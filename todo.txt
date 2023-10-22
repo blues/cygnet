@@ -1,0 +1,8 @@
+1. merge all peripherals into core, and fix symbol definitions
+CURRENTLY just finished gpio.c
+2. go over the loranote core and merge it in, especially all the serial and power management
+3. fix app to work in theory, doing req/rsp echoing just on lpuart1
+4. build a project and get it all to compile and link and work
+5. make this the cygnet repo
+6. build a power.c for peripherals
+7. have a diag that turns them on and off, to test them
