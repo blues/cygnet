@@ -16,7 +16,7 @@ void MX_SPI1_Init(void)
     hspi1.Instance = SPI1;
     hspi1.Init.Mode = SPI_MODE_MASTER;
     hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-    hspi1.Init.DataSize = SPI_DATASIZE_4BIT;
+    hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
     hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
     hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
     hspi1.Init.NSS = SPI_NSS_HARD_OUTPUT;
@@ -31,6 +31,15 @@ void MX_SPI1_Init(void)
         Error_Handler();
     }
 
+    peripherals |= PERIPHERAL_SPI1;
+
+}
+
+// SPI1 Deinitialization
+void MX_SPI1_DeInit(void)
+{
+    peripherals &= ~PERIPHERAL_SPI1;
+    HAL_SPI_DeInit(&hspi1);
 }
 
 // SPI2 init function
@@ -40,7 +49,7 @@ void MX_SPI2_Init(void)
     hspi2.Instance = SPI2;
     hspi2.Init.Mode = SPI_MODE_MASTER;
     hspi2.Init.Direction = SPI_DIRECTION_2LINES;
-    hspi2.Init.DataSize = SPI_DATASIZE_4BIT;
+    hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
     hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
     hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
     hspi2.Init.NSS = SPI_NSS_HARD_OUTPUT;
@@ -55,6 +64,15 @@ void MX_SPI2_Init(void)
         Error_Handler();
     }
 
+    peripherals |= PERIPHERAL_SPI2;
+
+}
+
+// SPI2 Deinitialization
+void MX_SPI2_DeInit(void)
+{
+    peripherals &= ~PERIPHERAL_SPI2;
+    HAL_SPI_DeInit(&hspi2);
 }
 
 // SPI msp init

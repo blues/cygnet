@@ -17,13 +17,44 @@
 #include "usart.h"
 #include "spi.h"
 
+// Peripherals that are currently active
+uint32_t peripherals = 0;
+
+// See reference manual RM0394.  The size is the last entry's address in Table 46 + sizeof(uint32_t).
+// (Don't be confused into using the entry number rather than the address, because there are negative
+// entry numbers. The highest address is the only accurate way of determining the actual table size.)
+#define VECTOR_TABLE_SIZE_BYTES (0x0190+sizeof(uint32_t))
+#if defined ( __ICCARM__ ) /* IAR Compiler */
+#pragma data_alignment=512
+#elif defined ( __CC_ARM ) /* ARM Compiler */
+__align(512)
+#elif defined ( __GNUC__ ) /* GCC Compiler */
+__attribute__ ((aligned (512)))
+#endif
+uint8_t vector_t[VECTOR_TABLE_SIZE_BYTES];
+
+// Linker-related symbols
+#if defined( __ICCARM__ )   // IAR
+extern void *ROM_CONTENT$$Limit;
+#else                       // STM32CubeIDE (gcc)
+extern void *_highest_used_rom;
+#endif
+
+// Forwards
 void SystemClock_Config(void);
 void PeriphCommonClock_Config(void);
 void MX_FREERTOS_Init(void);
 
-// The application entry point.
+// System entry point
 int main(void)
 {
+
+    // Copy the vectors
+    memcpy(vector_t, (uint8_t *) FLASH_BASE, sizeof(vector_t));
+    SCB->VTOR = (uint32_t) vector_t;
+
+    // Clear pending flash errors if any
+    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_OPTVERR);
 
     // Reset of all peripherals, Initializes the Flash interface and the Systick.
     HAL_Init();
@@ -31,14 +62,21 @@ int main(void)
     // Configure the system clock
     SystemClock_Config();
 
+    // Allow the timer to be enabled
+    HAL_EnableTick();
+    HAL_InitTick(TICK_INT_PRIORITY);
+    TIMER_IF_Init();
+
     // Configure the peripherals common clocks
     PeriphCommonClock_Config();
 
     // Initialize all configured peripherals
     MX_GPIO_Init();
-    MX_RTC_Init();
-    MX_LPTIM1_Init();
-    MX_RNG_Init();
+    MX_DMA_Init();
+    MX_DBG_Init();
+////    MX_RTC_Init();
+////    MX_LPTIM1_Init();
+//    MX_RNG_Init();
 //    MX_ADC1_Init();
 //    MX_WWDG_Init();
 //    MX_USB_PCD_Init();
@@ -47,7 +85,6 @@ int main(void)
 //    MX_I2C3_Init();
 //    MX_LPUART1_UART_Init(false, LPUART1_BAUDRATE);
 //    MX_LPUART1_UART_Init(true, LPUART1_BAUDRATE);
-//    MX_DMA_Init();
 //    MX_USART1_UART_Init(USART1_BAUDRATE);
 //    MX_USART2_UART_Init(USART2_BAUDRATE);
 //    MX_SPI1_Init();
@@ -55,12 +92,12 @@ int main(void)
 
     // Init scheduler
     osKernelInitialize();  // Call init function for freertos objects (in freertos.c)
-    MX_FREERTOS_Init();
+
+    // Initialize the FreeRTOS app
+    appInit();
 
     // Start scheduler
     osKernelStart();
-
-    // We should never get here as control is now taken by the scheduler
     while (1) {}
 
 }
@@ -71,22 +108,22 @@ void SystemClock_Config(void)
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};
     RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
+    // Configure LSE Drive Capability
+    HAL_PWR_EnableBkUpAccess();
+    __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_LOW);
+
     // Configure the main internal regulator output voltage
     if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK) {
         Error_Handler();
     }
 
-    // Configure LSE Drive Capability
-    HAL_PWR_EnableBkUpAccess();
-    __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_LOW);
-
     // Initializes the RCC Oscillators according to the specified parameters
     // in the RCC_OscInitTypeDef structure.
-    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_LSE|RCC_OSCILLATORTYPE_MSI;
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSE;
     RCC_OscInitStruct.LSEState = RCC_LSE_ON;
-    RCC_OscInitStruct.LSIState = RCC_LSI_ON;
+    RCC_OscInitStruct.OscillatorType |= RCC_OSCILLATORTYPE_MSI;
     RCC_OscInitStruct.MSIState = RCC_MSI_ON;
-    RCC_OscInitStruct.MSICalibrationValue = 0;
+    RCC_OscInitStruct.MSICalibrationValue = RCC_MSICALIBRATION_DEFAULT;
     RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
     RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
     RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
@@ -111,6 +148,10 @@ void SystemClock_Config(void)
 
     // Enable MSI Auto calibration
     HAL_RCCEx_EnableMSIPLLMode();
+
+    // Ensure that MSI is wake-up system clock
+    __HAL_RCC_WAKEUPSTOP_CLK_CONFIG(RCC_STOP_WAKEUPCLOCK_MSI);
+
 }
 
 // Peripherals Common Clock Configuration
@@ -158,3 +199,43 @@ void assert_failed(uint8_t *file, uint32_t line)
 {
 }
 #endif // USE_FULL_ASSERT
+
+// Get the currently active peripherals
+void MY_ActivePeripherals(char *buf, uint32_t buflen)
+{
+    *buf = '\0';
+    if ((peripherals & PERIPHERAL_RNG) != 0) {
+        strlcat(buf, "RNG ", buflen);
+    }
+    if ((peripherals & PERIPHERAL_USB) != 0) {
+        strlcat(buf, "RNG ", buflen);
+    }
+    if ((peripherals & PERIPHERAL_ADC1) != 0) {
+        strlcat(buf, "ADC1 ", buflen);
+    }
+    if ((peripherals & PERIPHERAL_CAN1) != 0) {
+        strlcat(buf, "CAN1 ", buflen);
+    }
+    if ((peripherals & PERIPHERAL_LPUART1) != 0) {
+        strlcat(buf, "LPUART1 ", buflen);
+    }
+    if ((peripherals & PERIPHERAL_USART1) != 0) {
+        strlcat(buf, "USART1 ", buflen);
+    }
+    if ((peripherals & PERIPHERAL_USART2) != 0) {
+        strlcat(buf, "USART2 ", buflen);
+    }
+    if ((peripherals & PERIPHERAL_I2C1) != 0) {
+        strlcat(buf, "I2C1 ", buflen);
+    }
+    if ((peripherals & PERIPHERAL_I2C3) != 0) {
+        strlcat(buf, "I2C3 ", buflen);
+    }
+    if ((peripherals & PERIPHERAL_SPI1) != 0) {
+        strlcat(buf, "SPI1 ", buflen);
+    }
+    if ((peripherals & PERIPHERAL_SPI2) != 0) {
+        strlcat(buf, "SPI2 ", buflen);
+    }
+
+}

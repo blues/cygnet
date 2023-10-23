@@ -13,6 +13,7 @@ void MX_RNG_Init(void)
     if (HAL_RNG_Init(&hrng) != HAL_OK) {
         Error_Handler();
     }
+    peripherals |= PERIPHERAL_RNG;
 }
 
 // RNG msp init
@@ -37,7 +38,19 @@ void HAL_RNG_MspInit(RNG_HandleTypeDef* rngHandle)
 // RNG msp deinit
 void HAL_RNG_MspDeInit(RNG_HandleTypeDef* rngHandle)
 {
+    peripherals &= ~PERIPHERAL_RNG;
     if(rngHandle->Instance==RNG) {
         __HAL_RCC_RNG_CLK_DISABLE();
     }
+}
+
+// Get a random number
+uint32_t MX_RNG_Get()
+{
+
+    uint32_t random;
+    while (HAL_RNG_GenerateRandomNumber(&hrng, &random) != HAL_OK) {
+        HAL_Delay(1);
+    }
+    return random;
 }

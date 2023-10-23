@@ -260,3 +260,16 @@
 #define VADC_DIV_TOP_RESISTOR           (float)10           // 10M Ohm
 #define VADC_DIV_BOT_RESISTOR           (float)4.3          // 4M3 Ohm
 #define VADC_DIV_K                      ((double)((VADC_DIV_TOP_RESISTOR + VADC_DIV_BOT_RESISTOR) / VADC_DIV_BOT_RESISTOR))
+
+// ADC
+#define USING_ADC_RESOLUTION			ADC_RESOLUTION_12B
+#define USING_ADC_RESOLUTION_LL			LL_ADC_RESOLUTION_12B
+#define USING_ADC_SCALE					ADC_SCALE_12BIT
+#define ADC_SCALE_14BIT					16384             // 14 Bit Resolution
+#define ADC_SCALE_12BIT					4096              // 12 Bit Resolution
+#define ADC_SCALE_10BIT					1024              // 10 Bit Resolution
+#define ADC_CHANNEL_SAMPLE				(uint16_t)1
+
+// Raw data acquired at a temperature of 30 deg C (+-5 deg C)
+// VDDA = VREF+ = 3.0 V (+- 10 mV)
+#define STM32_VDDA_REF_VOLT				(float)(3.00)

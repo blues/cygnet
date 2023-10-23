@@ -6,6 +6,9 @@
 
 ADC_HandleTypeDef hadc1;
 
+// Forwards
+double MY_GetVoltage(double *optTempC);
+
 #ifdef OZZIE
 // Change ADC1_Init to take a mask of all analog GPIOs, and then msp init/deinit
 // them and also have read/write functions that uses their ranks etc.

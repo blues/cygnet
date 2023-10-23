@@ -6,6 +6,11 @@
 
 RTC_HandleTypeDef hrtc;
 
+#define RTCWUT_SECS             4
+uint32_t rtcwutCounter =		0;
+uint32_t rtcwutClockrate =		32768;	// LSE Hz
+uint32_t rtcwutDivisor =		16;     // RTC DIV16 resolution
+
 // RTC init function
 void MX_RTC_Init(void)
 {
