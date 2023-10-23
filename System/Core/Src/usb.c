@@ -28,13 +28,21 @@ void MX_USB_PCD_Init(void)
 void HAL_PCD_MspInit(PCD_HandleTypeDef* pcdHandle)
 {
 
-    if(pcdHandle->Instance==USB) {
+    if (pcdHandle->Instance==USB) {
+
+        // Initializes the peripherals clock
+        RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+        PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB;
+        PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLLSAI1;
+        if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
+            Error_Handler();
+        }
 
         // USB clock enable
         __HAL_RCC_USB_CLK_ENABLE();
 
         // USB interrupt Init
-        HAL_NVIC_SetPriority(USB_IRQn, 5, 0);
+        HAL_NVIC_SetPriority(USB_IRQn, INTERRUPT_PRIO_USB, 0);
         HAL_NVIC_EnableIRQ(USB_IRQn);
 
     }
@@ -44,7 +52,7 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef* pcdHandle)
 void HAL_PCD_MspDeInit(PCD_HandleTypeDef* pcdHandle)
 {
 
-    if(pcdHandle->Instance==USB) {
+    if (pcdHandle->Instance==USB) {
 
         // Peripheral clock disable
         __HAL_RCC_USB_CLK_DISABLE();

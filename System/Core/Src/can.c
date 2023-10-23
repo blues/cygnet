@@ -49,20 +49,20 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* canHandle)
         GPIO_InitStruct.Pin = CAN1_D5_RX_Pin;
         HAL_GPIO_Init(CAN1_D5_RX_GPIO_Port, &GPIO_InitStruct);
 
-		memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
+        memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
         GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
         GPIO_InitStruct.Pin = CAN1_D12_STBY_Pin;
         HAL_GPIO_Init(CAN1_D12_STBY_GPIO_Port, &GPIO_InitStruct);
         HAL_GPIO_WritePin(CAN1_D12_STBY_GPIO_Port, CAN1_D12_STBY_Pin, GPIO_PIN_RESET);
 
         // CAN1 interrupt Init
-        HAL_NVIC_SetPriority(CAN1_TX_IRQn, 5, 0);
+        HAL_NVIC_SetPriority(CAN1_TX_IRQn, INTERRUPT_PRIO_CAN, 0);
         HAL_NVIC_EnableIRQ(CAN1_TX_IRQn);
-        HAL_NVIC_SetPriority(CAN1_RX0_IRQn, 5, 0);
+        HAL_NVIC_SetPriority(CAN1_RX0_IRQn, INTERRUPT_PRIO_CAN, 0);
         HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
-        HAL_NVIC_SetPriority(CAN1_RX1_IRQn, 5, 0);
+        HAL_NVIC_SetPriority(CAN1_RX1_IRQn, INTERRUPT_PRIO_CAN, 0);
         HAL_NVIC_EnableIRQ(CAN1_RX1_IRQn);
-        HAL_NVIC_SetPriority(CAN1_SCE_IRQn, 5, 0);
+        HAL_NVIC_SetPriority(CAN1_SCE_IRQn, INTERRUPT_PRIO_CAN, 0);
         HAL_NVIC_EnableIRQ(CAN1_SCE_IRQn);
 
     }
@@ -77,7 +77,7 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef* canHandle)
         // Peripheral clock disable
         __HAL_RCC_CAN1_CLK_DISABLE();
 
-		// Deinit
+        // Deinit
         HAL_GPIO_DeInit(CAN1_D5_RX_GPIO_Port, CAN1_D5_RX_Pin);
         HAL_GPIO_DeInit(CAN1_D6_TX_GPIO_Port, CAN1_D6_TX_Pin);
         HAL_GPIO_DeInit(CAN1_D12_STBY_GPIO_Port, CAN1_D12_STBY_Pin);

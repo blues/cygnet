@@ -31,25 +31,25 @@ int main(void)
     // Configure the system clock
     SystemClock_Config();
 
-	// Configure the peripherals common clocks
+    // Configure the peripherals common clocks
     PeriphCommonClock_Config();
 
     // Initialize all configured peripherals
     MX_GPIO_Init();
     MX_RTC_Init();
-    MX_RNG_Init();
     MX_LPTIM1_Init();
+    MX_RNG_Init();
 //    MX_ADC1_Init();
 //    MX_WWDG_Init();
 //    MX_USB_PCD_Init();
 //    MX_CAN1_Init();
 //    MX_I2C1_Init();
 //    MX_I2C3_Init();
-//    MX_LPUART1_UART_Init(false);
-//    MX_LPUART1_UART_Init(true);
+//    MX_LPUART1_UART_Init(false, LPUART1_BAUDRATE);
+//    MX_LPUART1_UART_Init(true, LPUART1_BAUDRATE);
 //    MX_DMA_Init();
-//    MX_USART1_UART_Init();
-//    MX_USART2_UART_Init();
+//    MX_USART1_UART_Init(USART1_BAUDRATE);
+//    MX_USART2_UART_Init(USART2_BAUDRATE);
 //    MX_SPI1_Init();
 //    MX_SPI2_Init();
 
@@ -61,8 +61,7 @@ int main(void)
     osKernelStart();
 
     // We should never get here as control is now taken by the scheduler
-    while (1) {
-    }
+    while (1) {}
 
 }
 
@@ -82,9 +81,8 @@ void SystemClock_Config(void)
     __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_LOW);
 
     // Initializes the RCC Oscillators according to the specified parameters
-	// in the RCC_OscInitTypeDef structure.
-    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_LSE
-                                       |RCC_OSCILLATORTYPE_MSI;
+    // in the RCC_OscInitTypeDef structure.
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_LSE|RCC_OSCILLATORTYPE_MSI;
     RCC_OscInitStruct.LSEState = RCC_LSE_ON;
     RCC_OscInitStruct.LSIState = RCC_LSI_ON;
     RCC_OscInitStruct.MSIState = RCC_MSI_ON;
@@ -102,13 +100,11 @@ void SystemClock_Config(void)
     }
 
     // Initializes the CPU, AHB and APB buses clocks
-    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                                  |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK|RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
     RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
     RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
     RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
     RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-
     if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK) {
         Error_Handler();
     }
@@ -120,14 +116,9 @@ void SystemClock_Config(void)
 // Peripherals Common Clock Configuration
 void PeriphCommonClock_Config(void)
 {
-    RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
     // Initializes the peripherals clock
-    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB|RCC_PERIPHCLK_RNG
-                                         |RCC_PERIPHCLK_ADC;
-    PeriphClkInit.AdcClockSelection = RCC_ADCCLKSOURCE_PLLSAI1;
-    PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLLSAI1;
-    PeriphClkInit.RngClockSelection = RCC_RNGCLKSOURCE_PLLSAI1;
+    RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
     PeriphClkInit.PLLSAI1.PLLSAI1Source = RCC_PLLSOURCE_MSI;
     PeriphClkInit.PLLSAI1.PLLSAI1M = 1;
     PeriphClkInit.PLLSAI1.PLLSAI1N = 24;
@@ -138,6 +129,7 @@ void PeriphCommonClock_Config(void)
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
         Error_Handler();
     }
+
 }
 
 // Period elapsed callback in non blocking mode
@@ -161,11 +153,8 @@ void Error_Handler(void)
 }
 
 #ifdef  USE_FULL_ASSERT
-// Reports the name of the source file and the source line number
-// where the assert_param error has occurred.
+// Assertion trap
 void assert_failed(uint8_t *file, uint32_t line)
 {
-    // User can add his own implementation to report the file name and line number,
-	// ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line)
 }
 #endif // USE_FULL_ASSERT

@@ -81,25 +81,23 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
             Error_Handler();
         }
 
-        __HAL_RCC_GPIOB_CLK_ENABLE();
-        //I2C1 GPIO Configuration
-        PB6     ------> I2C1_SCL
-        PB7     ------> I2C1_SDA
-
-        GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
-        GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
-        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-        GPIO_InitStruct.Alternate = GPIO_AF4_I2C1;
-        HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
         // I2C1 clock enable
         __HAL_RCC_I2C1_CLK_ENABLE();
 
+        // I2C1 GPIO Configuration
+        GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+        GPIO_InitStruct.Alternate = I2C1_AF;
+        GPIO_InitStruct.Pin = GPIO_SCL_Pin;
+        HAL_GPIO_Init(GPIO_SCL_GPIO_Port, &GPIO_InitStruct);
+        GPIO_InitStruct.Pin = GPIO_SDA_Pin;
+        HAL_GPIO_Init(GPIO_SDA_GPIO_Port, &GPIO_InitStruct);
+
         // I2C1 interrupt Init
-        HAL_NVIC_SetPriority(I2C1_EV_IRQn, 5, 0);
+        HAL_NVIC_SetPriority(I2C1_EV_IRQn, INTERRUPT_PRIO_I2CM, 0);
         HAL_NVIC_EnableIRQ(I2C1_EV_IRQn);
-        HAL_NVIC_SetPriority(I2C1_ER_IRQn, 5, 0);
+        HAL_NVIC_SetPriority(I2C1_ER_IRQn, INTERRUPT_PRIO_I2CM, 0);
         HAL_NVIC_EnableIRQ(I2C1_ER_IRQn);
 
     }
@@ -113,33 +111,23 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
             Error_Handler();
         }
 
-        __HAL_RCC_GPIOA_CLK_ENABLE();
-        __HAL_RCC_GPIOB_CLK_ENABLE();
-        //I2C3 GPIO Configuration
-        PA7     ------> I2C3_SCL
-        PB4 (NJTRST)     ------> I2C3_SDA
-
-        GPIO_InitStruct.Pin = GPIO_PIN_7;
-        GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
-        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-        GPIO_InitStruct.Alternate = GPIO_AF4_I2C3;
-        HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-        GPIO_InitStruct.Pin = GPIO_PIN_4;
-        GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
-        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-        GPIO_InitStruct.Alternate = GPIO_AF4_I2C3;
-        HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
         // I2C3 clock enable
         __HAL_RCC_I2C3_CLK_ENABLE();
 
+        // I2C3 GPIO Configuration
+        GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+        GPIO_InitStruct.Alternate = I2C3_AF;
+        GPIO_InitStruct.Pin = I2C3_A5_SCL_Pin;
+        HAL_GPIO_Init(I2C3_A5_SCL_GPIO_Port, &GPIO_InitStruct);
+        GPIO_InitStruct.Pin = I2C3_D13_SDA_Pin;
+        HAL_GPIO_Init(I2C3_D13_SDA_GPIO_Port, &GPIO_InitStruct);
+
         // I2C3 interrupt Init
-        HAL_NVIC_SetPriority(I2C3_EV_IRQn, 5, 0);
+        HAL_NVIC_SetPriority(I2C3_EV_IRQn, INTERRUPT_PRIO_I2CM, 0);
         HAL_NVIC_EnableIRQ(I2C3_EV_IRQn);
-        HAL_NVIC_SetPriority(I2C3_ER_IRQn, 5, 0);
+        HAL_NVIC_SetPriority(I2C3_ER_IRQn, INTERRUPT_PRIO_I2CM, 0);
         HAL_NVIC_EnableIRQ(I2C3_ER_IRQn);
 
     }
@@ -155,13 +143,9 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
         // Peripheral clock disable
         __HAL_RCC_I2C1_CLK_DISABLE();
 
-        //I2C1 GPIO Configuration
-        PB6     ------> I2C1_SCL
-        PB7     ------> I2C1_SDA
-
-        HAL_GPIO_DeInit(GPIOB, GPIO_PIN_6);
-
-        HAL_GPIO_DeInit(GPIOB, GPIO_PIN_7);
+        // GPIO DeInit
+        HAL_GPIO_DeInit(I2C1_SCL_GPIO_Port, I2C1_SCL_Pin);
+        HAL_GPIO_DeInit(I2C1_SDA_GPIO_Port, I2C1_SDA_Pin);
 
         // I2C1 interrupt Deinit
         HAL_NVIC_DisableIRQ(I2C1_EV_IRQn);
@@ -174,13 +158,9 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
         // Peripheral clock disable
         __HAL_RCC_I2C3_CLK_DISABLE();
 
-        //I2C3 GPIO Configuration
-        PA7     ------> I2C3_SCL
-        PB4 (NJTRST)     ------> I2C3_SDA
-
-        HAL_GPIO_DeInit(GPIOA, GPIO_PIN_7);
-
-        HAL_GPIO_DeInit(GPIOB, GPIO_PIN_4);
+        // GPIO DeInit
+        HAL_GPIO_DeInit(I2C3_A5_SCL_GPIO_Port, I2C3_A5_SCL_Pin);
+        HAL_GPIO_DeInit(I2C3_D13_SDA_GPIO_Port, I2C3_D13_SDA_Pin);
 
         // I2C3 interrupt Deinit
         HAL_NVIC_DisableIRQ(I2C3_EV_IRQn);

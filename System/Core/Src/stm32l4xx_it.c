@@ -26,49 +26,37 @@ extern DMA_HandleTypeDef hdma_spi2_tx;
 // This function handles Non maskable interrupt.
 void NMI_Handler(void)
 {
-    while (1) {
-    }
+    while (1) {}
 }
 
 // This function handles Hard fault interrupt.
 void HardFault_Handler(void)
 {
-    while (1) {
-    }
+    while (1) {}
 }
 
 // This function handles Memory management fault.
 void MemManage_Handler(void)
 {
-    while (1) {
-    }
+    while (1) {}
 }
 
 // This function handles Prefetch fault, memory access fault.
 void BusFault_Handler(void)
 {
-    while (1) {
-    }
+    while (1) {}
 }
 
 // This function handles Undefined instruction or illegal state.
 void UsageFault_Handler(void)
 {
-    while (1) {
-    }
+    while (1) {}
 }
 
 // This function handles Debug monitor.
 void DebugMon_Handler(void)
 {
 }
-
-///**************************************************************************
-// STM32L4xx Peripheral Interrupt Handlers
-// Add here the Interrupt Handlers for the used peripherals.
-// For the available peripheral interrupt handler names,
-// please refer to the startup file (startup_stm32l4xx.s).
-///**************************************************************************
 
 // This function handles TIM2 global interrupt.
 void TIM2_IRQHandler(void)
@@ -82,18 +70,12 @@ void LPTIM1_IRQHandler(void)
     HAL_LPTIM_IRQHandler(&hlptim1);
 }
 
-// This function handles USB event interrupt through EXTI line 17.
+// USB interrupt
 void USB_IRQHandler(void)
 {
     HAL_PCD_IRQHandler(&hpcd_USB_FS);
 }
 
-///**************************************************************************
-// STM32L4xx Peripheral Interrupt Handlers
-// Add here the Interrupt Handlers for the used peripherals.
-// For the available peripheral interrupt handler names,
-// please refer to the startup file (startup_stm32l4xx.s).
-///**************************************************************************
 // This function handles CAN1 TX interrupt.
 void CAN1_TX_IRQHandler(void)
 {
@@ -159,49 +141,50 @@ void USART2_IRQHandler(void)
 {
     HAL_UART_IRQHandler(&huart2);
 }
-// This function handles DMA1 channel4 global interrupt.
-void DMA1_Channel4_IRQHandler(void)
-{
-    HAL_DMA_IRQHandler(&hdma_spi2_rx);
-}
-
-// This function handles DMA1 channel5 global interrupt.
-void DMA1_Channel5_IRQHandler(void)
-{
-    HAL_DMA_IRQHandler(&hdma_spi2_tx);
-}
-
-// This function handles DMA1 channel6 global interrupt.
-void DMA1_Channel6_IRQHandler(void)
-{
-    HAL_DMA_IRQHandler(&hdma_usart2_rx);
-}
-
-// This function handles DMA1 channel7 global interrupt.
-void DMA1_Channel7_IRQHandler(void)
-{
-    HAL_DMA_IRQHandler(&hdma_usart2_tx);
-}
-
-// This function handles DMA2 channel6 global interrupt.
-void DMA2_Channel6_IRQHandler(void)
-{
-    HAL_DMA_IRQHandler(&hdma_usart1_tx);
-}
-
-// This function handles DMA2 channel7 global interrupt.
-void DMA2_Channel7_IRQHandler(void)
-{
-    HAL_DMA_IRQHandler(&hdma_usart1_rx);
-}
 
 // This function handles SPI1 global interrupt.
 void SPI1_IRQHandler(void)
-	HAL_SPI_IRQHandler(&hspi1);
+HAL_SPI_IRQHandler(&hspi1);
 }
 
 // This function handles SPI2 global interrupt.
 void SPI2_IRQHandler(void)
-	HAL_SPI_IRQHandler(&hspi2);
+HAL_SPI_IRQHandler(&hspi2);
 }
 
+
+// This function handles SPI2 global interrupt.
+void SPI2_RX_DMA_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(&hdma_spi2_rx);
+}
+
+// This function handles SPI2 global interrupt.
+void SPI2_TX_DMA_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(&hdma_spi2_tx);
+}
+
+// This function handles USART2 global interrupt.
+void USART2_RX_DMA_Channel(void)
+{
+    HAL_DMA_IRQHandler(&hdma_usart2_rx);
+}
+
+// This function handles USART2 global interrupt.
+void USART2_TX_DMA_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(&hdma_usart2_tx);
+}
+
+// This function handles USART1 global interrupt.
+void USART1_TX_DMA_Channel(void)
+{
+    HAL_DMA_IRQHandler(&hdma_usart1_tx);
+}
+
+// This function handles USART1 global interrupt.
+void USART1_RX_DMA_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(&hdma_usart1_rx);
+}

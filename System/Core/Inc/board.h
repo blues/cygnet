@@ -159,6 +159,7 @@
 #define	LPUART1_A2_TX_Pin				A2_Pin
 #define	LPUART1_A2_TX_GPIO_Port			A2_GPIO_Port
 #define	LPUART1_AF						GPIO_AF8_LPUART1
+#define	LPUART1_BAUDRATE				9600
 
 #define	TX_Pin							GPIO_PIN_9		// PA9
 #define	TX_GPIO_Port					GPIOA
@@ -169,7 +170,7 @@
 #define	USART1_RX_Pin					RX_Pin
 #define	USART1_RX_GPIO_Port				RX_GPIO_Port
 #define	USART1_AF						GPIO_AF7_USART1
-#define	USART1_BAUDRATE					9600
+#define	USART1_BAUDRATE					115200
 #define USART1_RX_DMA_Channel			DMA2_Channel7
 #define USART1_RX_DMA_IRQn				DMA2_Channel7_IRQn
 #define USART1_RX_DMA_IRQHandler		DMA2_Channel7_IRQHandler
@@ -182,7 +183,7 @@
 #define	USART2_A3_RX_Pin				A3_Pin
 #define	USART2_A3_RX_GPIO_Port			A3_GPIO_Port
 #define	USART2_AF						GPIO_AF7_USART2
-#define	USART2_BAUDRATE					9600
+#define	USART2_BAUDRATE					115200
 #define USART2_RX_DMA_Channel			DMA1_Channel6
 #define USART2_RX_DMA_IRQn				DMA1_Channel6_IRQn
 #define USART2_RX_DMA_IRQHandler		DMA1_Channel6_IRQHandler
@@ -222,6 +223,29 @@
 #define	RS485_A1_DE_GPIO_Port			A1_GPIO_Port
 #define	RS485_AF						GPIO_AF7_USART2
 #define	RS485_BAUDRATE					9600
+
+// Interrupt priorities.  (Note - to get this you must include FreeRTOSCOnfig.h before board.h)
+#ifdef configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY
+
+// RTC is our highest priority, because it is our watchdog
+#define INTERRUPT_PRIO_RTC				configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY
+#define INTERRUPT_PRIO_TIMER			configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY
+#define INTERRUPT_PRIO_TAMP				configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY
+
+// Next are interrupts where external devices are reliant upon our timing/responsiveness
+#define INTERRUPT_PRIO_I2CS				configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY+1
+#define INTERRUPT_PRIO_I2CM				configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY+1
+#define INTERRUPT_PRIO_SPI				configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY+1
+#define	INTERRUPT_PRIO_USB				configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY+2
+#define	INTERRUPT_PRIO_SERIAL			configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY+2
+#define	INTERRUPT_PRIO_CAN				configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY+2
+#define	INTERRUPT_PRIO_EXTI				configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY+3
+#define INTERRUPT_PRIO_ADC				configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY+3
+
+// This is used by "yield" in the task scheduler and should be lowest priority
+#define INTERRUPT_PRIO_PENDSV			configLIBRARY_LOWEST_INTERRUPT_PRIORITY
+
+#endif
 
 // RTC
 #define RTC_N_PREDIV_S					10

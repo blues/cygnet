@@ -29,6 +29,7 @@ HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
 
     // Get APB1 prescaler
     uwAPB1Prescaler = clkconfig.APB1CLKDivider;
+
     // Compute TIM2 clock
     if (uwAPB1Prescaler == RCC_HCLK_DIV1) {
         uwTimclock = HAL_RCC_GetPCLK1Freq();
@@ -43,12 +44,11 @@ HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
     htim2.Instance = TIM2;
 
     // Initialize TIMx peripheral as follow:
-    + Period = [(TIM2CLK/1000) - 1]. to have a (1/1000) s time base.
-               + Prescaler = (uwTimclock/1000000 - 1) to have a 1MHz counter clock.
-                             + ClockDivision = 0
-                                     + Counter direction = Up
-
-                                             htim2.Init.Period = (1000000U / 1000U) - 1U;
+    // + Period = [(TIM2CLK/1000) - 1]. to have a (1/1000) s time base.
+    // + Prescaler = (uwTimclock/1000000 - 1) to have a 1MHz counter clock.
+    // + ClockDivision = 0
+    // + Counter direction = Up
+    htim2.Init.Period = (1000000U / 1000U) - 1U;
     htim2.Init.Prescaler = uwPrescalerValue;
     htim2.Init.ClockDivision = 0;
     htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -72,7 +72,7 @@ HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
         }
     }
 
-	// Return function status
+    // Return function status
     return status;
 }
 

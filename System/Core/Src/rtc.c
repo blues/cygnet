@@ -10,7 +10,7 @@ RTC_HandleTypeDef hrtc;
 void MX_RTC_Init(void)
 {
 
-    // Initialize RTC Only
+    // Initialize RTC
     hrtc.Instance = RTC;
     hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
     hrtc.Init.AsynchPrediv = 127;
@@ -30,7 +30,7 @@ void HAL_RTC_MspInit(RTC_HandleTypeDef* rtcHandle)
 {
 
     RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
-    if(rtcHandle->Instance==RTC) {
+    if (rtcHandle->Instance==RTC) {
 
         // Initializes the peripherals clock
         PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC;
@@ -55,4 +55,5 @@ void HAL_RTC_MspDeInit(RTC_HandleTypeDef* rtcHandle)
         __HAL_RCC_RTC_DISABLE();
 
     }
+
 }

@@ -59,6 +59,14 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
     GPIO_InitTypeDef GPIO_InitStruct = {0};
     if(adcHandle->Instance==ADC1) {
 
+        // Initializes the peripherals clock
+        RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+        PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
+        PeriphClkInit.AdcClockSelection = RCC_ADCCLKSOURCE_PLLSAI1;
+        if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
+            Error_Handler();
+        }
+
         // ADC1 clock enable
         __HAL_RCC_ADC_CLK_ENABLE();
 
@@ -88,7 +96,7 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
         // Peripheral clock disable
         __HAL_RCC_ADC_CLK_DISABLE();
 
-		// Deinit pins
+        // Deinit pins
 #ifdef OZZIE
         HAL_GPIO_DeInit(GPIOA, A0_Pin|A1_Pin|A2_Pin|A3_Pin|A4_Pin);
         HAL_GPIO_DeInit(BAT_VOLTAGE_GPIO_Port, BAT_VOLTAGE_Pin);

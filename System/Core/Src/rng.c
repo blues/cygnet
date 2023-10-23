@@ -9,12 +9,10 @@ RNG_HandleTypeDef hrng;
 // RNG init function
 void MX_RNG_Init(void)
 {
-
     hrng.Instance = RNG;
     if (HAL_RNG_Init(&hrng) != HAL_OK) {
         Error_Handler();
     }
-
 }
 
 // RNG msp init
@@ -22,7 +20,15 @@ void HAL_RNG_MspInit(RNG_HandleTypeDef* rngHandle)
 {
     if(rngHandle->Instance==RNG) {
 
-        // RNG clock enable
+        // Initializes the peripherals clock
+        RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+        PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RNG;
+        PeriphClkInit.RngClockSelection = RCC_RNGCLKSOURCE_PLLSAI1;
+        if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
+            Error_Handler();
+        }
+
+        // Enable peripheral clock
         __HAL_RCC_RNG_CLK_ENABLE();
 
     }
@@ -32,9 +38,6 @@ void HAL_RNG_MspInit(RNG_HandleTypeDef* rngHandle)
 void HAL_RNG_MspDeInit(RNG_HandleTypeDef* rngHandle)
 {
     if(rngHandle->Instance==RNG) {
-
-        // Peripheral clock disable
         __HAL_RCC_RNG_CLK_DISABLE();
-
     }
 }

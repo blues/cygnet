@@ -43,7 +43,7 @@ void HAL_LPTIM_MspInit(LPTIM_HandleTypeDef* lptimHandle)
         __HAL_RCC_LPTIM1_CLK_ENABLE();
 
         // LPTIM1 interrupt Init
-        HAL_NVIC_SetPriority(LPTIM1_IRQn, 5, 0);
+        HAL_NVIC_SetPriority(LPTIM1_IRQn, INTERRUPT_PRIO_TIMER, 0);
         HAL_NVIC_EnableIRQ(LPTIM1_IRQn);
 
     }

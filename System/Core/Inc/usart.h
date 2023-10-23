@@ -10,7 +10,7 @@ extern UART_HandleTypeDef hlpuart1;
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 
-void MX_LPUART1_UART_Init(bool altPins);
-void MX_USART1_UART_Init(void);
-void MX_USART2_UART_Init(bool useRS485);
+void MX_LPUART1_UART_Init(bool altPins, uint32_t baudRate);
+void MX_USART1_UART_Init(uint32_t baudRate);
+void MX_USART2_UART_Init(bool useRS485, uint32_t baudRate);
 
