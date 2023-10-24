@@ -19,18 +19,30 @@
 #define PERIPHERAL_I2C3     0x00000100
 #define PERIPHERAL_SPI1     0x00000200
 #define PERIPHERAL_SPI2     0x00000400
-extern uint32_t peripherals;
 
 // main.c
+int main(void);
+extern uint32_t peripherals;
+void MX_ActivePeripherals(char *buf, uint32_t buflen);
+uint32_t MX_ImageSize(void);
+void MX_GetUniqueId(uint8_t *id);
+
+// stm32l4xx_it.c
 void Error_Handler(void);
+
+// stm32l4xx_hal_timebase_tim.c
+void HAL_SuspendTick(void);
+void HAL_ResumeTick(void);
 
 // app_weak.c
 void appInit(void);
-
-// stm32_lpm_if.c
-extern const struct UTIL_LPM_Driver_s UTIL_PowerDriver;
+void appHeartbeatISR(void);
+void appISR(void);
 
 // debug_if.c
+void MX_Breakpoint(void);
+bool MX_InISR(void);
+void MX_JumpToBootloader(void);
 bool MX_DBG_Active(void);
 void MX_DBG_Init(void);
 void MX_DBG_SetOutput(UART_HandleTypeDef *huart, void (*fn)(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen));

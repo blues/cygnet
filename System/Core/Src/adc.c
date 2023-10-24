@@ -5,53 +5,76 @@
 #include "adc.h"
 
 ADC_HandleTypeDef hadc1;
+static uint16_t adcGpioPin;
+static GPIO_TypeDef *adcGpioPort
 
-// Forwards
-double MY_GetVoltage(double *optTempC);
-
-#ifdef OZZIE
-// Change ADC1_Init to take a mask of all analog GPIOs, and then msp init/deinit
-// them and also have read/write functions that uses their ranks etc.
-#endif
-
-// ADC1 init function
-void MX_ADC1_Init(void)
+// ADC1 function to read a channel (supply NULL for gpioPort for internal channels such as VREFINT)
+uint32_t MX_ADC1_ReadChannel(uint32_t adcChannel, uint16_t gpioPin, GPIO_TypeDef *gpioPort)
 {
 
-    ADC_ChannelConfTypeDef sConfig = {0};
+	// Peripheral active
+	peripherals |= PERIPHERAL_ADC1;
+
+	// Save for msp init/deinit
+	adcGpioPin = gpioPin;
+	adcGpioPort = gpioPort;
 
     // Common config
     hadc1.Instance = ADC1;
     hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
     hadc1.Init.Resolution = ADC_RESOLUTION_12B;
     hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-    hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+    hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
     hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
     hadc1.Init.LowPowerAutoWait = DISABLE;
     hadc1.Init.ContinuousConvMode = DISABLE;
-    hadc1.Init.NbrOfConversion = 1;
-    hadc1.Init.DiscontinuousConvMode = DISABLE;
+    hadc1.Init.DiscontinuousConvMode = ENABLE;
     hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
     hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
     hadc1.Init.DMAContinuousRequests = DISABLE;
-    hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+    hadc1.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
     hadc1.Init.OversamplingMode = DISABLE;
+    hadc1.Init.SamplingTimeCommon1 = ADC_SAMPLETIME_160CYCLES_5;
+    hadc1.Init.SamplingTimeCommon2 = ADC_SAMPLETIME_160CYCLES_5;
+    hadc1.Init.NbrOfConversion = 1;
     if (HAL_ADC_Init(&hadc1) != HAL_OK) {
         Error_Handler();
     }
 
+    // Start Calibration
+    if (HAL_ADCEx_Calibration_Start(&hadc1) != HAL_OK) {
+        Error_Handler();
+    }
+
     // Configure Regular Channel
-#ifdef OZZIE
-    sConfig.Channel = ADC_CHANNEL_BAT_VOLTAGE;
+    sConfig.Channel = adcChannel;
     sConfig.Rank = ADC_REGULAR_RANK_1;
-    sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
-    sConfig.SingleDiff = ADC_SINGLE_ENDED;
-    sConfig.OffsetNumber = ADC_OFFSET_NONE;
-    sConfig.Offset = 0;
+    sConfig.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
         Error_Handler();
     }
-#endif
+
+    if (HAL_ADC_Start(&hadc1) != HAL_OK) {
+        Error_Handler();
+    }
+
+    // Wait for end of conversion
+    HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+
+    // Stop conversion, which calls ADC_Disable()
+    HAL_ADC_Stop(&hadc1);
+
+    // Read the data
+    uint32_t convertedValue = HAL_ADC_GetValue(&hadc1);
+
+    // Deinit
+    MX_ADC_DeInit();
+
+	// Peripheral inactive
+	peripherals &= ~PERIPHERAL_ADC1;
+
+	// Done
+	return convertedValue;
 
 }
 
@@ -74,18 +97,12 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
         __HAL_RCC_ADC_CLK_ENABLE();
 
         // ADC1 GPIO Configuration
-#ifdef OZZIE
-        GPIO_InitStruct.Pin = A0_Pin|A1_Pin|A2_Pin|A3_Pin
-                              |A4_Pin;
-        GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
-        HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-        GPIO_InitStruct.Pin = BAT_VOLTAGE_Pin;
-        GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
-        HAL_GPIO_Init(BAT_VOLTAGE_GPIO_Port, &GPIO_InitStruct);
-#endif
+		if (adcGpioPort != NULL) {
+	        GPIO_InitStruct.Pin = adcGpioPin;
+	        GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+	        GPIO_InitStruct.Pull = GPIO_NOPULL;
+	        HAL_GPIO_Init(adcGpioPort, &GPIO_InitStruct);
+		}
 
     }
 }
@@ -100,10 +117,67 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
         __HAL_RCC_ADC_CLK_DISABLE();
 
         // Deinit pins
-#ifdef OZZIE
-        HAL_GPIO_DeInit(GPIOA, A0_Pin|A1_Pin|A2_Pin|A3_Pin|A4_Pin);
-        HAL_GPIO_DeInit(BAT_VOLTAGE_GPIO_Port, BAT_VOLTAGE_Pin);
-#endif
+		if (adcGpioPort != NULL) {
+	        HAL_GPIO_DeInit(adcGpioPort, adcGpioPin);
+		}
 
     }
+}
+
+// Get the mcu's voltage level in millivolts
+uint16_t MX_ADC_GetMcuVoltageMv(void)
+{
+
+    uint16_t batteryLevelmV = 0;
+    uint32_t measuredLevel = 0;
+
+    measuredLevel = MX_ADC_ReadChannels(ADC_CHANNEL_VREFINT);
+
+    if (measuredLevel == 0) {
+        batteryLevelmV = 0;
+    } else {
+        if ((uint32_t)*VREFINT_CAL_ADDR != (uint32_t)0xFFFFU) {
+            // Device with Reference voltage calibrated in production:
+            // use device optimized parameters
+            batteryLevelmV = __LL_ADC_CALC_VREFANALOG_VOLTAGE(measuredLevel, ADC_RESOLUTION_12B);
+        } else {
+            // Device with Reference voltage not calibrated in production:
+            // use generic parameters
+            batteryLevelmV = (VREFINT_CAL_VREF * 1510) / measuredLevel;
+        }
+    }
+
+    return batteryLevelmV;
+
+}
+
+// Get the mcu's temp in degrees centigrade
+int16_t MX_ADC_GetMcuTemperatureC(void)
+{
+
+    __IO int16_t temperatureDegreeC = 0;
+    uint32_t measuredLevel = 0;
+    uint16_t batteryLevelmV = MX_ADC_GetBatteryLevel();
+
+    measuredLevel = MX_ADC_ReadChannels(ADC_CHANNEL_TEMPSENSOR);
+
+    // Convert ADC level to temperature
+    // check whether device has temperature sensor calibrated in production
+    if (((int32_t)*TEMPSENSOR_CAL2_ADDR - (int32_t)*TEMPSENSOR_CAL1_ADDR) != 0) {
+        // Device with temperature sensor calibrated in production:
+        // use device optimized parameters
+        temperatureDegreeC = __LL_ADC_CALC_TEMPERATURE(batteryLevelmV, measuredLevel, LL_ADC_RESOLUTION_12B);
+    } else {
+        // Device with temperature sensor not calibrated in production:
+        // use generic parameters
+        temperatureDegreeC = __LL_ADC_CALC_TEMPERATURE_TYP_PARAMS(TEMPSENSOR_TYP_AVGSLOPE,
+                             TEMPSENSOR_TYP_CAL1_V,
+                             TEMPSENSOR_CAL1_TEMP,
+                             batteryLevelmV,
+                             measuredLevel,
+                             LL_ADC_RESOLUTION_12B);
+    }
+
+    return (int16_t) temperatureDegreeC;
+
 }

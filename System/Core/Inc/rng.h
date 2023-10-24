@@ -9,4 +9,5 @@
 extern RNG_HandleTypeDef hrng;
 
 void MX_RNG_Init(void);
-
+void MX_RNG_DeInit(void);
+uint32_t MX_RNG_Get(void);

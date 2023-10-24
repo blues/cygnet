@@ -7,4 +7,5 @@
 #include "main.h"
 
 void MX_DMA_Init(void);
+void MX_DMA_DeInit(void);
 

@@ -9,4 +9,5 @@
 extern PCD_HandleTypeDef hpcd_USB_FS;
 
 void MX_USB_PCD_Init(void);
+void MX_USB_PCD_DeInit(void);
 

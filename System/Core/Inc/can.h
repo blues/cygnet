@@ -9,3 +9,4 @@
 extern CAN_HandleTypeDef hcan1;
 
 void MX_CAN1_Init(void);
+void MX_CAN1_DeInit(void);

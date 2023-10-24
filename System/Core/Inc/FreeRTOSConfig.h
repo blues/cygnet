@@ -68,7 +68,7 @@ extern uint32_t SystemCoreClock;
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION  0
 #define configUSE_TICKLESS_IDLE                  1
 // Defaults to size_t for backward compatibility, but can be changed
-if lengths will always be less than the number of bytes in a size_t.
+// if lengths will always be less than the number of bytes in a size_t.
 #define configMESSAGE_BUFFER_LENGTH_TYPE         size_t
 
 // Co-routine definitions.
@@ -94,7 +94,7 @@ to exclude the API function.
 #define INCLUDE_vTaskPrioritySet             1
 #define INCLUDE_uxTaskPriorityGet            1
 #define INCLUDE_vTaskDelete                  1
-#define INCLUDE_vTaskCleanUpResources        0
+#define INCLUDE_vTaskCleanUpResources        1
 #define INCLUDE_vTaskSuspend                 1
 #define INCLUDE_vTaskDelayUntil              1
 #define INCLUDE_vTaskDelay                   1
@@ -104,6 +104,7 @@ to exclude the API function.
 #define INCLUDE_uxTaskGetStackHighWaterMark  1
 #define INCLUDE_xTaskGetCurrentTaskHandle    1
 #define INCLUDE_eTaskGetState                1
+#define INCLUDE_xTaskGetHandle               1
 
 // The CMSIS-RTOS V2 FreeRTOS wrapper is dependent on the heap implementation used
 // by the application thus the correct define need to be enabled below
@@ -118,28 +119,28 @@ to exclude the API function.
 #endif
 
 // The lowest interrupt priority that can be used in a call to a "set priority"
-function.
+// function.
 #define configLIBRARY_LOWEST_INTERRUPT_PRIORITY   15
 
 // The highest interrupt priority that can be used by any interrupt service
-routine that makes calls to interrupt safe FreeRTOS API functions.  DO NOT CALL
-INTERRUPT SAFE FREERTOS API FUNCTIONS FROM ANY INTERRUPT THAT HAS A HIGHER
-PRIORITY THAN THIS! (higher priorities are lower numeric values.
+// routine that makes calls to interrupt safe FreeRTOS API functions.  DO NOT CALL
+// INTERRUPT SAFE FREERTOS API FUNCTIONS FROM ANY INTERRUPT THAT HAS A HIGHER
+// PRIORITY THAN THIS! (higher priorities are lower numeric values.
 #define configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY 5
 
 // Interrupt priorities used by the kernel port layer itself.  These are generic
-                     to all Cortex-M ports, and do not rely on any particular library functions.
+// to all Cortex-M ports, and do not rely on any particular library functions.
 #define configKERNEL_INTERRUPT_PRIORITY 		( configLIBRARY_LOWEST_INTERRUPT_PRIORITY << (8 - configPRIO_BITS) )
 // !!!! configMAX_SYSCALL_INTERRUPT_PRIORITY must not be set to zero !!!!
-                         See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html.
+// See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html.
 #define configMAX_SYSCALL_INTERRUPT_PRIORITY 	( configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY << (8 - configPRIO_BITS) )
 
 // Normal assert() semantics without relying on the provision of an assert.h
-                         header file.
+// header file.
 #define configASSERT( x ) if ((x) == 0) {taskDISABLE_INTERRUPTS(); for( ;; );}
 
 // Definitions that map the FreeRTOS port interrupt handlers to their CMSIS
-                         standard names.
+// standard names.
 #define vPortSVCHandler    SVC_Handler
 #define xPortPendSVHandler PendSV_Handler
 
@@ -148,20 +149,20 @@ PRIORITY THAN THIS! (higher priorities are lower numeric values.
 
 // Section where parameter definitions can be added (for instance, to override default ones in FreeRTOS.h)
 #if defined(__ICCARM__) || defined(__CC_ARM) || defined(__GNUC__)
-                         void PreSleepProcessing(uint32_t ulExpectedIdleTime);
-                         void PostSleepProcessing(uint32_t ulExpectedIdleTime);
+void appPreSleepProcessing(uint32_t *ulExpectedIdleTime);
+void appPostSleepProcessing(uint32_t *ulExpectedIdleTime);
 #endif // defined(__ICCARM__) || defined(__CC_ARM) || defined(__GNUC__)
 
 // The configPRE_SLEEP_PROCESSING() and configPOST_SLEEP_PROCESSING() macros
-                         allow the application writer to add additional code before and after the MCU is
-                         placed into the low power state respectively.
+// allow the application writer to add additional code before and after the MCU is
+// placed into the low power state respectively.
 #if configUSE_TICKLESS_IDLE == 1
 #define configPRE_SLEEP_PROCESSING(__x__)                           \
                                        do {                         \
                                          __x__ = 0;                 \
-                                         PreSleepProcessing(__x__); \
+                                         appPreSleepProcessing(__x__); \
                                       }while(0)
-#define configPOST_SLEEP_PROCESSING                       PostSleepProcessing
+#define configPOST_SLEEP_PROCESSING	appPostSleepProcessing
 #endif // configUSE_TICKLESS_IDLE == 1
 
 #endif // FREERTOS_CONFIG_H

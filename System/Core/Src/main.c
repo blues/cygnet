@@ -74,21 +74,6 @@ int main(void)
     MX_GPIO_Init();
     MX_DMA_Init();
     MX_DBG_Init();
-////    MX_RTC_Init();
-////    MX_LPTIM1_Init();
-//    MX_RNG_Init();
-//    MX_ADC1_Init();
-//    MX_WWDG_Init();
-//    MX_USB_PCD_Init();
-//    MX_CAN1_Init();
-//    MX_I2C1_Init();
-//    MX_I2C3_Init();
-//    MX_LPUART1_UART_Init(false, LPUART1_BAUDRATE);
-//    MX_LPUART1_UART_Init(true, LPUART1_BAUDRATE);
-//    MX_USART1_UART_Init(USART1_BAUDRATE);
-//    MX_USART2_UART_Init(USART2_BAUDRATE);
-//    MX_SPI1_Init();
-//    MX_SPI2_Init();
 
     // Init scheduler
     osKernelInitialize();  // Call init function for freertos objects (in freertos.c)
@@ -98,7 +83,9 @@ int main(void)
 
     // Start scheduler
     osKernelStart();
-    while (1) {}
+
+	// Must never return here
+	Error_Handler();
 
 }
 
@@ -173,35 +160,8 @@ void PeriphCommonClock_Config(void)
 
 }
 
-// Period elapsed callback in non blocking mode
-// This function is called  when TIM2 interrupt took place, inside
-// HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
-// a global variable "uwTick" used as application time base.
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-    if (htim->Instance == TIM2) {
-        HAL_IncTick();
-    }
-}
-
-// This function is executed in case of error occurrence.
-void Error_Handler(void)
-{
-    // User can add his own implementation to report the HAL error return state
-    __disable_irq();
-    while (1) {
-    }
-}
-
-#ifdef  USE_FULL_ASSERT
-// Assertion trap
-void assert_failed(uint8_t *file, uint32_t line)
-{
-}
-#endif // USE_FULL_ASSERT
-
 // Get the currently active peripherals
-void MY_ActivePeripherals(char *buf, uint32_t buflen)
+void MX_ActivePeripherals(char *buf, uint32_t buflen)
 {
     *buf = '\0';
     if ((peripherals & PERIPHERAL_RNG) != 0) {
@@ -236,6 +196,48 @@ void MY_ActivePeripherals(char *buf, uint32_t buflen)
     }
     if ((peripherals & PERIPHERAL_SPI2) != 0) {
         strlcat(buf, "SPI2 ", buflen);
+    }
+
+}
+
+// Get the image size
+uint32_t MX_ImageSize()
+{
+#if defined( __ICCARM__ )   // IAR
+    return (uint32_t) (&ROM_CONTENT$$Limit) - FLASH_BASE;
+#else
+    return (uint32_t) (&_highest_used_rom) - FLASH_BASE;
+#endif
+}
+
+// Get the board 64 bits unique ID
+void MX_GetUniqueId(uint8_t *id)
+{
+    uint32_t val = 0;
+    val = LL_FLASH_GetUDN();
+    if (val == 0xFFFFFFFF) { // Normally this should not happen
+        uint32_t ID_1_3_val = HAL_GetUIDw0() + HAL_GetUIDw2();
+        uint32_t ID_2_val = HAL_GetUIDw1();
+
+        id[7] = (ID_1_3_val) >> 24;
+        id[6] = (ID_1_3_val) >> 16;
+        id[5] = (ID_1_3_val) >> 8;
+        id[4] = (ID_1_3_val);
+        id[3] = (ID_2_val) >> 24;
+        id[2] = (ID_2_val) >> 16;
+        id[1] = (ID_2_val) >> 8;
+        id[0] = (ID_2_val);
+    } else { // Typical use case
+        id[7] = val & 0xFF;
+        id[6] = (val >> 8) & 0xFF;
+        id[5] = (val >> 16) & 0xFF;
+        id[4] = (val >> 24) & 0xFF;
+        val = LL_FLASH_GetDeviceID();
+        id[3] = val & 0xFF;
+        val = LL_FLASH_GetSTCompanyID();
+        id[2] = val & 0xFF;
+        id[1] = (val >> 8) & 0xFF;
+        id[0] = (val >> 16) & 0xFF;
     }
 
 }

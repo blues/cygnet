@@ -16,6 +16,13 @@ void MX_RNG_Init(void)
     peripherals |= PERIPHERAL_RNG;
 }
 
+// RNG deinit function
+void MX_RNG_DeInit(void)
+{
+    peripherals &= ~PERIPHERAL_RNG;
+    HAL_RNG_DeInit(&hrng);
+}
+
 // RNG msp init
 void HAL_RNG_MspInit(RNG_HandleTypeDef* rngHandle)
 {

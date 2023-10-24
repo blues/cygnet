@@ -9,3 +9,24 @@ __weak void appInit(void)
 {
 }
 
+// RTC heartbeat, used for timeouts and watchdogs
+__weak void appHeartbeatISR(void)
+{
+}
+
+// EXTI interrupt
+__weak void appISR(void)
+{
+}
+
+// See FreeRTOSConfig.h where this is registered via configPRE_SLEEP_PROCESSING()
+__weak void appPreSleepProcessing(uint32_t *ulExpectedIdleTime)
+{
+    (void) ulExpectedIdleTime;
+}
+
+// See FreeRTOSConfig.h where this is registered via configPOST_SLEEP_PROCESSING()
+__weak void appPostSleepProcessing(uint32_t *ulExpectedIdleTime)
+{
+    (void) ulExpectedIdleTime;
+}

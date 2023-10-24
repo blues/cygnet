@@ -24,6 +24,11 @@ void MX_LPTIM1_Init(void)
     }
 
 }
+// LPTIM1 deinit function
+void MX_LPTIM1_DeInit(void)
+{
+    HAL_LPTIM_DeInit(&hlptim1);
+}
 
 // LPTIM msp init
 void HAL_LPTIM_MspInit(LPTIM_HandleTypeDef* lptimHandle)

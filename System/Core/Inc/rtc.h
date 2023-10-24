@@ -9,4 +9,6 @@
 extern RTC_HandleTypeDef hrtc;
 
 void MX_RTC_Init(void);
+void MX_RTC_DeInit(void);
+void MX_RTC_ResetWakeupTimer(void);
 

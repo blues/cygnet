@@ -9,4 +9,5 @@
 extern LPTIM_HandleTypeDef hlptim1;
 
 void MX_LPTIM1_Init(void);
+void MX_LPTIM1_DeInit(void);
 

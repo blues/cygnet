@@ -22,6 +22,15 @@ void MX_USB_PCD_Init(void)
         Error_Handler();
     }
 
+    peripherals |= PERIPHERAL_USB;
+
+}
+
+// USB deinit function
+void MX_USB_PCD_DeInit(void)
+{
+    peripherals &= ~PERIPHERAL_USB;
+    HAL_PCD_DeInit(&hpcd_USB_FS);
 }
 
 // USB msp init

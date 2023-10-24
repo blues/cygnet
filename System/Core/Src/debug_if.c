@@ -17,6 +17,20 @@ bool dbgEnabled = false;
 STATIC UART_HandleTypeDef *dbgOutputPort = NULL;
 STATIC void (*dbgOutputFn)(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen) = NULL;
 
+// For panic breakpoint
+void MX_Breakpoint()
+{
+    if (MX_DBG_Active()) {
+        asm ("BKPT 0");
+    }
+}
+
+// See if in an ISR
+bool MX_InISR()
+{
+    return ((SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk) != 0);
+}
+
 // See if the debugger is active
 bool MX_DBG_Active()
 {
@@ -73,8 +87,6 @@ void MX_DBG_Init(void)
 
     // Enable or disable debug mode
     if (MX_DBG_Active()) {
-// Not sure what the STM32L433 equivalent is - can't find it in RM0394 Table 47
-//        LL_EXTI_EnableIT_32_63(LL_EXTI_LINE_46);    // STM32WL RM0453 Table 93 38.3.4
         HAL_DBGMCU_EnableDBGSleepMode();
         HAL_DBGMCU_EnableDBGStopMode();
         HAL_DBGMCU_EnableDBGStandbyMode();
@@ -90,5 +102,78 @@ void MX_DBG_Init(void)
         HAL_DBGMCU_DisableDBGStopMode();
         HAL_DBGMCU_DisableDBGStandbyMode();
     }
+
+}
+
+// Jump to the bootloader in system memory directly
+void MX_JumpToBootloader()
+{
+
+    // Disable instruction cache
+#ifdef HAL_ICACHE_MODULE_ENABLED
+    if (HAL_ICACHE_IsEnabled() == 1) {
+        (void)HAL_ICACHE_Disable();
+    }
+#endif
+
+    // Hard-coded for this processor, and stolen/adapted by JW from:
+    // http://www.keil.com/support/docs/3913.htm
+    // https://stm32f4-discovery.net/2017/04/tutorial-jump-system-memory-software-stm32/
+
+    // Disable SysTick and clear its exception pending bit, if it is used in the bootloader, e. g. by the RTX
+    SysTick->LOAD = 0;
+    SysTick->VAL = 0;
+    SysTick->CTRL = 0;
+    SCB->ICSR |= SCB_ICSR_PENDSTCLR_Msk ;
+
+    // Disable interrupts.
+    __disable_irq();
+
+    // Disable all enabled interrupts in NVIC.
+    for (int i=0; i<(sizeof(NVIC->ICER)/sizeof(NVIC->ICER[0])); i++) {
+        NVIC->ICER[i] = 0xFFFFFFFF;
+    }
+
+    // Clear all pending interrupt requests in NVIC
+    for (int i=0; i<(sizeof(NVIC->ICER)/sizeof(NVIC->ICPR[0])); i++) {
+        NVIC->ICPR[i] = 0xFFFFFFFF;
+    }
+
+    // Disable individual fault handlers if the bootloader used them.
+    SCB->SHCSR &= ~( SCB_SHCSR_USGFAULTENA_Msk |     \
+                     SCB_SHCSR_BUSFAULTENA_Msk |     \
+                     SCB_SHCSR_MEMFAULTENA_Msk ) ;
+
+    // Remap system memory to address 0x00000000.
+    __DSB();
+    __ISB();
+    __HAL_SYSCFG_REMAPMEMORY_SYSTEMFLASH();
+    __DSB();
+    __ISB();
+
+    // Activate the MSP, if the core is found to currently run with the PSP.
+    // As the compiler might still uses the stack, the PSP needs to be copied to the MSP before this.
+    if (CONTROL_SPSEL_Msk & __get_CONTROL()) {
+        // MSP is not active
+        __set_MSP( __get_PSP( ) ) ;
+        __set_CONTROL( __get_CONTROL( ) & ~CONTROL_SPSEL_Msk ) ;
+    }
+
+    // Load the vector table address of the user application into SCB->VTOR register.
+    // Make sure the address meets the alignment requirements.
+#define BOOTLOADER_BASE 0x1FFF0000
+    SCB->VTOR = BOOTLOADER_BASE;
+
+    // Initialize Stack Pointer
+    __set_MSP(*(__IO uint32_t *) BOOTLOADER_BASE);
+
+    // Jump to bootloader.
+    typedef void (*pFunction)(void);
+    pFunction jumpToBootloader = (pFunction) (*(uint32_t *)(BOOTLOADER_BASE + 4));
+    jumpToBootloader();
+
+    // We never get here.
+    // At this point, the user may upload firmware to the STM32 in a variety of ways,
+    // including connecting via USB and use the STM32CubeProgrammer application.
 
 }

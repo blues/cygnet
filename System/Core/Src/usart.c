@@ -298,10 +298,6 @@ void MX_LPUART1_UART_Init(bool altPins, uint32_t baudRate)
         Error_Handler();
     }
 
-    // Unmask wakeup with Interrupt request from LPUART1
-	// See RM0394 Table 47 to see why line 31
-    LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_31);
-
     MX_UART_RxStart(&hlpuart1);
 
     peripherals |= PERIPHERAL_LPUART1;
@@ -330,10 +326,6 @@ void MX_LPUART1_UART_Suspend(void)
 
     // Enable Wake Up From Stop
     LL_LPUART_EnableInStopMode(LPUART1);
-
-    // Unmask wakeup with Interrupt request from LPUART1
-	// See RM0394 Table 47 to see why line 31
-    LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_31);
 
 }
 
@@ -433,25 +425,12 @@ void MX_USART1_UART_DeInit(void)
 
 }
 
-// USART1 suspend function
-void MX_USART1_UART_Suspend(void)
-{
-}
-
-// USART1 resume function
-void MX_USART1_UART_Resume(void)
-{
-    if (HAL_UART_Init(&huart1) != HAL_OK) {
-        Error_Handler();
-    }
-}
-
 // USART2 init function
 void MX_USART2_UART_Init(bool useRS485, uint32_t baudRate)
 {
-    usart2UsingRS485 = useRS485
+    usart2UsingRS485 = useRS485;
 
-                       huart2.Instance = USART2;
+    huart2.Instance = USART2;
     huart2.Init.BaudRate = baudRate;
     huart2.Init.WordLength = UART_WORDLENGTH_8B;
     huart2.Init.StopBits = UART_STOPBITS_1;
@@ -464,6 +443,37 @@ void MX_USART2_UART_Init(bool useRS485, uint32_t baudRate)
     if (HAL_UART_Init(&huart2) != HAL_OK) {
         Error_Handler();
     }
+
+    peripherals |= PERIPHERAL_USART2;
+
+}
+
+// USART2 Deinitialization
+void MX_USART2_UART_DeInit(void)
+{
+
+    // Deinitialized
+    peripherals &= ~PERIPHERAL_USART2;
+
+    // Deconfigure RX buffer
+    rxioUSART2.fill = rxioUSART2.drain = 0;
+
+    // Stop any pending DMA, if any
+    HAL_UART_DMAStop(&huart2);
+
+    // Deinit DMA interrupts
+    HAL_NVIC_DisableIRQ(USART1_RX_DMA_IRQn);
+    HAL_NVIC_DisableIRQ(USART1_TX_DMA_IRQn);
+
+    // Reset peripheral
+    __HAL_RCC_USART1_FORCE_RESET();
+    __HAL_RCC_USART1_RELEASE_RESET();
+
+    // Disable IDLE interrupt
+    __HAL_UART_DISABLE_IT(&huart2, UART_IT_IDLE);
+
+    // Deinit
+    HAL_UART_DeInit(&huart2);
 
 }
 

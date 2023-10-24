@@ -26,6 +26,15 @@ void MX_CAN1_Init(void)
         Error_Handler();
     }
 
+    peripherals |= PERIPHERAL_CAN1;
+
+}
+
+// CAN1 deinit function
+void MX_CAN1_DeInit(void)
+{
+    peripherals &= ~PERIPHERAL_CAN1;
+    HAL_CAN_DeInit(&hcan1);
 }
 
 // CAN msp init

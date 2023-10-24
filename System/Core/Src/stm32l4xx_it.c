@@ -26,31 +26,35 @@ extern DMA_HandleTypeDef hdma_spi2_tx;
 // This function handles Non maskable interrupt.
 void NMI_Handler(void)
 {
-    while (1) {}
+    MX_Breakpoint();
+    NVIC_SystemReset();
 }
 
 // This function handles Hard fault interrupt.
 void HardFault_Handler(void)
 {
-    while (1) {}
+    MX_Breakpoint();
+    NVIC_SystemReset();
 }
 
 // This function handles Memory management fault.
 void MemManage_Handler(void)
 {
-    while (1) {}
+    MX_Breakpoint();
+    NVIC_SystemReset();
 }
 
 // This function handles Prefetch fault, memory access fault.
 void BusFault_Handler(void)
 {
-    while (1) {}
+    MX_Breakpoint();
+    NVIC_SystemReset();
 }
 
 // This function handles Undefined instruction or illegal state.
 void UsageFault_Handler(void)
 {
-    while (1) {}
+    MX_Breakpoint();
 }
 
 // This function handles Debug monitor.
@@ -58,10 +62,52 @@ void DebugMon_Handler(void)
 {
 }
 
+// This function is executed in case of error occurrence.
+void Error_Handler(void)
+{
+    MX_Breakpoint();
+    NVIC_SystemReset();
+}
+
+// Assertion trap
+#ifdef  USE_FULL_ASSERT
+void assert_failed(uint8_t *file, uint32_t line)
+{
+}
+#endif
+
+// Tamper alarm
+void TAMP_STAMP_LSECSS_SSRU_IRQHandler(void)
+{
+    HAL_RTCEx_SSRUIRQHandler(&hrtc);
+}
+
+// This function handles TIM2 Global Interrupt
+void TIM2_IRQHandler(void)
+{
+    HAL_TIM_IRQHandler(&htim2);
+}
+
+// IRQ handler
+void RNG_IRQHandler(void)
+{
+    HAL_RNG_IRQHandler(&hrng);
+}
+
 // This function handles TIM2 global interrupt.
 void TIM2_IRQHandler(void)
 {
     HAL_TIM_IRQHandler(&htim2);
+}
+
+void RTC_Alarm_IRQHandler(void)
+{
+    HAL_RTC_AlarmIRQHandler(&hrtc);
+}
+
+void RTC_WKUP_IRQHandler(void)
+{
+    HAL_RTCEx_WakeUpTimerIRQHandler(&hrtc);
 }
 
 // This function handles LPTIM1 global interrupt.
@@ -187,4 +233,53 @@ void USART1_TX_DMA_Channel(void)
 void USART1_RX_DMA_IRQHandler(void)
 {
     HAL_DMA_IRQHandler(&hdma_usart1_rx);
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    appISR(GPIO_Pin);
+}
+
+void GPIO_EXTI_IRQHandler(uint16_t GPIO_Pin)
+{
+    if(__HAL_GPIO_EXTI_GET_IT(GPIO_Pin) != RESET) {
+        uint16_t GPIO_Line = GPIO_Pin & EXTI->PR1;
+        __HAL_GPIO_EXTI_CLEAR_IT(GPIO_Pin);
+        HAL_GPIO_EXTI_Callback(GPIO_Line);
+    }
+}
+
+void EXTI0_IRQHandler( void )
+{
+    GPIO_EXTI_IRQHandler(GPIO_PIN_0);
+}
+
+void EXTI1_IRQHandler( void )
+{
+    GPIO_EXTI_IRQHandler(GPIO_PIN_1);
+}
+
+void EXTI2_IRQHandler( void )
+{
+    GPIO_EXTI_IRQHandler(GPIO_PIN_2);
+}
+
+void EXTI3_IRQHandler( void )
+{
+    GPIO_EXTI_IRQHandler(GPIO_PIN_3);
+}
+
+void EXTI4_IRQHandler( void )
+{
+    GPIO_EXTI_IRQHandler(GPIO_PIN_4);
+}
+
+void EXTI9_5_IRQHandler( void )
+{
+    GPIO_EXTI_IRQHandler(GPIO_PIN_9|GPIO_PIN_8|GPIO_PIN_7|GPIO_PIN_6|GPIO_PIN_5);
+}
+
+void EXTI15_10_IRQHandler( void )
+{
+    GPIO_EXTI_IRQHandler(GPIO_PIN_15|GPIO_PIN_14|GPIO_PIN_13|GPIO_PIN_12|GPIO_PIN_11|GPIO_PIN_10);
 }
