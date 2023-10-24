@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <stdbool.h>
+#include <stddef.h>
+#include <string.h>
 #include "stm32l4xx_hal.h"
 #include "board.h"
 
@@ -19,6 +22,10 @@
 #define PERIPHERAL_I2C3     0x00000100
 #define PERIPHERAL_SPI1     0x00000200
 #define PERIPHERAL_SPI2     0x00000400
+
+// global
+size_t strlcpy(char *dst, const char *src, size_t siz);
+size_t strlcat(char *dst, const char *src, size_t siz);
 
 // main.c
 int main(void);
@@ -37,7 +44,7 @@ void HAL_ResumeTick(void);
 // app_weak.c
 void appInit(void);
 void appHeartbeatISR(void);
-void appISR(void);
+void appISR(uint16_t);
 
 // debug_if.c
 void MX_Breakpoint(void);

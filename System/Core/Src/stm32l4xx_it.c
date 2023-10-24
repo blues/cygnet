@@ -22,6 +22,7 @@ extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
 extern DMA_HandleTypeDef hdma_spi2_rx;
 extern DMA_HandleTypeDef hdma_spi2_tx;
+extern RTC_HandleTypeDef hrtc;
 
 // This function handles Non maskable interrupt.
 void NMI_Handler(void)
@@ -76,25 +77,7 @@ void assert_failed(uint8_t *file, uint32_t line)
 }
 #endif
 
-// Tamper alarm
-void TAMP_STAMP_LSECSS_SSRU_IRQHandler(void)
-{
-    HAL_RTCEx_SSRUIRQHandler(&hrtc);
-}
-
 // This function handles TIM2 Global Interrupt
-void TIM2_IRQHandler(void)
-{
-    HAL_TIM_IRQHandler(&htim2);
-}
-
-// IRQ handler
-void RNG_IRQHandler(void)
-{
-    HAL_RNG_IRQHandler(&hrng);
-}
-
-// This function handles TIM2 global interrupt.
 void TIM2_IRQHandler(void)
 {
     HAL_TIM_IRQHandler(&htim2);
@@ -190,14 +173,15 @@ void USART2_IRQHandler(void)
 
 // This function handles SPI1 global interrupt.
 void SPI1_IRQHandler(void)
-HAL_SPI_IRQHandler(&hspi1);
+{
+    HAL_SPI_IRQHandler(&hspi1);
 }
 
 // This function handles SPI2 global interrupt.
 void SPI2_IRQHandler(void)
-HAL_SPI_IRQHandler(&hspi2);
+{
+    HAL_SPI_IRQHandler(&hspi2);
 }
-
 
 // This function handles SPI2 global interrupt.
 void SPI2_RX_DMA_IRQHandler(void)
@@ -212,7 +196,7 @@ void SPI2_TX_DMA_IRQHandler(void)
 }
 
 // This function handles USART2 global interrupt.
-void USART2_RX_DMA_Channel(void)
+void USART2_RX_DMA_IRQHandler(void)
 {
     HAL_DMA_IRQHandler(&hdma_usart2_rx);
 }
@@ -224,7 +208,7 @@ void USART2_TX_DMA_IRQHandler(void)
 }
 
 // This function handles USART1 global interrupt.
-void USART1_TX_DMA_Channel(void)
+void USART1_TX_DMA_IRQHandler(void)
 {
     HAL_DMA_IRQHandler(&hdma_usart1_tx);
 }

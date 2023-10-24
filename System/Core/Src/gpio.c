@@ -2,6 +2,7 @@
 // Use of this source code is governed by licenses granted by the
 // copyright holder including that found in the LICENSE file.
 
+#include "main.h"
 #include "gpio.h"
 
 // Configure GPIO

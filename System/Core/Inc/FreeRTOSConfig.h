@@ -90,7 +90,7 @@ extern uint32_t SystemCoreClock;
 #define configUSE_OS2_MUTEX                  1
 
 // Set the following definitions to 1 to include the API function, or zero
-to exclude the API function.
+// to exclude the API function.
 #define INCLUDE_vTaskPrioritySet             1
 #define INCLUDE_uxTaskPriorityGet            1
 #define INCLUDE_vTaskDelete                  1
@@ -149,8 +149,8 @@ to exclude the API function.
 
 // Section where parameter definitions can be added (for instance, to override default ones in FreeRTOS.h)
 #if defined(__ICCARM__) || defined(__CC_ARM) || defined(__GNUC__)
-void appPreSleepProcessing(uint32_t *ulExpectedIdleTime);
-void appPostSleepProcessing(uint32_t *ulExpectedIdleTime);
+void appPreSleepProcessing(uint32_t ulExpectedIdleTime);
+void appPostSleepProcessing(uint32_t ulExpectedIdleTime);
 #endif // defined(__ICCARM__) || defined(__CC_ARM) || defined(__GNUC__)
 
 // The configPRE_SLEEP_PROCESSING() and configPOST_SLEEP_PROCESSING() macros

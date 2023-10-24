@@ -45,7 +45,7 @@
 //#define HAL_SD_MODULE_ENABLED
 //#define HAL_SMBUS_MODULE_ENABLED
 //#define HAL_SMARTCARD_MODULE_ENABLED
-//#define HAL_SPI_MODULE_ENABLED
+#define HAL_SPI_MODULE_ENABLED
 //#define HAL_SRAM_MODULE_ENABLED
 //#define HAL_SWPMI_MODULE_ENABLED
 #define HAL_TIM_MODULE_ENABLED
@@ -94,15 +94,15 @@
 //        which is subject to manufacturing process variations.
 #if !defined  (HSI48_VALUE)
 #define HSI48_VALUE   ((uint32_t)48000000U) //!< Value of the Internal High Speed oscillator for USB FS/SDMMC/RNG in Hz.
-The real value my vary depending on manufacturing process variations.
+// The real value my vary depending on manufacturing process variations.
 #endif // HSI48_VALUE
 
 // @brief Internal Low Speed oscillator (LSI) value.
 #if !defined  (LSI_VALUE)
 #define LSI_VALUE  32000U       //!< LSI Typical Value in Hz
 #endif // LSI_VALUE                       //!< Value of the Internal Low Speed oscillator in Hz
-The real value may vary depending on the variations
-in voltage and temperature.
+// The real value may vary depending on the variations
+// in voltage and temperature.
 
 // @brief External Low Speed oscillator (LSE) value.
 //        This value is used by the UART, RTC HAL module to compute the system frequency
@@ -129,7 +129,7 @@ in voltage and temperature.
 #endif // EXTERNAL_SAI2_CLOCK_VALUE
 
 // Tip: To avoid modifying this file each time you need to use different HSE,
-===  you can define the HSE value in your toolchain compiler preprocessor.
+// ===  you can define the HSE value in your toolchain compiler preprocessor.
 
 // ########################### System Configuration #########################
 // @brief This is the HAL system configuration section
@@ -407,7 +407,7 @@ in voltage and temperature.
 // @retval None
 #define assert_param(expr) ((expr) ? (void)0U : assert_failed((uint8_t *)__FILE__, __LINE__))
 // Exported functions -------------------------------------------------------
-     void assert_failed(uint8_t *file, uint32_t line);
+void assert_failed(uint8_t *file, uint32_t line);
 #else
 #define assert_param(expr) ((void)0U)
 #endif // USE_FULL_ASSERT

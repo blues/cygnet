@@ -2,9 +2,9 @@
 #include <math.h>
 #include "timer_if.h"
 #include "main.h"
-#include "utilities_def.h"
-#include "stm32wlxx_ll_rtc.h"
+#include "stm32l4xx_ll_rtc.h"
 #include "global.h"
+#include "rtc.h"
 
 // Timer driver callbacks handler
 const UTIL_TIMER_Driver_s UTIL_TimerDriver = {
@@ -81,14 +81,11 @@ UTIL_TIMER_Status_t TIMER_IF_Init(void)
 
     if (!rtcInitialized) {
         // Init RTC
-        hrtc.IsEnabled.RtcFeatures = UINT32_MAX;
         MX_RTC_Init();
         // Stop Timer
         TIMER_IF_StopTimer();
         // DeActivate the Alarm A enabled by STM32CubeMX during MX_RTC_Init()
         HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A);
-        // overload RTC feature enable
-        hrtc.IsEnabled.RtcFeatures = UINT32_MAX;
 
         // Enable Direct Read of the calendar registers (not through Shadow)
         HAL_RTCEx_EnableBypassShadow(&hrtc);
@@ -118,10 +115,8 @@ UTIL_TIMER_Status_t TIMER_IF_StartTimer(uint32_t timeout)
 
     TIMER_IF_DBG_PRINTF("Start timer: time=%d, alarm=%d\n\r",  GetTimerTicks(), timeout);
     // starts timer
-    sAlarm.BinaryAutoClr = RTC_ALARMSUBSECONDBIN_AUTOCLR_NO;
     sAlarm.AlarmTime.SubSeconds = UINT32_MAX - timeout;
     sAlarm.AlarmMask = RTC_ALARMMASK_NONE;
-    sAlarm.AlarmSubSecondMask = RTC_ALARMSUBSECONDBINMASK_NONE;
     sAlarm.Alarm = RTC_ALARM_A;
     if (HAL_RTC_SetAlarm_IT(&hrtc, &sAlarm, RTC_FORMAT_BCD) != HAL_OK) {
         Error_Handler();
@@ -138,8 +133,6 @@ UTIL_TIMER_Status_t TIMER_IF_StopTimer(void)
     __HAL_RTC_ALARM_CLEAR_FLAG(&hrtc, RTC_FLAG_ALRAF);
     // Disable the Alarm A interrupt
     HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A);
-    // overload RTC feature enable
-    hrtc.IsEnabled.RtcFeatures = UINT32_MAX;
     return ret;
 }
 

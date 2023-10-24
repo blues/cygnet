@@ -6,6 +6,7 @@
 
 #include "stm32l4xx_hal.h"
 #include "stm32l4xx_hal_exti.h"
+#include "FreeRTOSConfig.h"
 
 #define BOARD_NUCLEO		0       // Proto using NUCLEO-L433RC-P
 #define BOARD_V1            1       // First spin
@@ -55,6 +56,7 @@
 #define	LED_BUILTIN_GPIO_Port			GPIOD
 #define	USER_BTN_Pin					GPIO_PIN_13		// PB13 (B1 USER)
 #define	USER_BTN_GPIO_Port				GPIOB
+#define	USER_BTN_EXTI_IRQn				EXTI15_10_IRQn
 #define	USER_BTN_STATE_PUSHED			GPIO_PIN_SET
 #define	USER_BTN_STATE_RELEASED			GPIO_PIN_RESET
 #endif
@@ -62,7 +64,7 @@
 #if (CURRENT_BOARD != BOARD_NUCLEO)
 #define	USB_DETECT_Pin					GPIO_PIN_13		// PC13
 #define	USB_DETECT_GPIO_Port			GPIOC
-#define	USB_DETECT_EXTIIRQn				EXTI15_10_IRQn
+#define	USB_DETECT_EXTI_IRQn			EXTI15_10_IRQn
 #define	USB_DM_Pin						GPIO_PIN_11		// PA11
 #define	USB_DM_GPIO_Port				GPIOA
 #define	USB_DP_Pin						GPIO_PIN_12		// PA12

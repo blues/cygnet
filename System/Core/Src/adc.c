@@ -2,11 +2,12 @@
 // Use of this source code is governed by licenses granted by the
 // copyright holder including that found in the LICENSE file.
 
+#include "main.h"
 #include "adc.h"
 
 ADC_HandleTypeDef hadc1;
-static uint16_t adcGpioPin;
-static GPIO_TypeDef *adcGpioPort
+uint16_t adcGpioPin;
+GPIO_TypeDef *adcGpioPort;
 
 // ADC1 function to read a channel (supply NULL for gpioPort for internal channels such as VREFINT)
 uint32_t MX_ADC1_ReadChannel(uint32_t adcChannel, uint16_t gpioPin, GPIO_TypeDef *gpioPort)
@@ -34,22 +35,21 @@ uint32_t MX_ADC1_ReadChannel(uint32_t adcChannel, uint16_t gpioPin, GPIO_TypeDef
     hadc1.Init.DMAContinuousRequests = DISABLE;
     hadc1.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
     hadc1.Init.OversamplingMode = DISABLE;
-    hadc1.Init.SamplingTimeCommon1 = ADC_SAMPLETIME_160CYCLES_5;
-    hadc1.Init.SamplingTimeCommon2 = ADC_SAMPLETIME_160CYCLES_5;
     hadc1.Init.NbrOfConversion = 1;
     if (HAL_ADC_Init(&hadc1) != HAL_OK) {
         Error_Handler();
     }
 
     // Start Calibration
-    if (HAL_ADCEx_Calibration_Start(&hadc1) != HAL_OK) {
+    if (HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED) != HAL_OK) {
         Error_Handler();
     }
 
     // Configure Regular Channel
+    ADC_ChannelConfTypeDef sConfig = {0};
     sConfig.Channel = adcChannel;
     sConfig.Rank = ADC_REGULAR_RANK_1;
-    sConfig.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;
+    sConfig.SamplingTime = ADC_SAMPLETIME_12CYCLES_5;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
         Error_Handler();
     }
@@ -68,7 +68,7 @@ uint32_t MX_ADC1_ReadChannel(uint32_t adcChannel, uint16_t gpioPin, GPIO_TypeDef
     uint32_t convertedValue = HAL_ADC_GetValue(&hadc1);
 
     // Deinit
-    MX_ADC_DeInit();
+    HAL_ADC_DeInit(&hadc1);
 
 	// Peripheral inactive
 	peripherals &= ~PERIPHERAL_ADC1;
@@ -131,7 +131,7 @@ uint16_t MX_ADC_GetMcuVoltageMv(void)
     uint16_t batteryLevelmV = 0;
     uint32_t measuredLevel = 0;
 
-    measuredLevel = MX_ADC_ReadChannels(ADC_CHANNEL_VREFINT);
+    measuredLevel = MX_ADC1_ReadChannel(ADC_CHANNEL_VREFINT, 0, NULL);
 
     if (measuredLevel == 0) {
         batteryLevelmV = 0;
@@ -157,9 +157,9 @@ int16_t MX_ADC_GetMcuTemperatureC(void)
 
     __IO int16_t temperatureDegreeC = 0;
     uint32_t measuredLevel = 0;
-    uint16_t batteryLevelmV = MX_ADC_GetBatteryLevel();
+    uint16_t batteryLevelmV = MX_ADC_GetMcuVoltageMv();
 
-    measuredLevel = MX_ADC_ReadChannels(ADC_CHANNEL_TEMPSENSOR);
+    measuredLevel = MX_ADC1_ReadChannel(ADC_CHANNEL_TEMPSENSOR, 0, NULL);
 
     // Convert ADC level to temperature
     // check whether device has temperature sensor calibrated in production

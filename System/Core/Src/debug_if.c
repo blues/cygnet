@@ -14,8 +14,8 @@
 bool dbgEnabled = false;
 
 // Debug state
-STATIC UART_HandleTypeDef *dbgOutputPort = NULL;
-STATIC void (*dbgOutputFn)(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen) = NULL;
+static UART_HandleTypeDef *dbgOutputPort = NULL;
+static void (*dbgOutputFn)(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen) = NULL;
 
 // For panic breakpoint
 void MX_Breakpoint()

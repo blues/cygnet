@@ -1,11 +1,15 @@
 
+#include "main.h"
 #include "stm32_lpm.h"
 #include "stm32_lpm_if.h"
-#include "usart_if.h"
+#include "usart.h"
+#include "rng.h"
+#include "dma.h"
+#include "gpio.h"
 
 // Stop/Resume data
-STATIC bool wasStopped = false;
-STATIC uint32_t peripheralsToResume;
+static bool wasStopped = false;
+static uint32_t peripheralsToResume;
 
 // Power driver callbacks handler
 const struct UTIL_LPM_Driver_s UTIL_PowerDriver = {
@@ -54,9 +58,11 @@ void PWR_EnterStopMode(void)
     if (MX_DBG_Active()) {
         stayAwake = true;
     }
+#ifdef USB_DETECT_Pin
     if (HAL_GPIO_ReadPin(USB_DETECT_GPIO_Port, USB_DETECT_Pin) == GPIO_PIN_SET) {
         stayAwake = true;
     }
+#endif
 
     // If any peripherals are left initialized other than USART1, don't stop
     if (wouldKeepUsAwake != 0 || stayAwake) {
@@ -95,7 +101,6 @@ void PWR_EnterStopMode(void)
 
     // Clear Status Flag before entering STOP/STANDBY Mode
     wasStopped = true;
-    LL_PWR_ClearFlag_C1STOP_C1STB();
     HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
 
 }
@@ -125,10 +130,10 @@ void PWR_ExitStopMode(void)
 
     // Resume peripherals that weren't retained but which are active
     if ((peripheralsToResume & PERIPHERAL_USART1) != 0) {
-        MX_USART1_UART_Init();
+        MX_USART1_UART_ReInit();
     }
     if ((peripheralsToResume & PERIPHERAL_USART2) != 0) {
-        MX_USART2_UART_Init();
+        MX_USART2_UART_ReInit();
     }
 
 }

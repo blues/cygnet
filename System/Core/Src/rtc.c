@@ -2,6 +2,7 @@
 // Use of this source code is governed by licenses granted by the
 // copyright holder including that found in the LICENSE file.
 
+#include "main.h"
 #include "rtc.h"
 
 RTC_HandleTypeDef hrtc;
@@ -23,22 +24,13 @@ void MX_RTC_Init(void)
     hrtc.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
     hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
     hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
-    hrtc.Init.OutPutPullUp = RTC_OUTPUT_PULLUP_NONE;
-    hrtc.Init.BinMode = RTC_BINARY_ONLY;
     if (HAL_RTC_Init(&hrtc) != HAL_OK) {
         Error_Handler();
     }
 
-    // Initialize RTC and set the Time and Date
-    if (HAL_RTCEx_SetSSRU_IT(&hrtc) != HAL_OK) {
-        Error_Handler();
-    }
-
     // Enable the Alarm A
-    sAlarm.BinaryAutoClr = RTC_ALARMSUBSECONDBIN_AUTOCLR_YES;
     sAlarm.AlarmTime.SubSeconds = 0x0;
     sAlarm.AlarmMask = RTC_ALARMMASK_NONE;
-    sAlarm.AlarmSubSecondMask = RTC_ALARMSUBSECONDBINMASK_NONE;
     sAlarm.Alarm = RTC_ALARM_A;
     if (HAL_RTC_SetAlarm(&hrtc, &sAlarm, 0) != HAL_OK) {
         Error_Handler();
@@ -74,11 +66,9 @@ void HAL_RTC_MspInit(RTC_HandleTypeDef* rtcHandle)
         __HAL_RCC_RTCAPB_CLK_ENABLE();
 
 		// Interrupt init
-        HAL_NVIC_SetPriority(TAMP_STAMP_LSECSS_SSRU_IRQn, INTERRUPT_PRIO_TAMP, 0);
-        HAL_NVIC_EnableIRQ(TAMP_STAMP_LSECSS_SSRU_IRQn);
         HAL_NVIC_SetPriority(RTC_Alarm_IRQn, INTERRUPT_PRIO_RTC, 0);
         HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
-        HAL_NVIC_SetPriority(RTC_WKUP_IRQn, NOTE_INTERRUPT_PRIO_RTC, 0);
+        HAL_NVIC_SetPriority(RTC_WKUP_IRQn, INTERRUPT_PRIO_RTC, 0);
         HAL_NVIC_EnableIRQ(RTC_WKUP_IRQn);
 
     }
@@ -95,7 +85,6 @@ void HAL_RTC_MspDeInit(RTC_HandleTypeDef* rtcHandle)
         __HAL_RCC_RTCAPB_CLK_DISABLE();
 
         // RTC interrupt Deinit
-        HAL_NVIC_DisableIRQ(TAMP_STAMP_LSECSS_SSRU_IRQn);
         HAL_NVIC_DisableIRQ(RTC_Alarm_IRQn);
 
     }
@@ -117,7 +106,7 @@ void MX_RTC_ResetWakeupTimer()
     //    or, for a 10 second periodic interrupt, it would be
     //    ((32768/16)*10)-1 = 20479
     rtcwutCounter = ((rtcwutClockrate * RTCWUT_SECS) / rtcwutDivisor) - 1;
-    HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, rtcwutCounter, RTC_WAKEUPCLOCK_RTCCLK_DIV16, 0);
+    HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, rtcwutCounter, RTC_WAKEUPCLOCK_RTCCLK_DIV16);
 
 }
 

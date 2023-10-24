@@ -16,6 +16,7 @@
 #include "dma.h"
 #include "usart.h"
 #include "spi.h"
+#include "timer_if.h"
 
 // Peripherals that are currently active
 uint32_t peripherals = 0;
@@ -56,6 +57,9 @@ int main(void)
     // Clear pending flash errors if any
     __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_OPTVERR);
 
+    // For debugging, retrive image size
+    MX_ImageSize();
+
     // Reset of all peripherals, Initializes the Flash interface and the Systick.
     HAL_Init();
 
@@ -63,7 +67,6 @@ int main(void)
     SystemClock_Config();
 
     // Allow the timer to be enabled
-    HAL_EnableTick();
     HAL_InitTick(TICK_INT_PRIORITY);
     TIMER_IF_Init();
 
@@ -213,31 +216,14 @@ uint32_t MX_ImageSize()
 // Get the board 64 bits unique ID
 void MX_GetUniqueId(uint8_t *id)
 {
-    uint32_t val = 0;
-    val = LL_FLASH_GetUDN();
-    if (val == 0xFFFFFFFF) { // Normally this should not happen
-        uint32_t ID_1_3_val = HAL_GetUIDw0() + HAL_GetUIDw2();
-        uint32_t ID_2_val = HAL_GetUIDw1();
-
-        id[7] = (ID_1_3_val) >> 24;
-        id[6] = (ID_1_3_val) >> 16;
-        id[5] = (ID_1_3_val) >> 8;
-        id[4] = (ID_1_3_val);
-        id[3] = (ID_2_val) >> 24;
-        id[2] = (ID_2_val) >> 16;
-        id[1] = (ID_2_val) >> 8;
-        id[0] = (ID_2_val);
-    } else { // Typical use case
-        id[7] = val & 0xFF;
-        id[6] = (val >> 8) & 0xFF;
-        id[5] = (val >> 16) & 0xFF;
-        id[4] = (val >> 24) & 0xFF;
-        val = LL_FLASH_GetDeviceID();
-        id[3] = val & 0xFF;
-        val = LL_FLASH_GetSTCompanyID();
-        id[2] = val & 0xFF;
-        id[1] = (val >> 8) & 0xFF;
-        id[0] = (val >> 16) & 0xFF;
-    }
-
+    uint32_t ID_1_3_val = HAL_GetUIDw0() + HAL_GetUIDw2();
+    uint32_t ID_2_val = HAL_GetUIDw1();
+    id[7] = (ID_1_3_val) >> 24;
+    id[6] = (ID_1_3_val) >> 16;
+    id[5] = (ID_1_3_val) >> 8;
+    id[4] = (ID_1_3_val);
+    id[3] = (ID_2_val) >> 24;
+    id[2] = (ID_2_val) >> 16;
+    id[1] = (ID_2_val) >> 8;
+    id[0] = (ID_2_val);
 }

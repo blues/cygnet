@@ -8,6 +8,8 @@ enum {
     FLASH_IF_MEM_NOT_EMPTY = 1
 };
 
+#define IS_ADDR_ALIGNED_64bit(__VALUE__)           (((__VALUE__) & 0x7U) == (0x00UL))
+
 // Get internal flash page index from page address
 #define PAGE_INDEX(__ADDRESS__)     (uint32_t)((((__ADDRESS__) - FLASH_BASE) % FLASH_BANK_SIZE) / FLASH_PAGE_SIZE)
 
@@ -93,8 +95,8 @@ static FLASH_IF_StatusTypedef FLASH_IF_INT_Write(void *pDestination, const void 
     uint32_t current_source;
     uint32_t current_length;
 
-    if ((pDestination == NULL) || (pSource == NULL) || !IS_ADDR_ALIGNED_64BITS(uLength)
-            || !IS_ADDR_ALIGNED_64BITS((uint32_t)pDestination)) {
+    if ((pDestination == NULL) || (pSource == NULL) || !IS_ADDR_ALIGNED_64bit(uLength)
+            || !IS_ADDR_ALIGNED_64bit((uint32_t)pDestination)) {
         return FLASH_IF_PARAM_ERROR;
     }
 

@@ -15,18 +15,19 @@ __weak void appHeartbeatISR(void)
 }
 
 // EXTI interrupt
-__weak void appISR(void)
+__weak void appISR(uint16_t pins)
 {
+    (void) pins;
 }
 
 // See FreeRTOSConfig.h where this is registered via configPRE_SLEEP_PROCESSING()
-__weak void appPreSleepProcessing(uint32_t *ulExpectedIdleTime)
+__weak void appPreSleepProcessing(uint32_t ulExpectedIdleTime)
 {
     (void) ulExpectedIdleTime;
 }
 
 // See FreeRTOSConfig.h where this is registered via configPOST_SLEEP_PROCESSING()
-__weak void appPostSleepProcessing(uint32_t *ulExpectedIdleTime)
+__weak void appPostSleepProcessing(uint32_t ulExpectedIdleTime)
 {
     (void) ulExpectedIdleTime;
 }

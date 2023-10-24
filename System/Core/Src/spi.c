@@ -2,7 +2,9 @@
 // Use of this source code is governed by licenses granted by the
 // copyright holder including that found in the LICENSE file.
 
+#include "main.h"
 #include "spi.h"
+#include "dma.h"
 
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;

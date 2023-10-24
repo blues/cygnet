@@ -2,19 +2,52 @@
 // Use of this source code is governed by licenses granted by the
 // copyright holder including that found in the LICENSE file.
 
+#include "stm32l4xx_ll_lpuart.h"
+#include "stm32l4xx_hal_uart_ex.h"
+#include "stm32l4xx_hal_usart_ex.h"
+#include "main.h"
 #include "usart.h"
+#include "global.h"
+#include "dma.h"
 
 UART_HandleTypeDef hlpuart1;
 bool lpuart1UsingAlternatePins = false;
+uint32_t lpuart1BaudRate = 0;
 
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
 DMA_HandleTypeDef hdma_usart1_tx;
+uint32_t usart1BaudRate = 0;
 
-bool usart2UsingRS485 = false;
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
+bool usart2UsingRS485 = false;
+uint32_t usart2BaudRate = 0;
+
+// For UART receive
+// UART receive I/O descriptor.  Note that if we ever fill the buffer
+// completely we will get an I/O error because we can't start a receive
+// without overwriting the data waiting to be pulled out.  There must
+// always be at least one byte available to start a receive.
+typedef struct {
+    uint8_t *iobuf;
+    uint8_t *buf;
+    uint16_t buflen;
+    uint16_t fill;
+    uint16_t drain;
+    uint16_t rxlen;
+    void (*notifyReceivedFn)(UART_HandleTypeDef *huart, bool error);
+} UARTIO;
+static UARTIO rxioLPUART1 = {0};
+static UARTIO rxioUSART1 = {0};
+static UARTIO rxioUSART2 = {0};
+
+// Number of bytes for UART receives.  (We can just use this until there's a perf issue)
+#define UART_RXLEN 1
+
+// Forwards
+bool uioReceivedBytes(UARTIO *uio, uint8_t *buf, uint32_t buflen);
 
 // Callbacks
 void (*TxCpltCallback_LPUART1)(void *) = NULL;
@@ -246,37 +279,20 @@ uint8_t HAL_UART_RxGet(UART_HandleTypeDef *huart)
     return databyte;
 }
 
-// For UART receive
-// UART receive I/O descriptor.  Note that if we ever fill the buffer
-// completely we will get an I/O error because we can't start a receive
-// without overwriting the data waiting to be pulled out.  There must
-// always be at least one byte available to start a receive.
-typedef struct {
-    uint8_t *iobuf;
-    uint8_t *buf;
-    uint16_t buflen;
-    uint16_t fill;
-    uint16_t drain;
-    uint16_t rxlen;
-    void (*notifyReceivedFn)(UART_HandleTypeDef *huart, bool error);
-} UARTIO;
-STATIC UARTIO rxioLPUART1 = {0};
-STATIC UARTIO rxioUSART1 = {0};
-STATIC UARTIO rxioUSART2 = {0};
-
-// Number of bytes for UART receives.  (We can just use this until there's a perf issue)
-#define UART_RXLEN 1
-
-// Forwards
-bool uioReceivedBytes(UARTIO *uio, uint8_t *buf, uint32_t buflen);
-
 // LPUART1 init function
 void MX_LPUART1_UART_Init(bool altPins, uint32_t baudRate)
 {
     lpuart1UsingAlternatePins = altPins;
+    lpuart1BaudRate = baudRate;
+    MX_LPUART1_UART_ReInit();
+}
+
+// LPUART1 reinit function
+void MX_LPUART1_UART_ReInit(void)
+{
 
     hlpuart1.Instance = LPUART1;
-    hlpuart1.Init.BaudRate = baudRate;
+    hlpuart1.Init.BaudRate = lpuart1BaudRate;
     hlpuart1.Init.WordLength = UART_WORDLENGTH_8B;
     hlpuart1.Init.StopBits = UART_STOPBITS_1;
     hlpuart1.Init.Parity = UART_PARITY_NONE;
@@ -285,16 +301,6 @@ void MX_LPUART1_UART_Init(bool altPins, uint32_t baudRate)
     hlpuart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
     hlpuart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
     if (HAL_UART_Init(&hlpuart1) != HAL_OK) {
-        Error_Handler();
-    }
-
-    if (HAL_UARTEx_SetTxFifoThreshold(&hlpuart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK) {
-        Error_Handler();
-    }
-    if (HAL_UARTEx_SetRxFifoThreshold(&hlpuart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK) {
-        Error_Handler();
-    }
-    if (HAL_UARTEx_DisableFifoMode(&hlpuart1) != HAL_OK) {
         Error_Handler();
     }
 
@@ -365,9 +371,16 @@ void MX_LPUART1_UART_DeInit(void)
 // USART1 init function
 void MX_USART1_UART_Init(uint32_t baudRate)
 {
+    usart1BaudRate = baudRate;
+    MX_USART1_UART_ReInit();
+}
+
+// USART1 reinit function
+void MX_USART1_UART_ReInit(void)
+{
 
     huart1.Instance = USART1;
-    huart1.Init.BaudRate = baudRate;
+    huart1.Init.BaudRate = usart1BaudRate;
     huart1.Init.WordLength = UART_WORDLENGTH_8B;
     huart1.Init.StopBits = UART_STOPBITS_1;
     huart1.Init.Parity = UART_PARITY_NONE;
@@ -377,16 +390,6 @@ void MX_USART1_UART_Init(uint32_t baudRate)
     huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
     huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
     if (HAL_UART_Init(&huart1) != HAL_OK) {
-        Error_Handler();
-    }
-
-    if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK) {
-        Error_Handler();
-    }
-    if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK) {
-        Error_Handler();
-    }
-    if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK) {
         Error_Handler();
     }
 
@@ -429,9 +432,16 @@ void MX_USART1_UART_DeInit(void)
 void MX_USART2_UART_Init(bool useRS485, uint32_t baudRate)
 {
     usart2UsingRS485 = useRS485;
+    usart2BaudRate = baudRate;
+    MX_USART2_UART_ReInit();
+}
+
+// USART2 reinit function
+void MX_USART2_UART_ReInit(void)
+{
 
     huart2.Instance = USART2;
-    huart2.Init.BaudRate = baudRate;
+    huart2.Init.BaudRate = usart2BaudRate;
     huart2.Init.WordLength = UART_WORDLENGTH_8B;
     huart2.Init.StopBits = UART_STOPBITS_1;
     huart2.Init.Parity = UART_PARITY_NONE;
@@ -537,10 +547,10 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
         GPIO_InitStruct.Pull = GPIO_NOPULL;
         GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
         GPIO_InitStruct.Alternate = USART1_AF;
-        GPIO_InitStruct.Pin = USART1_TX_Pin
-                              HAL_GPIO_Init(USART1_TX_GPIO_Port, &GPIO_InitStruct);
-        GPIO_InitStruct.Pin = USART1_RX_Pin
-                              HAL_GPIO_Init(USART1_RX_GPIO_Port, &GPIO_InitStruct);
+        GPIO_InitStruct.Pin = USART1_TX_Pin;
+        HAL_GPIO_Init(USART1_TX_GPIO_Port, &GPIO_InitStruct);
+        GPIO_InitStruct.Pin = USART1_RX_Pin;
+        HAL_GPIO_Init(USART1_RX_GPIO_Port, &GPIO_InitStruct);
 
         // USART1_RX Init
         hdma_usart1_rx.Instance = USART1_RX_DMA_Channel;
@@ -605,8 +615,8 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
             GPIO_InitStruct.Alternate = USART2_AF;
             GPIO_InitStruct.Pin = USART2_A2_TX_Pin;
             HAL_GPIO_Init(USART2_A2_TX_GPIO_Port, &GPIO_InitStruct);
-            GPIO_InitStruct.Pin = USART2_A2_RX_Pin;
-            HAL_GPIO_Init(USART2_A2_RX_GPIO_Port, &GPIO_InitStruct);
+            GPIO_InitStruct.Pin = USART2_A3_RX_Pin;
+            HAL_GPIO_Init(USART2_A3_RX_GPIO_Port, &GPIO_InitStruct);
         } else {
             GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
             GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -614,9 +624,9 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
             GPIO_InitStruct.Alternate = RS485_AF;
             GPIO_InitStruct.Pin = RS485_A2_TX_Pin;
             HAL_GPIO_Init(RS485_A2_TX_GPIO_Port, &GPIO_InitStruct);
-            GPIO_InitStruct.Pin = RS485_A2_RX_Pin;
-            HAL_GPIO_Init(RS485_A2_RX_GPIO_Port, &GPIO_InitStruct);
-            GPIO_InitStruct.Pin = RS485_12_DE_Pin;
+            GPIO_InitStruct.Pin = RS485_A3_RX_Pin;
+            HAL_GPIO_Init(RS485_A3_RX_GPIO_Port, &GPIO_InitStruct);
+            GPIO_InitStruct.Pin = RS485_A1_DE_Pin;
             HAL_GPIO_Init(RS485_A1_DE_GPIO_Port, &GPIO_InitStruct);
         }
 
@@ -655,10 +665,10 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
         // USART2 interrupt Init
         HAL_NVIC_SetPriority(USART2_IRQn, INTERRUPT_PRIO_SERIAL, 0);
         HAL_NVIC_EnableIRQ(USART2_IRQn);
-        HAL_NVIC_SetPriority(USART2_RX_DMA_Channel, INTERRUPT_PRIO_SERIAL, 0);
-        HAL_NVIC_EnableIRQ(USART2_RX_DMA_Channel);
-        HAL_NVIC_SetPriority(USART2_TX_DMA_Channel, INTERRUPT_PRIO_SERIAL, 0);
-        HAL_NVIC_EnableIRQ(USART2_TX_DMA_Channel);
+        HAL_NVIC_SetPriority(USART2_RX_DMA_IRQn, INTERRUPT_PRIO_SERIAL, 0);
+        HAL_NVIC_EnableIRQ(USART2_RX_DMA_IRQn);
+        HAL_NVIC_SetPriority(USART2_TX_DMA_IRQn, INTERRUPT_PRIO_SERIAL, 0);
+        HAL_NVIC_EnableIRQ(USART2_TX_DMA_IRQn);
 
     }
 
@@ -715,11 +725,11 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
         // GPIO Configuration
         if (!usart2UsingRS485) {
             HAL_GPIO_DeInit(USART2_A2_TX_GPIO_Port, USART2_A2_TX_Pin);
-            HAL_GPIO_DeInit(USART2_A2_RX_GPIO_Port, USART2_A2_RX_Pin);
+            HAL_GPIO_DeInit(USART2_A3_RX_GPIO_Port, USART2_A3_RX_Pin);
         } else {
             HAL_GPIO_DeInit(RS485_A2_TX_GPIO_Port, RS485_A2_TX_Pin);
-            HAL_GPIO_DeInit(RS485_A2_RX_GPIO_Port, RS485_A2_RX_Pin);
-            HAL_GPIO_DeInit(RS485_A1_DE_GPIO_Port, RS485_12_DE_Pin);
+            HAL_GPIO_DeInit(RS485_A3_RX_GPIO_Port, RS485_A3_RX_Pin);
+            HAL_GPIO_DeInit(RS485_A1_DE_GPIO_Port, RS485_A1_DE_Pin);
         }
 
         // USART2 DMA DeInit
@@ -728,8 +738,8 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 
         // USART2 interrupt Deinit
         HAL_NVIC_DisableIRQ(USART2_IRQn);
-        HAL_NVIC_DisableIRQ(USART2_RX_DMA_Channel);
-        HAL_NVIC_DisableIRQ(USART2_TX_DMA_Channel);
+        HAL_NVIC_DisableIRQ(USART2_RX_DMA_IRQn);
+        HAL_NVIC_DisableIRQ(USART2_TX_DMA_IRQn);
 
     }
 
