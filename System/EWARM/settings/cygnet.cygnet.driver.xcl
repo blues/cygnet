@@ -8,11 +8,11 @@
 
 "C:\Program Files\IAR Systems\Embedded Workbench 9.0\arm\CONFIG\debugger\ST\STM32L433CC.ddf" 
 
-"--drv_verify_download" 
-
 "--semihosting" 
 
 "--device=STM32L433CC" 
+
+"--drv_communication_log=C:\Users\rozzie\dev\cygnet\System\EWARM\cspycomm.log" 
 
 "--drv_communication=USB0" 
 
