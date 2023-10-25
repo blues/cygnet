@@ -1,0 +1,30 @@
+
+# Cygnet builds
+EWARM/cygnet.dep
+EWARM/.ninja_deps
+EWARM/cygnet/Exe/
+EWARM/cygnet/List/
+EWARM/cygnet/Obj/
+EWARM/settings/Project.wsdt
+EWARM/settings/cygnet.dnx
+EWARM/settings/cygnet.dbgdt
+EWARM/settings/cygnet.cygnet.cspy.bat
+EWARM/settings/cygnet.cygnet.cspy.ps1
+EWARM/settings/cygnet.cygnet.general.xcl
+EWARM/Backup*
+
+# auto- generated files #
+*~
+\#*\#
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# VSCode Makefile Tools generated
+.vscode/configurationCache.log
+.vscode/dryrun.log
+.vscode/targets.log
