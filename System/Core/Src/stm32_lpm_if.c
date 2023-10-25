@@ -8,8 +8,8 @@
 #include "gpio.h"
 
 // Stop/Resume data
-static bool wasStopped = false;
-static uint32_t peripheralsToResume;
+bool wasStopped = false;
+uint32_t peripheralsToResume;
 
 // Power driver callbacks handler
 const struct UTIL_LPM_Driver_s UTIL_PowerDriver = {

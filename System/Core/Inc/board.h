@@ -50,13 +50,13 @@
 #define	USER_BTN_GPIO_Port				GPIOB
 #define	USER_BTN_STATE_PUSHED			GPIO_PIN_RESET
 #define	USER_BTN_STATE_RELEASED			GPIO_PIN_SET
-#define	USER_BTN_EXTI_IRQn				EXTI3_IRQn
+#define	USER_BTN_IRQn                   EXTI3_IRQn
 #else
 #define	LED_BUILTIN_Pin					GPIO_PIN_13		// PD13 (LD4)
 #define	LED_BUILTIN_GPIO_Port			GPIOD
 #define	USER_BTN_Pin					GPIO_PIN_13		// PB13 (B1 USER)
 #define	USER_BTN_GPIO_Port				GPIOB
-#define	USER_BTN_EXTI_IRQn				EXTI15_10_IRQn
+#define	USER_BTN_IRQn                   EXTI15_10_IRQn
 #define	USER_BTN_STATE_PUSHED			GPIO_PIN_SET
 #define	USER_BTN_STATE_RELEASED			GPIO_PIN_RESET
 #endif
@@ -64,7 +64,7 @@
 #if (CURRENT_BOARD != BOARD_NUCLEO)
 #define	USB_DETECT_Pin					GPIO_PIN_13		// PC13
 #define	USB_DETECT_GPIO_Port			GPIOC
-#define	USB_DETECT_EXTI_IRQn			EXTI15_10_IRQn
+#define	USB_DETECT_IRQn                 EXTI15_10_IRQn
 #define	USB_DM_Pin						GPIO_PIN_11		// PA11
 #define	USB_DM_GPIO_Port				GPIOA
 #define	USB_DP_Pin						GPIO_PIN_12		// PA12
@@ -82,38 +82,51 @@
 
 #define	A0_Pin							GPIO_PIN_0		// PA0
 #define	A0_GPIO_Port					GPIOA
+#define	A0_IRQn							EXTI0_IRQn
 #define	ADC_CHANNEL_A0					ADC_CHANNEL_5
 #define	A1_Pin							GPIO_PIN_1		// PA1
 #define	A1_GPIO_Port					GPIOA
+#define	A1_IRQn							EXTI1_IRQn
 #define	ADC_CHANNEL_A1					ADC_CHANNEL_6
 #define	A2_Pin							GPIO_PIN_2		// PA2
 #define	A2_GPIO_Port					GPIOA
+#define	A2_IRQn							EXTI2_IRQn
 #define	ADC_CHANNEL_A2					ADC_CHANNEL_7
 #define	A3_Pin							GPIO_PIN_3		// PA3
 #define	A3_GPIO_Port					GPIOA
+#define	A3_IRQn							EXTI3_IRQn
 #define	ADC_CHANNEL_A3					ADC_CHANNEL_8
 #define	A4_Pin							GPIO_PIN_1		// PB1
 #define	A4_GPIO_Port					GPIOB
+#define	A4_IRQn							EXTI1_IRQn
 #define	ADC_CHANNEL_A4					ADC_CHANNEL_16
 #define	A5_Pin							GPIO_PIN_7		// PA7
 #define	A5_GPIO_Port					GPIOA
+#define	A5_IRQn							EXTI9_5_IRQn
 #define	ADC_CHANNEL_A5					ADC_CHANNEL_12
 
 #define	D5_Pin							GPIO_PIN_8		// PB8
 #define	D5_GPIO_Port					GPIOB
+#define	D5_IRQn							EXTI9_5_IRQn
 #define	D6_Pin							GPIO_PIN_9		// PB9
 #define	D6_GPIO_Port					GPIOB
+#define	D6_IRQn							EXTI9_5_IRQn
 #define	D9_Pin							GPIO_PIN_14		// PB14
 #define	D9_GPIO_Port					GPIOB
+#define	D9_IRQn							EXTI15_10_IRQn
 #define	D10_Pin							GPIO_PIN_13		// PB13
 #define	D10_GPIO_Port					GPIOB
+#define	D10_IRQn						EXTI15_10_IRQn
 #define	D11_Pin							GPIO_PIN_0		// PB0
 #define	D11_GPIO_Port					GPIOB
+#define	D11_IRQn						EXTI0_IRQn
 #define	ADC_CHANNEL_D11					ADC_CHANNEL_15
 #define	D12_Pin							GPIO_PIN_15		// PB15
 #define	D12_GPIO_Port					GPIOB
+#define	D12_IRQn						EXTI15_10_IRQn
 #define	D13_Pin							GPIO_PIN_4		// PB4
 #define	D13_GPIO_Port					GPIOB
+#define	D13_IRQn						EXTI4_IRQn
 
 #define	CK_Pin							GPIO_PIN_5		// PA5
 #define	CK_GPIO_Port					GPIOA
@@ -266,3 +279,6 @@
 // Raw data acquired at a temperature of 30 deg C (+-5 deg C)
 // VDDA = VREF+ = 3.0 V (+- 10 mV)
 #define STM32_VDDA_REF_VOLT				(float)(3.00)
+
+// App's overrides to board.h, which are resolved in the "weak" folder if the app doesn't define them
+#include "app_board.h"

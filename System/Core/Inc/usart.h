@@ -16,7 +16,6 @@ void MX_LPUART1_UART_DeInit(void);
 void MX_LPUART1_UART_Suspend(void);
 void MX_LPUART1_UART_Resume(void);
 void MX_LPUART1_UART_Transmit(uint8_t *buf, uint32_t len, uint32_t timeoutMs);
-void MX_LPUART1_Message(char *buf);
 
 void MX_USART1_UART_Init(uint32_t baudRate);
 void MX_USART1_UART_ReInit(void);

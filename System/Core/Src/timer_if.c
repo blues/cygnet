@@ -67,7 +67,7 @@ const UTIL_SYSTIM_Driver_s UTIL_SYSTIMDriver = {
 bool rtcInitialized = false;
 
 // RtcTimerContext
-static uint32_t RtcTimerContext = 0;
+uint32_t RtcTimerContext = 0;
 
 // Forwards
 static inline uint32_t GetTimerTicks(void);

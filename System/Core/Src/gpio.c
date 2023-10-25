@@ -40,8 +40,8 @@ void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Pin = USB_DETECT_Pin;
     HAL_GPIO_Init(USB_DETECT_GPIO_Port, &GPIO_InitStruct);
-    HAL_NVIC_SetPriority(USB_DETECT_EXTI_IRQn, INTERRUPT_PRIO_EXTI, 0);
-    HAL_NVIC_EnableIRQ(USB_DETECT_EXTI_IRQn);
+    HAL_NVIC_SetPriority(USB_DETECT_IRQn, INTERRUPT_PRIO_EXTI, 0);
+    HAL_NVIC_EnableIRQ(USB_DETECT_IRQn);
 #endif
 
     // Configure button input
@@ -56,9 +56,12 @@ void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Pin = USER_BTN_Pin;
     HAL_GPIO_Init(USER_BTN_GPIO_Port, &GPIO_InitStruct);
-    HAL_NVIC_SetPriority(USER_BTN_EXTI_IRQn, INTERRUPT_PRIO_EXTI, 0);
-    HAL_NVIC_EnableIRQ(USER_BTN_EXTI_IRQn);
+    HAL_NVIC_SetPriority(USER_BTN_IRQn, INTERRUPT_PRIO_EXTI, 0);
+    HAL_NVIC_EnableIRQ(USER_BTN_IRQn);
 #endif
+
+    // Ask the app to initialize its GPIOs
+    appInitGPIO();
 
 }
 

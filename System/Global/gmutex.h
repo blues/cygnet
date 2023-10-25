@@ -21,16 +21,8 @@
 #define MTX_RAND        0x0000000000000010
 #define MTX_ERR         0x0000000000000020
 #define MTX_SERIAL_TX   0x0000000000000040
-#define MTX_NEO         0x0000000000000080
-#define MTX_VLED        0x0000000000000100
-#define MTX_XQ          0x0000000000000200
-#define MTX_TEMPLATE    0x0000000000000400
-#define MTX_PAGE        0x0000000000000800
-#define MTX_XQP         0x0000000000001000
-#define MTX_ENV         0x0000000000002000
-#define MTX_SYNCLOG     0x0000000000004000
-#define MTX_ATTN        0x0000000000008000
-#define MTX_SERIAL_RX   0x0000000000010000
+                        // Anything needed when processing a request goe here
+#define MTX_SERIAL_RX   0x0000000000000080
 typedef uint64_t mtxtype_t;
 
 // mutex.c

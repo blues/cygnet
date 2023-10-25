@@ -1422,6 +1422,30 @@
     </configuration>
     <group>
         <name>App</name>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\app.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\button.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\diag.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\led.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\maintask.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\req.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\reqtask.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\serial.c</name>
+        </file>
     </group>
     <group>
         <name>Core</name>
@@ -1605,6 +1629,81 @@
     </group>
     <group>
         <name>Global</name>
+        <file>
+            <name>$PROJ_DIR$\..\Global\amd5.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\array.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\base64.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\crc16.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\crc32.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\debug.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\float16.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\gerr.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\gmem.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\md5hash.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\memmem.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\mutex.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\os.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\rand.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\rrandom.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\strl.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\task.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\timegm.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\timer.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Global\tss.c</name>
+        </file>
+    </group>
+    <group>
+        <name>JSON</name>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\json\note-c\n_b64.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\json\note-c\n_cjson.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\json\note-c\n_cjson_helpers.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\json\n_lib.c</name>
+        </file>
     </group>
     <group>
         <name>Middlewares</name>

@@ -60,13 +60,13 @@ task.h is included from an application file. */
 
 /* Allocate the memory for the heap. */
 #if MALLOC_HEAP
-static uint8_t *ucHeap;
+uint8_t *ucHeap;
 #elif( configAPPLICATION_ALLOCATED_HEAP == 1 )
 /* The application writer has already defined the array used for the RTOS
 heap - probably so it can be placed in a special segment or address. */
 extern uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
 #else
-static uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
+uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
 #endif /* configAPPLICATION_ALLOCATED_HEAP */
 
 /* Define the linked list structure.  This is used to link free blocks in order
@@ -76,10 +76,9 @@ typedef struct A_BLOCK_LINK {
     size_t xBlockSize;						/*<< The size of the free block. */
 } BlockLink_t;
 
-#if MALLOC_HEAP
+// MALLOC_HEAP but referenced even if not compiled-in
 uint32_t heapPhysical = 0;
 uint32_t heapFreeAtStartup = 0;
-#endif
 
 /*-----------------------------------------------------------*/
 
@@ -101,23 +100,23 @@ static void prvHeapInit( void );
 
 /* The size of the structure placed at the beginning of each allocated memory
 block must by correctly byte aligned. */
-static const size_t xHeapStructSize	= ( sizeof( BlockLink_t ) + ( ( size_t ) ( portBYTE_ALIGNMENT - 1 ) ) ) & ~( ( size_t ) portBYTE_ALIGNMENT_MASK );
+const size_t xHeapStructSize	= ( sizeof( BlockLink_t ) + ( ( size_t ) ( portBYTE_ALIGNMENT - 1 ) ) ) & ~( ( size_t ) portBYTE_ALIGNMENT_MASK );
 
 /* Create a couple of list links to mark the start and end of the list. */
-static BlockLink_t xStart, *pxEnd = NULL;
+BlockLink_t xStart, *pxEnd = NULL;
 
 /* Keeps track of the number of calls to allocate and free memory as well as the
 number of free bytes remaining, but says nothing about fragmentation. */
-static size_t xFreeBytesRemaining = 0U;
-static size_t xMinimumEverFreeBytesRemaining = 0U;
-static size_t xNumberOfSuccessfulAllocations = 0;
-static size_t xNumberOfSuccessfulFrees = 0;
+size_t xFreeBytesRemaining = 0U;
+size_t xMinimumEverFreeBytesRemaining = 0U;
+size_t xNumberOfSuccessfulAllocations = 0;
+size_t xNumberOfSuccessfulFrees = 0;
 
 /* Gets set to the top bit of an size_t type.  When this bit in the xBlockSize
 member of an BlockLink_t structure is set then the block belongs to the
 application.  When the bit is free the block is still part of the free heap
 space. */
-static size_t xBlockAllocatedBit = 0;
+size_t xBlockAllocatedBit = 0;
 
 /*-----------------------------------------------------------*/
 

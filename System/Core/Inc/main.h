@@ -45,6 +45,7 @@ void HAL_ResumeTick(void);
 void appInit(void);
 void appHeartbeatISR(void);
 void appISR(uint16_t);
+void appInitGPIO(void);
 
 // debug_if.c
 void MX_Breakpoint(void);
@@ -55,3 +56,8 @@ void MX_DBG_Init(void);
 void MX_DBG_SetOutput(UART_HandleTypeDef *huart, void (*fn)(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen));
 void MX_DBG(const char *message, size_t length);
 bool MX_DBG_Enable(bool on);
+
+// heap_4.c
+extern uint32_t heapPhysical;
+extern uint32_t heapFreeAtStartup;
+

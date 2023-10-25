@@ -39,9 +39,9 @@ typedef struct {
     uint16_t rxlen;
     void (*notifyReceivedFn)(UART_HandleTypeDef *huart, bool error);
 } UARTIO;
-static UARTIO rxioLPUART1 = {0};
-static UARTIO rxioUSART1 = {0};
-static UARTIO rxioUSART2 = {0};
+UARTIO rxioLPUART1 = {0};
+UARTIO rxioUSART1 = {0};
+UARTIO rxioUSART2 = {0};
 
 // Number of bytes for UART receives.  (We can just use this until there's a perf issue)
 #define UART_RXLEN 1
@@ -66,12 +66,6 @@ void MX_UART_TxCpltCallback(UART_HandleTypeDef *huart, void (*cb)(void *))
     if (huart == &huart2) {
         TxCpltCallback_USART2 = cb;
     }
-}
-
-// Transmit on LPUART1 (for low level debugging only)
-void MX_LPUART1_Message(char *buf)
-{
-    MX_UART_Transmit(&hlpuart1, (uint8_t *)buf, strlen(buf), 500);
 }
 
 // Transmit to a port synchronously

@@ -9,6 +9,11 @@ __weak void appInit(void)
 {
 }
 
+// Initialize the app's GPIOs
+__weak void appInitGPIO(void)
+{
+}
+
 // RTC heartbeat, used for timeouts and watchdogs
 __weak void appHeartbeatISR(void)
 {

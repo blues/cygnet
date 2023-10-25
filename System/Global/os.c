@@ -1,5 +1,4 @@
 
-#include "buildnum.h"
 #include "main.h"
 #include "global.h"
 #include "product.h"
@@ -8,12 +7,6 @@
 bool osDebugging(void)
 {
     return MX_DBG_Active();
-}
-
-// Get the build number
-uint32_t osBuildNum(void)
-{
-    return BUILDNUMBER;
 }
 
 // Return configuration JSON object

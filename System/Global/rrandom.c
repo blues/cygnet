@@ -42,10 +42,6 @@ control over the state of the random number generator.
 */
 
 #include <stdint.h>
-#include <errno.h>
-#ifndef EINVAL
-#define	EINVAL 22
-#endif
 
 #define	ULONG_MAX  ((uint32_t)(~0L))     /* 0xFFFFFFFF for 32-bits */
 #define	LONG_MAX   ((int32_t)(ULONG_MAX >> 1))   /* 0x7FFFFFFF for 32-bits*/
@@ -248,7 +244,6 @@ rinitstate (uint32_t seed, PTR arg_state, uint32_t n)
     }
     if (n < BREAK_1) {
         if (n < BREAK_0) {
-            errno = EINVAL;
             return NULL;
         }
         rand_type = TYPE_0;
@@ -320,7 +315,6 @@ rsetstate (PTR arg_state)
         break;
     default:
         /* State info munged.  */
-        errno = EINVAL;
         return NULL;
     }
 

@@ -39,12 +39,9 @@
 #define PRODUCT_CONFIG PRODUCT_CONFIG_SIGNATURE                         \
     "{" QUOTE "org" QUOTE ":" QUOTE PRODUCT_MANUFACTURER QUOTE          \
     "," QUOTE "product" QUOTE ":" QUOTE PRODUCT_DISPLAY_NAME QUOTE      \
-    "," QUOTE "target" QUOTE ":" QUOTE TARGET_NAME QUOTE                \
-    "," QUOTE "version" QUOTE ":" QUOTE FIRMWARE_ID QUOTE               \
     "," QUOTE "ver_major" QUOTE ":" STRINGIFY(PRODUCT_MAJOR_VERSION)    \
     "," QUOTE "ver_minor" QUOTE ":" STRINGIFY(PRODUCT_MINOR_VERSION)    \
     "," QUOTE "ver_patch" QUOTE ":" STRINGIFY(PRODUCT_PATCH_VERSION)    \
-    "," QUOTE "ver_build" QUOTE ":" STRINGIFY(BUILDNUMBER)              \
     "," QUOTE "built" QUOTE ":" QUOTE  __DATE__ " " __TIME__ QUOTE      \
     "}"
 

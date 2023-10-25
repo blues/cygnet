@@ -5,6 +5,7 @@
 #include "main.h"
 #include "global.h"
 #include "gmutex.h"
+#include "rng.h"
 
 STATIC bool rand_initialized = false;
 STATIC char rand_state[256] = {0};

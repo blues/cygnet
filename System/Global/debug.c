@@ -49,9 +49,9 @@ void debugBreakpoint(void)
 // Soft panic
 void debugSoftPanic(const char *message)
 {
-    MX_USART1_Message("*****\n");
-    MX_USART1_Message((char *)message);
-    MX_USART1_Message("\n*****\n");
+    debugMessage("*****\n");
+    debugMessage((char *)message);
+    debugMessage("\n*****\n");
     MX_Breakpoint();
 }
 

@@ -19,6 +19,8 @@
 #define UNUSED_PARAMETER(X) UNUSED_VARIABLE(X)
 #endif
 
+#define STATIC
+
 #define STRINGIZE(x) #x
 #define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
 

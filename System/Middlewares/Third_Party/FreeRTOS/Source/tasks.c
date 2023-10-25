@@ -98,6 +98,20 @@ set then don't fill the stack so there is no unnecessary dependency on memset. *
 #define tskDELETED_CHAR		( 'D' )
 #define tskSUSPENDED_CHAR	( 'S' )
 
+//////// BLUES BEGIN ////////
+// 2021-05-03 Tracing to find the source of FreeRTOS SysTick slowdown
+int64_t traceTickSteps = 0;
+int64_t traceTickStepOverflows = 0;
+int64_t traceTickStepErrors = 0;
+int64_t traceTicksDiscarded = 0;
+void freeRTOSStepTickTrace(int64_t *tickSteps, int64_t *tickStepOverflows, int64_t *tickStepErrors, int64_t *ticksDiscarded) {
+    *tickSteps = traceTickSteps;
+    *tickStepOverflows = traceTickStepOverflows;
+    *tickStepErrors = traceTickStepErrors;
+    *ticksDiscarded = traceTicksDiscarded;
+}
+//////// BLUES END ////////
+
 /*
  * Some kernel aware debuggers require the data the debugger needs access to be
  * global, rather than file scope.
@@ -2599,6 +2613,47 @@ implementations require configUSE_TICKLESS_IDLE to be set to a value other than
 		was suppressed.  Note this does *not* call the tick hook function for
 		each stepped tick. */
 		configASSERT( ( xTickCount + xTicksToJump ) <= xNextTaskUnblockTime );
+//////// BLUES BEGIN ////////
+#if 0   // 2019-12-25 I changed to a different method of updating xTickCount
+        // because it's very common that we will step the tick beyond the
+        // next unblock time, due to the fact that we stay in STOP2 mode
+        // for very long periods of time.
+        configASSERT( ( xTickCount + xTicksToJump ) <= xNextTaskUnblockTime );
+#else
+        TickType_t ticksToJump = xTicksToJump;
+        // We maintain a "tick bank" in the traceTicksDiscarded variable,
+        // and so each time we come back here we try to use some of
+        // that accumulated error.
+        ticksToJump += traceTicksDiscarded;
+        traceTicksDiscarded = 0;
+        // If this would step the tick beyond the next unblock time,
+        // ensure that it gets unblocked by setting the tick count
+        // to exactly the unblock time, which is required by the
+        // prvGetExpectedIdleTime() method.  We do this calculation
+        // in a way that is immune to counter wrap that might occur
+        // if a crazy-large number of ticks is supplied.
+        
+        // Only increment if ticks > 1 to filter out second call to 
+        // vTaskStepTick in vPortSuppressTickAndSleep.
+        if (ticksToJump > 1) {
+            traceTickSteps++;
+        }
+        TickType_t xTicksUntilUnblock = xNextTaskUnblockTime - xTickCount;
+        if ( xTickCount >= xNextTaskUnblockTime || ticksToJump >= xTicksUntilUnblock ) {
+
+            // If xTickCount is at or beyond xNextTaskUnblockTime this is an error
+            if ( xTickCount > xNextTaskUnblockTime ) {
+                traceTickStepErrors++;
+            } else if (ticksToJump > xTicksUntilUnblock) {
+                traceTickStepOverflows++;
+                traceTicksDiscarded += (ticksToJump - xTicksUntilUnblock);
+            }
+            xTickCount = xNextTaskUnblockTime;
+    		traceINCREASE_TICK_COUNT( xTicksUntilUnblock );
+            return;
+        }
+#endif
+//////// BLUES END ////////
 		xTickCount += xTicksToJump;
 		traceINCREASE_TICK_COUNT( xTicksToJump );
 	}
