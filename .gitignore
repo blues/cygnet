@@ -2,9 +2,10 @@
 # Cygnet builds
 System/EWARM/cygnet.dep
 System/EWARM/.ninja_deps
-System/EWARM/cygnet/Exe*
-System/EWARM/cygnet/List*
-System/EWARM/cygnet/Obj*
+System/EWARM/cygnet/Exe/
+System/EWARM/cygnet/List/
+System/EWARM/cygnet/Obj/
+System/EWARM/cygnet/Obj/Core/*
 System/EWARM/settings/Project.wsdt
 System/EWARM/settings/cygnet.dnx
 System/EWARM/settings/cygnet.dbgdt
