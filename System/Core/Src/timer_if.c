@@ -25,36 +25,8 @@ const UTIL_TIMER_Driver_s UTIL_TimerDriver = {
     TIMER_IF_Convert_Tick2ms,
 };
 
-// SysTime driver callbacks handler
-const UTIL_SYSTIM_Driver_s UTIL_SYSTIMDriver = {
-    TIMER_IF_BkUp_Write_Seconds,
-    TIMER_IF_BkUp_Read_Seconds,
-    TIMER_IF_BkUp_Write_SubSeconds,
-    TIMER_IF_BkUp_Read_SubSeconds,
-    TIMER_IF_GetTime,
-};
-
 // Minimum timeout delay of Alarm in ticks
 #define MIN_ALARM_DELAY    3
-
-// Backup seconds register
-#define RTC_BKP_SECONDS    RTC_BKP_DR0
-
-// Backup subseconds register
-#define RTC_BKP_SUBSECONDS RTC_BKP_DR1
-
-// Backup msbticks register
-#define RTC_BKP_MSBTICKS   RTC_BKP_DR2
-
-/* #define RTIF_DEBUG */
-
-// UTIL_TIMER_IRQ can be overridden in utilities_conf.h to Map on Task rather then Isr
-#ifndef UTIL_TIMER_IRQ_MAP_INIT
-#define UTIL_TIMER_IRQ_MAP_INIT()
-#endif
-#ifndef UTIL_TIMER_IRQ_MAP_PROCESS
-#define UTIL_TIMER_IRQ_MAP_PROCESS() UTIL_TIMER_IRQ_Handler()
-#endif
 
 // Post the RTC log string format to the circular queue for printing in using the polling mode
 #ifdef RTIF_DEBUG
@@ -69,35 +41,28 @@ bool rtcInitialized = false;
 // RtcTimerContext
 uint32_t RtcTimerContext = 0;
 
-// Forwards
-static inline uint32_t GetTimerTicks(void);
-static void TIMER_IF_BkUp_Write_MSBticks(uint32_t MSBticks);
-static uint32_t TIMER_IF_BkUp_Read_MSBticks(void);
-
 // Init
 UTIL_TIMER_Status_t TIMER_IF_Init(void)
 {
     UTIL_TIMER_Status_t ret = UTIL_TIMER_OK;
 
     if (!rtcInitialized) {
+
         // Init RTC
         MX_RTC_Init();
+
         // Stop Timer
         TIMER_IF_StopTimer();
+
         // DeActivate the Alarm A enabled by STM32CubeMX during MX_RTC_Init()
         HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A);
 
-        // Enable Direct Read of the calendar registers (not through Shadow)
-        HAL_RTCEx_EnableBypassShadow(&hrtc);
-        // Initialize MSB ticks
-        TIMER_IF_BkUp_Write_MSBticks(0);
-
+        // Set the initial context
         TIMER_IF_SetTimerContext();
 
-        // Register a task to associate to UTIL_TIMER_Irq() interrupt
-        UTIL_TIMER_IRQ_MAP_INIT();
-
+        // Done with init
         rtcInitialized = true;
+
     }
 
     return ret;
@@ -108,13 +73,17 @@ UTIL_TIMER_Status_t TIMER_IF_StartTimer(uint32_t timeout)
 {
     UTIL_TIMER_Status_t ret = UTIL_TIMER_OK;
 
-    RTC_AlarmTypeDef sAlarm = {0};
     // Stop timer if one is already started
     TIMER_IF_StopTimer();
+
+    // Extend timeout beyond the tick when the timer context was initiated
     timeout += RtcTimerContext;
 
-    TIMER_IF_DBG_PRINTF("Start timer: time=%d, alarm=%d\n\r",  GetTimerTicks(), timeout);
-    // starts timer
+    // Trace
+    TIMER_IF_DBG_PRINTF("Start timer: tick=%d, alarm=%d\n\r",  HAL_GetTick(), timeout);
+
+    // Start timer
+    RTC_AlarmTypeDef sAlarm = {0};
     sAlarm.AlarmTime.SubSeconds = UINT32_MAX - timeout;
     sAlarm.AlarmMask = RTC_ALARMMASK_NONE;
     sAlarm.Alarm = RTC_ALARM_A;
@@ -139,7 +108,7 @@ UTIL_TIMER_Status_t TIMER_IF_StopTimer(void)
 // Set the context
 uint32_t TIMER_IF_SetTimerContext(void)
 {
-    RtcTimerContext = GetTimerTicks();
+    RtcTimerContext = HAL_GetTick();
     TIMER_IF_DBG_PRINTF("TIMER_IF_SetTimerContext=%d\n\r", RtcTimerContext);
     return RtcTimerContext;
 }
@@ -155,18 +124,14 @@ uint32_t TIMER_IF_GetTimerContext(void)
 uint32_t TIMER_IF_GetTimerElapsedTime(void)
 {
     uint32_t ret = 0;
-    ret = ((uint32_t)(GetTimerTicks() - RtcTimerContext));
+    ret = ((uint32_t)(HAL_GetTick() - RtcTimerContext));
     return ret;
 }
 
 // Get ticks value
 uint32_t TIMER_IF_GetTimerValue(void)
 {
-    uint32_t ret = 0;
-    if (rtcInitialized) {
-        ret = GetTimerTicks();
-    }
-    return ret;
+    return HAL_GetTick();
 }
 
 // Get min t/o
@@ -194,104 +159,15 @@ uint32_t TIMER_IF_Convert_Tick2ms(uint32_t tick)
 }
 
 // Delay
-void TIMER_IF_DelayMs(uint32_t delay)
+void TIMER_IF_DelayMs(uint32_t delayMs)
 {
-    uint32_t delayTicks = TIMER_IF_Convert_ms2Tick(delay);
-    uint32_t timeout = GetTimerTicks();
-    while (((GetTimerTicks() - timeout)) < delayTicks) {
-        __NOP();
-    }
+    HAL_Delay(delayMs);
 }
 
 // Alarm callback from HAL
 void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 {
-    UTIL_TIMER_IRQ_MAP_PROCESS();
-}
-
-// Get current time
-uint32_t TIMER_IF_GetTime(uint16_t *mSeconds)
-{
-    uint32_t seconds = 0;
-
-    uint64_t ticks;
-    uint32_t timerValueLsb = GetTimerTicks();
-    uint32_t timerValueMSB = TIMER_IF_BkUp_Read_MSBticks();
-
-    ticks = (((uint64_t) timerValueMSB) << 32) + timerValueLsb;
-    seconds = (uint32_t)(ticks >> RTC_N_PREDIV_S);
-    ticks = (uint32_t) ticks & RTC_PREDIV_S;
-    *mSeconds = TIMER_IF_Convert_Tick2ms(ticks);
-
-    return seconds;
-}
-
-// Write backup register
-void TIMER_IF_BkUp_Write_Seconds(uint32_t Seconds)
-{
-    HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_SECONDS, Seconds);
-}
-
-// Write backup subsecs register
-void TIMER_IF_BkUp_Write_SubSeconds(uint32_t SubSeconds)
-{
-    HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_SUBSECONDS, SubSeconds);
-}
-
-// Read backup
-uint32_t TIMER_IF_BkUp_Read_Seconds(void)
-{
-    uint32_t ret = 0;
-    ret = HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_SECONDS);
-    return ret;
-}
-
-// Read backup subsecs
-uint32_t TIMER_IF_BkUp_Read_SubSeconds(void)
-{
-    uint32_t ret = 0;
-    ret = HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_SUBSECONDS);
-    return ret;
-}
-
-// Writes MSBticks to backup register
-// Absolute RTC time in tick is (MSBticks)<<32 + (32bits binary counter)
-// MSBticks incremented every time the 32bits RTC timer wraps around (~44days)
-static void TIMER_IF_BkUp_Write_MSBticks(uint32_t MSBticks)
-{
-    HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_MSBTICKS, MSBticks);
-}
-
-// Reads MSBticks from backup register
-// Absolute RTC time in tick is (MSBticks)<<32 + (32bits binary counter)
-// MSBticks incremented every time the 32bits RTC timer wraps around (~44days)
-static uint32_t TIMER_IF_BkUp_Read_MSBticks(void)
-{
-    uint32_t MSBticks;
-    MSBticks = HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_MSBTICKS);
-    return MSBticks;
-}
-
-// Get the (upcounting) rtc timer Value in rtc ticks
-uint32_t GetTimerTicks(void)
-{
-    // Read subseconds and reverse it to be positive because it's downcounting
-    uint32_t tick = UINT32_MAX - LL_RTC_TIME_GetSubSecond(RTC);
-    // If it goes backward by less than 1 second, mask it (because we see this),
-    // else if it goes backward by a lot then assume we are wrapping.
-    static uint32_t lastTick = 0;
-    if (lastTick != 0) {
-        if (tick < lastTick && (lastTick - tick) < 1000) {
-            // Try a second time
-            tick = UINT32_MAX - LL_RTC_TIME_GetSubSecond(RTC);
-            // If still backward, mask it
-            if (tick < lastTick && (lastTick - tick) < 1000) {
-                tick = lastTick;
-            }
-        }
-    }
-    lastTick = tick;
-    return tick;
+    UTIL_TIMER_IRQ_Handler();
 }
 
 // Set the number of ticks that should be added to the tick count
@@ -302,20 +178,12 @@ void MX_AddTicksToOffset(uint32_t offsetMs)
     msToOffset += offsetMs;
 }
 
-// Core method to get timer tick value
-uint32_t HAL_GetTick(void)
+// Get current time
+uint32_t TIMER_IF_GetTime(uint16_t *mSeconds)
 {
-    if (!rtcInitialized) {
-        return 1;
+    int64_t timeMs = MX_RTC_GetMs();
+    if (mSeconds != NULL) {
+        *mSeconds = (uint16_t) (timeMs % 1000);
     }
-    return GetTimerTicks();
-}
-
-// Delay milliseconds
-void HAL_Delay(__IO uint32_t Delay)
-{
-    if (!rtcInitialized) {
-        return;
-    }
-    TIMER_IF_DelayMs(Delay);
+    return (uint32_t) (timeMs / 1000);
 }

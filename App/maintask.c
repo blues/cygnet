@@ -3,7 +3,6 @@
 #include "app.h"
 #include "task.h"
 #include "queue.h"
-#include "stm32_systime.h"
 #include "stm32_lpm.h"
 #include "timer_if.h"
 #include "utilities_def.h"

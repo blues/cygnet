@@ -101,6 +101,22 @@ void LPTIM1_IRQHandler(void)
     HAL_LPTIM_IRQHandler(&hlptim1);
 }
 
+// Timer when we're using LPTIM1
+void HAL_LPTIM_CompareMatchCallback(LPTIM_HandleTypeDef *hlptim)
+{
+    if (hlptim->Instance==LPTIM1) {
+        HAL_IncTick();
+    }
+}
+
+// Timer when we're using TIM2
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+    if (htim->Instance == TIM2) {
+        HAL_IncTick();
+    }
+}
+
 // USB interrupt
 void USB_IRQHandler(void)
 {

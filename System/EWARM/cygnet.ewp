@@ -219,6 +219,7 @@
                 <option>
                     <name>CCDefines</name>
                     <state>USE_HAL_DRIVER</state>
+                    <state>USING_IAR</state>
                     <state>STM32L433xx</state>
                     <state>STM32_THREAD_SAFE_STRATEGY=4</state>
                     <state>CJSON_NO_CLIB=0</state>
@@ -1413,9 +1414,6 @@
         </file>
         <file>
             <name>$PROJ_DIR$\..\Utilities\misc\stm32_mem.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\Utilities\misc\stm32_systime.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\Utilities\timer\stm32_timer.c</name>

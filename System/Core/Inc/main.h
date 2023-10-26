@@ -40,10 +40,15 @@ void Error_Handler(void);
 // stm32l4xx_hal_timebase_tim.c
 void HAL_SuspendTick(void);
 void HAL_ResumeTick(void);
+void HAL_IncTick(void);
+uint32_t HAL_GetTick(void);
+int64_t MX_GetTickMs(void);
+void MX_StepTickMs(uint32_t msElapsed);
+int64_t MX_SteppedTickMs(void);
 
 // app_weak.c
 void appInit(void);
-void appHeartbeatISR(void);
+void appHeartbeatISR(uint32_t heartbeatSecs);
 void appISR(uint16_t);
 void appInitGPIO(void);
 

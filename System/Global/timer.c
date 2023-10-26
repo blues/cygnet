@@ -6,8 +6,8 @@
 #include "main.h"
 #include "global.h"
 #include "gmutex.h"
+#include "rtc.h"
 #include <time.h>
-#include "timer_if.h"
 
 // Boot time
 STATIC int64_t bootTimeMs = 0;
@@ -47,10 +47,7 @@ void timerSetBootTime()
 // Get the current timer tick in milliseconds, for elapsed time computation purposes.
 int64_t timerMs(void)
 {
-    uint16_t tms;
-    uint32_t ts = TIMER_IF_GetTime(&tms);
-    int64_t ms = (((int64_t)ts) * 1000LL) + (int64_t) tms;
-    return ms;
+    return MX_GetTickMs();
 }
 
 // Delay for the specified number of milliseconds in a compute loop, without yielding.
@@ -87,20 +84,51 @@ uint32_t timerMsUntil(int64_t suppressionTimerMs)
 // Set the current time/date
 void timeSet(uint32_t newTimeSecs)
 {
+
     // Ensure that we notice when the time was set
     timeIsValid();
-    // Display it
-    char timestr[48];
-    uint32_t s = timeSecs();
-    timeDateStr(s, timestr, sizeof(timestr));
-    debugf("time: now %s UTC (%d)\n", timestr, s);
+
+    // Ensure that it's valid
+    if (!timeIsValidUnix(newTimeSecs)) {
+        return;
+    }
+
+    // Lock
+    mutexLock(&timeMutex);
+    time_t timenow = (time_t) newTimeSecs;
+
+    // Do the conversion and unlock
+#ifdef USING_IAR    // Not thread-safe.  Should use gmtime_s but compiling with __STDC_WANT_LIB_EXT1__ requires huge labor.
+    struct tm *t = gmtime(&timenow);
+#else               // POSIX
+    struct tm tmp;
+    struct tm *t = gmtime_r(&timenow, &tmp);
+#endif
+    if (t == NULL) {
+        mutexUnlock(&timeMutex);    // cannot do debugf with locked
+        debugf("time-set: error getting struct tm\n");
+    } else {
+        int year = t->tm_year+1900;
+        int mon1 = t->tm_mon+1;
+        int day1 = t->tm_mday;
+        int hour0 = t->tm_hour;
+        int min0 = t->tm_min;
+        int sec0 = t->tm_sec;
+        if (MX_RTC_SetDateTime(year, mon1, day1, hour0, min0, sec0)) {
+            mutexUnlock(&timeMutex);
+            debugf("time-set: %d %04d-%02d-%02dT%02d:%02d:%02dZ\n", newTimeSecs, year, mon1, day1, hour0, min0, sec0);
+        } else {
+            mutexUnlock(&timeMutex);
+            debugf("time-set: HAL error setting date/time\n");
+        }
+    }
+
 }
 
 // See if the time is currently valid, and try to restore it from the RTC if not
 bool timeIsValid()
 {
-    SysTime_t time = SysTimeGet();
-    if (!timeIsValidUnix(time.Seconds)) {
+    if (!timeIsValidUnix(timeSecs())) {
         return false;
     }
     return true;
@@ -120,11 +148,7 @@ bool timeIsValidUnix(uint32_t t)
 // When the time gets set ultimately, it will be a major leap forward.
 uint32_t timeSecs(void)
 {
-    if (!timeIsValid()) {
-        return (uint32_t) timerMs();
-    }
-    SysTime_t time = SysTimeGet();
-    return time.Seconds;
+    return (uint32_t)(MX_RTC_GetMs() / 1000LL);
 }
 
 // See if the specified number of seconds has elapsed

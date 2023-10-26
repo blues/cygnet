@@ -4,12 +4,22 @@
 
 #include "lptim.h"
 
+// According to this config, with 32k clock and Period = 65535,
+// the tick_period_seconds = (Period + 1) / Frequency (32768Hz LSE Crystal)
+// Period is the maximum value of the auto-reload counter - this is max
+// Timeout is the value to be placed into the compare register
+#define LPTPeriod (uint32_t) 32
+#define LPTTimeout (uint32_t) 31     // HIGH ERROR RATE - SEE HAL_LPTIM_CompareMatchCallback!!!
+
+// Timer
 LPTIM_HandleTypeDef hlptim1;
 
 // LPTIM1 init function
 void MX_LPTIM1_Init(void)
 {
 
+    // Note that the LPTIM clock source is configured to be an internal
+    // APB clock, but the actual clock used is selected by the msp.
     hlptim1.Instance = LPTIM1;
     hlptim1.Init.Clock.Source = LPTIM_CLOCKSOURCE_APBCLOCK_LPOSC;
     hlptim1.Init.Clock.Prescaler = LPTIM_PRESCALER_DIV1;
@@ -23,10 +33,17 @@ void MX_LPTIM1_Init(void)
         Error_Handler();
     }
 
+    // Start the timeout function in continuous interrupt mode
+    // See stm32l4xx_hal_lptim.c
+    if (HAL_LPTIM_TimeOut_Start_IT(&hlptim1, LPTPeriod, LPTTimeout) != HAL_OK) {
+        Error_Handler();
+    }
+
 }
 // LPTIM1 deinit function
 void MX_LPTIM1_DeInit(void)
 {
+    HAL_LPTIM_TimeOut_Stop_IT(&hlptim1);
     HAL_LPTIM_DeInit(&hlptim1);
 }
 

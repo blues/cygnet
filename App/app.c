@@ -1,6 +1,7 @@
 
 #include "main.h"
 #include "app.h"
+#include "rtc.h"
 #include "stm32_lpm_if.h"
 
 // When we went to sleep
@@ -47,7 +48,7 @@ void appPreSleepProcessing(uint32_t ulExpectedIdleTime)
     //  ensure all unused pins are in their lowest power state.
 
     // Remember when we went to sleep
-    sleepBeganMs = timerMs();
+    sleepBeganMs = MX_RTC_GetMs();
 
     // Enter to sleep Mode using the HAL function HAL_PWR_EnterSLEEPMode with WFI instruction
     UTIL_PowerDriver.EnterStopMode();
@@ -55,7 +56,7 @@ void appPreSleepProcessing(uint32_t ulExpectedIdleTime)
 }
 
 // RTC heartbeat, used for timeouts and watchdogs
-void appHeartbeatISR(void)
+void appHeartbeatISR(uint32_t heartbeatSecs)
 {
 }
 
@@ -70,10 +71,11 @@ void appPostSleepProcessing(uint32_t ulExpectedIdleTime)
     // ever steptick by 1ms because that's what we see when there is
     // no actual sleep performed, which has the net effect of clocking
     // the timer faster than it's actually supposed to go.
-    int64_t elapsedMs = timerMs() - sleepBeganMs;
+    int64_t elapsedMs = MX_RTC_GetMs() - sleepBeganMs;
     if (sleepBeganMs != 0 && elapsedMs > 1) {
         sleepBeganMs = 0;
         vTaskStepTick(pdMS_TO_TICKS(elapsedMs-1));
+        MX_StepTickMs(elapsedMs);
     }
 
     // Exit stop mode

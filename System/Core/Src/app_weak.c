@@ -15,7 +15,7 @@ __weak void appInitGPIO(void)
 }
 
 // RTC heartbeat, used for timeouts and watchdogs
-__weak void appHeartbeatISR(void)
+__weak void appHeartbeatISR(uint32_t heartbeatSecs)
 {
 }
 

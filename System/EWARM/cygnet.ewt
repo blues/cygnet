@@ -1750,9 +1750,6 @@
             <name>$PROJ_DIR$\..\Utilities\misc\stm32_mem.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Utilities\misc\stm32_systime.c</name>
-        </file>
-        <file>
             <name>$PROJ_DIR$\..\Utilities\timer\stm32_timer.c</name>
         </file>
     </group>

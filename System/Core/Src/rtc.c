@@ -14,6 +14,13 @@ uint32_t rtcwutCounter =		0;
 uint32_t rtcwutClockrate =		32768;	// LSE Hz
 uint32_t rtcwutDivisor =		16;     // RTC DIV16 resolution
 
+// Whether or not we had an RTC error
+bool needToResetRTC = false;
+
+// Failures
+uint32_t rtcGetFailures = 0;
+uint32_t rtcGetResets = 0;
+
 // RTC function to set date/time to a value that is valid so that our millisecond
 // timer will function, even if the time is wrong.
 void MX_RTC_Reset(void)
@@ -31,7 +38,7 @@ void MX_RTC_Reset(void)
     sDate.WeekDay = RTC_WEEKDAY_MONDAY;
     sDate.Month = RTC_MONTH_JANUARY;
     sDate.Date = 1;
-    sDate.Year = (2020-BASEYEAR); // Valid according to MY_RTC_GetDateTime rules
+    sDate.Year = (2020-BASEYEAR); // Valid according to MX_RTC_GetDateTime rules
     if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN) != HAL_OK) {
         Error_Handler();
     }
@@ -69,7 +76,13 @@ void MX_RTC_Init(void)
     }
 
     // Initialize RTC and set the Time and Date
-    MX_RTC_Reset();
+    // Note that we need to set it validly so that MY_RTC_GetDateTime() always
+    // succeeds, else the scheduler millisecond timer won't function
+    if (needToResetRTC || (HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR0) != 0x32F2)) {
+        MX_RTC_Reset();
+        HAL_RTCEx_BKUPWrite(&hrtc,RTC_BKP_DR0,0x32F2);
+    }
+    needToResetRTC = false;
 
     // Reset the wakeup timer
     MX_RTC_ResetWakeupTimer();
@@ -148,5 +161,142 @@ void MX_RTC_ResetWakeupTimer()
 // Wakeup event
 void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc)
 {
-    appHeartbeatISR();
+    appHeartbeatISR(RTCWUT_SECS);
+}
+
+// RTC SetDateTime function, returns true if succeeds
+bool MX_RTC_SetDateTime(int year, int mon1, int day1, int hour0, int min0, int sec0)
+{
+
+    // Set the date/time
+    RTC_TimeTypeDef time;
+    RTC_DateTypeDef date;
+    date.Year = year-BASEYEAR;
+    date.Month = mon1;
+    date.Date = day1;
+    date.WeekDay = RTC_WEEKDAY_MONDAY;
+    time.Hours = hour0;
+    time.Minutes = min0;
+    time.Seconds = sec0;
+    time.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+    time.StoreOperation = RTC_STOREOPERATION_RESET;
+    if (HAL_RTC_SetTime(&hrtc, &time, RTC_FORMAT_BIN) != HAL_OK) {
+        Error_Handler();
+    }
+    if (HAL_RTC_SetDate(&hrtc, &date, RTC_FORMAT_BIN) != HAL_OK) {
+        Error_Handler();
+    }
+
+    // Reset the wakeup timer, which is occasionally affected by setting the date/time
+    MX_RTC_ResetWakeupTimer();
+
+    // Done
+    return true;
+}
+
+// RTC GetMs function which is guaranteed never to go backwards
+#define is_leap(year) (((year) % 4) == 0 && (((year) % 100) != 0 || ((year) % 400) == 0))
+int64_t MX_RTC_GetMs()
+{
+
+    // Get the date/time and millisecond clock from the RTC
+    int year, mon1, day1, hour0, min0, sec0, ms0;
+    MX_RTC_GetDateTime(&year, &mon1, &day1, &hour0, &min0, &sec0, &ms0);
+
+    // Set up for timegm()
+    int tm_mon = mon1-1;
+    int tm_mday = day1;
+    int tm_hour = hour0;
+    int tm_min = min0;
+    int tm_sec = sec0;
+
+    // Private timegm() function
+    static const unsigned cumdays[2][12] = {
+        {31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365},
+        {31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366}
+    };
+    bool year_is_leap = is_leap(year);
+
+    // Optimization for a very stupid algorithm
+    int64_t res = 0;
+    if (year >= 2020) {
+        res = 18262;
+        for (unsigned i = 2020; i < year; ++i) {
+            res += is_leap(i) ? 366 : 365;
+        }
+    } else {
+        for (unsigned i = 1970; i < year; ++i) {
+            res += is_leap(i) ? 366 : 365;
+        }
+    }
+
+    // Another stupid algorithm replaced with optimization
+    if (tm_mon > 0) {
+        res += cumdays[year_is_leap][tm_mon-1];
+    }
+
+    res += tm_mday - 1;
+    res *= 24;
+    res += tm_hour;
+    res *= 60;
+    res += tm_min;
+    res *= 60;
+    res += tm_sec;
+
+    // Convert to milliseconds and exit
+    int64_t retMs = ((1000*(int64_t)res) + ms0);
+    return retMs;
+
+}
+
+// RTC GetDate debug function
+bool MX_RTC_GetErrors(uint32_t *retFailures, uint32_t *retResets)
+{
+    *retFailures = rtcGetFailures;
+    *retResets = rtcGetResets;
+    return (rtcGetFailures > 0 || rtcGetResets > 0);
+}
+
+// RTC GetDate function, returns TRUE if succeeded
+void MX_RTC_GetDateTime(int *retYear, int *retMon1, int *retDay1, int *retHour0, int *retMin0, int *retSec0, int *retMs)
+{
+    RTC_TimeTypeDef time;
+    RTC_DateTypeDef date = {0};
+    bool haveValidDateTime = false;
+    // 2021-04-25 As a harmless defensive measure, because time is so critical, retry
+    for (int i=0; i<25; i++) {
+        HAL_RTC_WaitForSynchro(&hrtc);
+        HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
+        HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
+        HAL_RTC_WaitForSynchro(&hrtc);
+        // GetDate MUST be called immediately after GetTime for consistency, according to HAL doc
+        if (HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN) == HAL_OK) {
+            if (HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN) == HAL_OK) {
+                // This is the check that ensures that when the module is booted that the time is not valid
+                if (date.Year+BASEYEAR < 2020 || date.Year+BASEYEAR > 2121) {
+                    MX_RTC_Reset();
+                    rtcGetResets++;
+                } else {
+                    haveValidDateTime = true;
+                    break;
+                }
+            }
+        } else {
+            // Always do GetTime/GetDate as a pair, even if failure
+            HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
+        }
+        HAL_Delay(1);
+        rtcGetFailures++;
+    }
+    if (!haveValidDateTime) {
+        Error_Handler();
+    }
+    *retYear = date.Year+BASEYEAR;
+    *retMon1 = date.Month;
+    *retDay1 = date.Date;
+    *retHour0 = time.Hours;
+    *retMin0 = time.Minutes;
+    *retSec0 = time.Seconds;
+    *retMs = (int) 1000 * (time.SecondFraction - time.SubSeconds) / (time.SecondFraction + 1);
+    return;
 }

@@ -65,8 +65,10 @@ int main(void)
     // Configure the system clock
     SystemClock_Config();
 
-    // Allow the timer to be enabled
+    // Start the HAL timer
     HAL_InitTick(TICK_INT_PRIORITY);
+
+    // Start the RTC via the timer package
     TIMER_IF_Init();
 
     // Initialize all configured peripherals

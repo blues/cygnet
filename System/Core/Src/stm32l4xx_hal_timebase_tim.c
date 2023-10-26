@@ -4,8 +4,17 @@
 
 #include "stm32l4xx_hal.h"
 #include "stm32l4xx_hal_tim.h"
+#include "main.h"
 
+// Timer handle
 TIM_HandleTypeDef        htim2;
+
+// 1ms ticks
+#define TICKS_PER_SECOND 1000
+#define MILLISECONDS_PER_TICK (1000/TICKS_PER_SECOND)
+__IO uint32_t tickCount;
+__IO int64_t msCountFromTicks = 0;
+__IO int64_t msCountFromSleep = 0;
 
 // This function configures the TIM2 as a time base source.
 // The time source is configured  to have 1ms time base with a dedicated
@@ -76,6 +85,25 @@ HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
     return status;
 }
 
+// Deinitialize the clock
+HAL_StatusTypeDef HAL_DeInitTick()
+{
+
+    // Stop the interrupt
+    HAL_TIM_Base_Stop_IT(&htim2);
+
+    // Deinit the timer
+    HAL_TIM_Base_DeInit(&htim2);
+
+    // Disable TIM2 clock
+    __HAL_RCC_TIM2_CLK_DISABLE();
+
+    // Disable the TIM2 global Interrupt
+    HAL_NVIC_DisableIRQ(TIM2_IRQn);
+
+    return HAL_OK;
+}
+
 // Suspend Tick increment.
 // Disable the tick increment by disabling TIM2 update interrupt.
 void HAL_SuspendTick(void)
@@ -88,17 +116,49 @@ void HAL_SuspendTick(void)
 // Enable the tick increment by Enabling TIM2 update interrupt.
 void HAL_ResumeTick(void)
 {
-    // Enable TIM2 Update interrupt
+    // Enable TIM2 Update in
     __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_UPDATE);
 }
 
-// Period elapsed callback in non blocking mode
-// This function is called  when TIM2 interrupt took place, inside
-// HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
-// a global variable "uwTick" used as application time base.
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+// This is an auxiliary timer tick that occurs, helping us to make sure that we increment
+// the main tick counter on a regular basis even though the main tick counter stops when
+// we're in STOP2 mode.
+void MX_StepTickMs(uint32_t msElapsed)
 {
-    if (htim->Instance == TIM2) {
-        HAL_IncTick();
+    msCountFromSleep += msElapsed;
+}
+
+// Return the total stepped ticks
+int64_t MX_SteppedTickMs()
+{
+    return msCountFromSleep;
+}
+
+// Bump the tick counts
+void HAL_IncTick(void)
+{
+    tickCount++;
+    msCountFromTicks++;
+}
+
+// Delay milliseconds in a compute loop
+void HAL_Delay(__IO uint32_t delayMs)
+{
+    int64_t expiresMs = MX_GetTickMs() + delayMs;
+    while (MX_GetTickMs() < expiresMs) {
+        __NOP();
     }
+}
+
+// Provide a tick value in milliseconds which pauses during STOP2 and which wraps
+uint32_t HAL_GetTick(void)
+{
+    return tickCount * MILLISECONDS_PER_TICK;
+}
+
+// Provide an approximate tick value in milliseconds with the illusion that it is continuous, across STOP2.
+int64_t MX_GetTickMs(void)
+{
+    int64_t ticks = msCountFromTicks;
+    return ticks + msCountFromSleep;
 }

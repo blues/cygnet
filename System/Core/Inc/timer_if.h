@@ -6,7 +6,6 @@
 #pragma once
 
 #include "stm32_timer.h"
-#include "stm32_systime.h"
 
 // Init RTC hardware
 // Returns status based on @ref UTIL_TIMER_Status_t
@@ -55,22 +54,3 @@ uint32_t TIMER_IF_Convert_Tick2ms(uint32_t tick);
 // Get rtc time
 // Returns time seconds
 uint32_t TIMER_IF_GetTime(uint16_t *subSeconds);
-
-// Write seconds in backUp register
-// Note: Used to store seconds difference between RTC time and Unix time
-void TIMER_IF_BkUp_Write_Seconds(uint32_t Seconds);
-
-// Reads seconds from backUp register
-// Note: Used to store seconds difference between RTC time and Unix time
-// Returns Time in seconds
-uint32_t TIMER_IF_BkUp_Read_Seconds(void);
-
-// Writes SubSeconds in backUp register
-// Note: Used to store SubSeconds difference between RTC time and Unix time
-void TIMER_IF_BkUp_Write_SubSeconds(uint32_t SubSeconds);
-
-// Reads SubSeconds from backUp register
-// Note: Used to store SubSeconds difference between RTC time and Unix time
-// Returns Time in SubSeconds
-uint32_t TIMER_IF_BkUp_Read_SubSeconds(void);
-
