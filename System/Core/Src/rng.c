@@ -31,7 +31,7 @@ void HAL_RNG_MspInit(RNG_HandleTypeDef* rngHandle)
         // Initializes the peripherals clock
         RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
         PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RNG;
-        PeriphClkInit.RngClockSelection = RCC_RNGCLKSOURCE_PLLSAI1;
+        PeriphClkInit.RngClockSelection = RCC_RNGCLKSOURCE_MSI;
         if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
             Error_Handler();
         }

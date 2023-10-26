@@ -262,11 +262,6 @@
 
 #endif
 
-// RTC
-#define RTC_N_PREDIV_S					10
-#define RTC_PREDIV_S					((1<<RTC_N_PREDIV_S)-1)
-#define RTC_PREDIV_A                    ((1<<(15-RTC_N_PREDIV_S))-1)
-
 // Temperature sensor
 #define TEMPSENSOR_TYP_CAL1_V           (( int32_t)  760)   // Internal temperature sensor, parameter V30 (unit: mV). Refer to device datasheet for min/typ/max values.
 #define TEMPSENSOR_TYP_AVGSLOPE         (( int32_t) 2500)   // Internal temperature sensor, parameter Avg_Slope (unit: uV/DegCelsius). Refer to device datasheet for min/typ/max vlaues.
@@ -279,6 +274,11 @@
 // Raw data acquired at a temperature of 30 deg C (+-5 deg C)
 // VDDA = VREF+ = 3.0 V (+- 10 mV)
 #define STM32_VDDA_REF_VOLT				(float)(3.00)
+
+// RTC
+#define RTC_N_PREDIV_S                  10
+#define RTC_PREDIV_S                    ((1<<RTC_N_PREDIV_S)-1)
+#define RTC_PREDIV_A                    ((1<<(15-RTC_N_PREDIV_S))-1)
 
 // App's overrides to board.h, which are resolved in the "weak" folder if the app doesn't define them
 #include "app_board.h"

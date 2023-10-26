@@ -61,22 +61,26 @@ void serialInit(uint32_t taskID)
     mutexInit(&usart2Desc.rxLock, MTX_SERIAL_RX);
     mutexInit(&usart2Desc.txLock, MTX_SERIAL_TX);
 
-    // LPUART is always enabled
+    // LPUART1 (notecard request port)
     MX_UART_RxConfigure(&hlpuart1, lpuart1InterruptBuffer, sizeof(lpuart1InterruptBuffer), serialReceivedNotification);
     MX_LPUART1_UART_Init(false, 9600);
 
-    // UART1
+    // USART1 (debug port)
     MX_UART_RxConfigure(&huart1, usart1InterruptBuffer, sizeof(usart1InterruptBuffer), serialReceivedNotification);
-    if (osUsbDetected()) {
-        MX_USART1_UART_Init(115200);
-    }
-    MX_UART_RxConfigure(&huart2, usart2InterruptBuffer, sizeof(usart2InterruptBuffer), serialReceivedNotification);
-    if (osUsbDetected()) {
-        MX_USART2_UART_Init(false, 9600);
-    }
-
+    MX_USART1_UART_Init(115200);
     MX_DBG_SetOutput(&huart1, serialOutput);
 
+    // USART2 (modem port)
+    MX_UART_RxConfigure(&huart2, usart2InterruptBuffer, sizeof(usart2InterruptBuffer), serialReceivedNotification);
+    MX_USART2_UART_Init(false, 9600);
+
+// OZZIE
+    for (int i=0; i<10; i++) {
+        serialOutputString(&hlpuart1, "LPUART1\n");
+        serialOutputString(&huart1, "USART1\n");
+        serialOutputString(&huart2, "USART2\n");
+    }
+// OZZIE
 
 }
 
@@ -279,6 +283,12 @@ void serialUnlock(UART_HandleTypeDef *huart, bool reset)
 
     // Unlock
     mutexUnlock(&desc->rxLock);
+}
+
+// Output string to debug uart
+void serialOutputString(UART_HandleTypeDef *huart, char *buf)
+{
+    serialOutput(huart, (uint8_t *)buf, strlen(buf));
 }
 
 // Output to debug uart
