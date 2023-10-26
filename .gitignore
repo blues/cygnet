@@ -1,7 +1,8 @@
 
 # Cygnet builds
 System/EWARM/cygnet.dep
-System/EWARM/.ninja_deps
+System/EWARM/cygnet/.ninja_deps
+System/EWARM/cygnet/.ninja_log
 System/EWARM/cygnet/Exe/
 System/EWARM/cygnet/List/
 System/EWARM/cygnet/Obj/
