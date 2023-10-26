@@ -14,6 +14,7 @@ System/EWARM/settings/cygnet.cygnet.cspy.bat
 System/EWARM/settings/cygnet.cygnet.cspy.ps1
 System/EWARM/settings/cygnet.cygnet.general.xcl
 System/EWARM/Backup*
+System/EWARM/cspy*
 
 # auto- generated files #
 *~

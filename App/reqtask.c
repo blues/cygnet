@@ -26,8 +26,9 @@ void reqTask(void *params)
     // Loop, extracting requests from the serial port and processing them
     while (true) {
         bool didSomething = false;
-        didSomething |= processReq(&huart1);
         didSomething |= processReq(&hlpuart1);
+        didSomething |= processReq(&huart1);
+        didSomething |= processReq(&huart2);
         didSomething |= processButton();
         if (!didSomething) {
             taskTake(TASKID_REQ, ms1Day);
@@ -72,17 +73,13 @@ bool processReq(UART_HandleTypeDef *huart)
             memFree(rspJSON);
         }
         char *errstr = errString(err);
-        if (errstr[0] == '+') {
-            serialOutputLn(huart, (uint8_t *) errstr, strlen(errstr));
-        } else {
-            err = errBody(err, &rspJSON, &rspJSONLen);
-            if (!err) {
-                serialOutputLn(huart, rspJSON, rspJSONLen);
-                debugMessage("<< ");
-                debugMessageLen((char *)rspJSON, rspJSONLen);
-                debugMessage("\n");
-                memFree(rspJSON);
-            }
+        err = errBody(err, &rspJSON, &rspJSONLen);
+        if (!err) {
+            serialOutputLn(huart, rspJSON, rspJSONLen);
+            debugMessage("<< ");
+            debugMessageLen((char *)rspJSON, rspJSONLen);
+            debugMessage("\n");
+            memFree(rspJSON);
         }
     } else {
         if (rspJSON != NULL) {

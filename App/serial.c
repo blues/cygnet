@@ -104,8 +104,9 @@ void serialPoll(void)
     bool didWork = false;
     while (true) {
         bool didSomething = false;
-        didSomething |= pollPort(&huart1);
         didSomething |= pollPort(&hlpuart1);
+        didSomething |= pollPort(&huart1);
+        didSomething |= pollPort(&huart2);
         if (isrDebugOutputLen > 0) {
             didSomething = true;
             serialOutput(&huart1, NULL, 0);

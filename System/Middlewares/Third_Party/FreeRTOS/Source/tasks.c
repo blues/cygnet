@@ -2612,7 +2612,6 @@ implementations require configUSE_TICKLESS_IDLE to be set to a value other than
 		/* Correct the tick count value after a period during which the tick
 		was suppressed.  Note this does *not* call the tick hook function for
 		each stepped tick. */
-		configASSERT( ( xTickCount + xTicksToJump ) <= xNextTaskUnblockTime );
 //////// BLUES BEGIN ////////
 #if 0   // 2019-12-25 I changed to a different method of updating xTickCount
         // because it's very common that we will step the tick beyond the

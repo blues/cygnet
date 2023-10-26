@@ -120,7 +120,7 @@ void MX_UART_RxStart(UART_HandleTypeDef *huart)
             return;
         }
         rxioLPUART1.rxlen = UART_RXLEN;
-        HAL_UART_Receive_IT(huart, rxioLPUART1.iobuf, rxioUSART1.rxlen);
+        HAL_UART_Receive_IT(huart, rxioLPUART1.iobuf, rxioLPUART1.rxlen);
     }
     if (huart == &huart1) {
         if (rxioUSART1.buf == NULL) {
@@ -447,6 +447,8 @@ void MX_USART2_UART_ReInit(void)
     if (HAL_UART_Init(&huart2) != HAL_OK) {
         Error_Handler();
     }
+
+    MX_UART_RxStart(&huart2);
 
     peripherals |= PERIPHERAL_USART2;
 

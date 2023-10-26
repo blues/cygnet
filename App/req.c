@@ -28,7 +28,7 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
     // Process diagnostic commands, taking advantage of the fact that it is null-terminated
     if (reqJSON[0] != '{') {
         if (!diagAllowed) {
-            return errF("+CME ERROR: not a modem");
+            return errF("diagnostics not allowed on this port");
         }
         err_t err = diagProcess((char *)reqJSON);
         if (err) {
