@@ -141,6 +141,8 @@ serialDesc *portDesc(UART_HandleTypeDef *huart)
 {
     if (huart == &huart1) {
         return &usart1Desc;
+    } else if (huart == &huart2) {
+        return &usart2Desc;
     } else if (huart == &hlpuart1) {
         return &lpuart1Desc;
     }

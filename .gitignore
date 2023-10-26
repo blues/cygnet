@@ -1,17 +1,17 @@
 
 # Cygnet builds
-EWARM/cygnet.dep
-EWARM/.ninja_deps
-EWARM/cygnet/Exe/
-EWARM/cygnet/List/
-EWARM/cygnet/Obj/
-EWARM/settings/Project.wsdt
-EWARM/settings/cygnet.dnx
-EWARM/settings/cygnet.dbgdt
-EWARM/settings/cygnet.cygnet.cspy.bat
-EWARM/settings/cygnet.cygnet.cspy.ps1
-EWARM/settings/cygnet.cygnet.general.xcl
-EWARM/Backup*
+System/EWARM/cygnet.dep
+System/EWARM/.ninja_deps
+System/EWARM/cygnet/Exe*
+System/EWARM/cygnet/List*
+System/EWARM/cygnet/Obj*
+System/EWARM/settings/Project.wsdt
+System/EWARM/settings/cygnet.dnx
+System/EWARM/settings/cygnet.dbgdt
+System/EWARM/settings/cygnet.cygnet.cspy.bat
+System/EWARM/settings/cygnet.cygnet.cspy.ps1
+System/EWARM/settings/cygnet.cygnet.general.xcl
+System/EWARM/Backup*
 
 # auto- generated files #
 *~

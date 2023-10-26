@@ -466,12 +466,12 @@ void MX_USART2_UART_DeInit(void)
     HAL_UART_DMAStop(&huart2);
 
     // Deinit DMA interrupts
-    HAL_NVIC_DisableIRQ(USART1_RX_DMA_IRQn);
-    HAL_NVIC_DisableIRQ(USART1_TX_DMA_IRQn);
+    HAL_NVIC_DisableIRQ(USART2_RX_DMA_IRQn);
+    HAL_NVIC_DisableIRQ(USART2_TX_DMA_IRQn);
 
     // Reset peripheral
-    __HAL_RCC_USART1_FORCE_RESET();
-    __HAL_RCC_USART1_RELEASE_RESET();
+    __HAL_RCC_USART2_FORCE_RESET();
+    __HAL_RCC_USART2_RELEASE_RESET();
 
     // Disable IDLE interrupt
     __HAL_UART_DISABLE_IT(&huart2, UART_IT_IDLE);

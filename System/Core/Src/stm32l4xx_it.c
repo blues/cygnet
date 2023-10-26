@@ -83,11 +83,13 @@ void TIM2_IRQHandler(void)
     HAL_TIM_IRQHandler(&htim2);
 }
 
+// RTC alarm
 void RTC_Alarm_IRQHandler(void)
 {
     HAL_RTC_AlarmIRQHandler(&hrtc);
 }
 
+// RTC wakeup
 void RTC_WKUP_IRQHandler(void)
 {
     HAL_RTCEx_WakeUpTimerIRQHandler(&hrtc);

@@ -209,16 +209,6 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
     UTIL_TIMER_IRQ_MAP_PROCESS();
 }
 
-// Event callback
-void HAL_RTCEx_SSRUEventCallback(RTC_HandleTypeDef *hrtc)
-{
-    // called every 48 days with 1024 ticks per seconds
-    TIMER_IF_DBG_PRINTF(">>Handler SSRUnderflow at %d\n\r", GetTimerTicks());
-    // Increment MSBticks
-    uint32_t MSB_ticks = TIMER_IF_BkUp_Read_MSBticks();
-    TIMER_IF_BkUp_Write_MSBticks(MSB_ticks + 1);
-}
-
 // Get current time
 uint32_t TIMER_IF_GetTime(uint16_t *mSeconds)
 {

@@ -25,9 +25,6 @@
  * 1 tab == 4 spaces!
  */
 
-// BLUES: malloc the heap
-#define MALLOC_HEAP             true
-
 /*
  * A sample implementation of pvPortMalloc() and vPortFree() that combines
  * (coalescences) adjacent memory blocks as they are freed, and in so doing
@@ -37,6 +34,7 @@
  * memory management pages of http://www.FreeRTOS.org for more information.
  */
 #include <stdlib.h>
+#include <stdbool.h>
 
 /* Defining MPU_WRAPPERS_INCLUDED_FROM_API_FILE prevents task.h from redefining
 all the API functions to use the MPU wrappers.  That should only be done when
@@ -45,6 +43,9 @@ task.h is included from an application file. */
 
 #include "FreeRTOS.h"
 #include "task.h"
+
+// BLUES: malloc the heap
+#define MALLOC_HEAP             true
 
 #undef MPU_WRAPPERS_INCLUDED_FROM_API_FILE
 

@@ -40,7 +40,11 @@ void MX_RTC_Reset(void)
 // RTC init function
 void MX_RTC_Init(void)
 {
-    RTC_AlarmTypeDef sAlarm = {0};
+
+    // Make sure that the RTC is fully uninitialized, or it will not initialize properly
+    // because of a call to __HAL_RTC_IS_CALENDAR_INITIALIZED()
+    hrtc.Instance = RTC;
+    HAL_RTC_DeInit(&hrtc);
 
     // Initialize RTC
     hrtc.Instance = RTC;
@@ -56,6 +60,7 @@ void MX_RTC_Init(void)
     }
 
     // Enable the Alarm A
+    RTC_AlarmTypeDef sAlarm = {0};
     sAlarm.AlarmTime.SubSeconds = 0x0;
     sAlarm.AlarmMask = RTC_ALARMMASK_NONE;
     sAlarm.Alarm = RTC_ALARM_A;

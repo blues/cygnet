@@ -26,7 +26,8 @@ define region SRAM1_region    = mem:[from __region_SRAM1_start__   to __region_S
 define region SRAM2_region    = mem:[from __region_SRAM2_start__   to __region_SRAM2_end__];
 
 define block CSTACK    with alignment = 8, size = __ICFEDIT_size_cstack__   { };
-define block HEAP      with alignment = 8, size = __ICFEDIT_size_heap__     { };
+define block HEAP      with minimum size = 4K, expanding size, alignment = 8  { };
+/* define block HEAP      with alignment = 8, size = __ICFEDIT_size_heap__     { }; */
 
 initialize by copy { readwrite };
 do not initialize  { section .noinit };
