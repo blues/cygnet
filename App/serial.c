@@ -74,14 +74,6 @@ void serialInit(uint32_t taskID)
     MX_UART_RxConfigure(&huart2, usart2InterruptBuffer, sizeof(usart2InterruptBuffer), serialReceivedNotification);
     MX_USART2_UART_Init(false, 9600);
 
-// OZZIE
-    for (int i=0; i<10; i++) {
-        serialOutputString(&hlpuart1, "LPUART1\n");
-        serialOutputString(&huart1, "USART1\n");
-        serialOutputString(&huart2, "USART2\n");
-    }
-// OZZIE
-
 }
 
 // Serial poller
@@ -354,3 +346,27 @@ void serialOutputLn(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen)
     mutexUnlock(&desc->txLock);
 }
 
+// Output an object to the specified port, and free it, also outputting to the debug console if appropriate
+void serialOutputObject(UART_HandleTypeDef *huart, J *msg)
+{
+    if (msg == NULL) {
+        return;
+    }
+    ledBusy(true);
+    char *json = JPrintUnformattedOmitEmpty(msg);
+    JDelete(msg);
+    if (huart != &huart1) {
+        debugMessage("<< ");
+        debugMessage(json);
+        debugMessage("\n");
+    }
+    serialOutputLn(huart, (uint8_t *)json, strlen(json));
+    memFree(json);
+    ledBusy(false);
+}
+
+// Output an object to the specified port, and free it, also outputting to the debug console if appropriate
+void serialOutputObjectToNotecard(J *msg)
+{
+    serialOutputObject(&hlpuart1, msg);
+}

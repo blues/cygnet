@@ -62,6 +62,9 @@ void PWR_EnterStopMode(void)
     if (HAL_GPIO_ReadPin(USB_DETECT_GPIO_Port, USB_DETECT_Pin) == GPIO_PIN_SET) {
         stayAwake = true;
     }
+#else
+    // We can't know what the right strategy is if we can't sense USB
+    stayAwake = true;
 #endif
 
     // If any peripherals are left initialized other than USART1, don't stop

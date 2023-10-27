@@ -64,28 +64,17 @@ bool processReq(UART_HandleTypeDef *huart)
     ledBusy(true);
 
     // Process the request
-    uint8_t *rspJSON = NULL;
-    uint32_t rspJSONLen;
-    err_t err = reqProcess(huart == &huart1, reqJSON, reqJSONLen, diagAllowed, &rspJSON, &rspJSONLen);
+    J *rsp;
+    err_t err = reqProcess(huart == &huart1, reqJSON, reqJSONLen, diagAllowed, &rsp);
     serialUnlock(huart, true);
     if (err) {
-        if (rspJSON != NULL) {
-            memFree(rspJSON);
-        }
-        char *errstr = errString(err);
-        err = errBody(err, &rspJSON, &rspJSONLen);
-        if (!err) {
-            serialOutputLn(huart, rspJSON, rspJSONLen);
-            debugMessage("<< ");
-            debugMessageLen((char *)rspJSON, rspJSONLen);
-            debugMessage("\n");
-            memFree(rspJSON);
-        }
+        uint8_t *rspJSON = NULL;
+        uint32_t rspJSONLen = 0;
+        errBody(err, &rspJSON, &rspJSONLen);
+        serialOutputLn(huart, rspJSON, rspJSONLen);
+        memFree(rspJSON);
     } else {
-        if (rspJSON != NULL) {
-            serialOutputLn(huart, rspJSON, rspJSONLen);
-            memFree(rspJSON);
-        }
+        serialOutputObject(huart, rsp);
     }
 
     // Busy LED

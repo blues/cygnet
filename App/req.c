@@ -6,7 +6,7 @@
 bool isResetKey(const char *key);
 
 // Process a request.  Note, it is guaranteed that reqJSON[reqJSONLen] == '\0'
-err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool diagAllowed, uint8_t **rspJSON, uint32_t *rspJSONLen)
+err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool diagAllowed, J **retRsp)
 {
     err_t err = errNone;
 
@@ -20,9 +20,8 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
 #endif
 
     // Preset return values in case of failure or 'cmd'
-    if (rspJSON != NULL) {
-        *rspJSON = NULL;
-        *rspJSONLen = 0;
+    if (retRsp != NULL) {
+        *retRsp = NULL;
     }
 
     // Process diagnostic commands, taking advantage of the fact that it is null-terminated
@@ -44,15 +43,15 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
     if (req == NULL) {
         // If this is a 'cmd', we need to suppress error messages
         // sent back to the host else we'll potentially get out of sync.
-        if (strstr((char *)reqJSON, "\"cmd\":") != NULL) {
+        if (strstr((char *)reqJSON, "\"" FieldCmd "\":") != NULL) {
             return errNone;
         }
         return errF("JSON object expected " ERR_IO);
     }
     bool noReplyRequired = false;
-    char *reqtype = JGetString(req, "req");
+    char *reqtype = JGetString(req, FieldReq);
     if (reqtype[0] == '\0') {
-        reqtype = JGetString(req, "cmd");
+        reqtype = JGetString(req, FieldCmd);
         if (reqtype[0] == '\0') {
             JDelete(req);
             return errF("no request type specified");
@@ -66,9 +65,9 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
     }
 
     // Copy ID field from request to response
-    uint32_t reqid = (uint32_t) JGetNumber(req, "id");
+    uint32_t reqid = (uint32_t) JGetNumber(req, FieldID);
     if (reqid != 0) {
-        JAddNumberToObject(rsp, "id", reqid);
+        JAddNumberToObject(rsp, FieldID, reqid);
     }
 
     // Don't allow debug output that could interfere with JSON requests
@@ -88,10 +87,20 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
     // Process requests
     for (;;) {
 
+        // Simple echo, for testing
         if (strEQL(reqtype, ReqEcho)) {
             J *temp = rsp;
             rsp = req;
             req = temp;
+            break;
+        }
+
+        if (strEQL(reqtype, ReqHello)) {
+            monitorReceivedHello();
+            uint32_t time = JGetInt(req, "time");
+            if (time != 0) {
+                timeSet(time);
+            }
             break;
         }
 
@@ -123,25 +132,15 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
         return err;
     }
 
-    // Return successful response
-    if (rspJSON == NULL) {
-        JDelete(rsp);
-    } else {
-        char *json = JPrintUnformattedOmitEmpty(rsp);
-        JDelete(rsp);
-        *rspJSON = (uint8_t *) json;
-        *rspJSONLen = strlen(json);
-        if (!debugPort) {
-            debugMessage("<< ");
-            debugMessage(json);
-            debugMessage("\n");
-        }
-    }
+    // Mem tracing
 #ifdef DEBUG_MEM
     if (!debugPort) {
         debugf("req: mem allocated count:%ld (+%ld) free:%ld (+%ld)\n", (long) memAllocatedObjects(), (long)memAllocatedObjects()-beginAO, (long) memCurrentlyFree(), (long)memCurrentlyFree()-beginFR);
     }
 #endif
+
+    // Done
+    *retRsp = rsp;
     return errNone;
 
 }

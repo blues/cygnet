@@ -14,7 +14,7 @@
 
 "--drv_communication_log=C:\Users\rozzie\dev\cygnet\System\EWARM\cspycomm.log" 
 
-"--drv_communication=USB0" 
+"--drv_communication=USB1" 
 
 "--drv_interface_speed=auto" 
 

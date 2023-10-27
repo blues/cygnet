@@ -5,6 +5,7 @@
 #include "queue.h"
 #include "stm32_lpm.h"
 #include "timer_if.h"
+#include "rtc.h"
 #include "utilities_def.h"
 
 // Main task
@@ -55,6 +56,9 @@ void mainTask(void *params)
 
     // Create the serial request processing task
     xTaskCreate(reqTask, TASKNAME_REQ, STACKWORDS(TASKSTACK_REQ), NULL, TASKPRI_REQ, NULL);
+
+    // Create the monitor task
+    xTaskCreate(monTask, TASKNAME_MON, STACKWORDS(TASKSTACK_MON), NULL, TASKPRI_MON, NULL);
 
     // Poll, moving serial data from interrupt buffers to app buffers
     for (;;) {

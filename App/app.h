@@ -2,6 +2,8 @@
 #include "main.h"
 #include "gmutex.h"
 #include "json.h"
+#include "product.h"
+#include "request.h"
 
 #pragma once
 
@@ -15,10 +17,16 @@
 #define TASKID_REQ                  1           // Request handler
 #define TASKNAME_REQ                "request"
 #define TASKLETTER_REQ              'R'
-#define TASKSTACK_REQ               3500
+#define TASKSTACK_REQ               2500
 #define TASKPRI_REQ                 ( configMAX_PRIORITIES - 2 )        // Normal
 
-#define TASKID_NUM_TASKS            2   // Total
+#define TASKID_MON                  2           // Monitor/poller
+#define TASKNAME_MON                "monitor"
+#define TASKLETTER_MON              'M'
+#define TASKSTACK_MON               2500
+#define TASKPRI_MON                 ( configMAX_PRIORITIES - 2 )        // Normal
+
+#define TASKID_NUM_TASKS            3   // Total
 #define TASKID_UNKNOWN              0xFFFF
 #define STACKWORDS(x)               ((x) / sizeof(StackType_t))
 
@@ -31,6 +39,8 @@ void serialSetReqTaskID(uint32_t taskID);
 void serialOutputString(UART_HandleTypeDef *huart, char *buf);
 void serialOutput(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen);
 void serialOutputLn(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen);
+void serialOutputObject(UART_HandleTypeDef *huart, J *msg);
+void serialOutputObjectToNotecard(J *msg);
 
 // maintask.c
 void mainTask(void *params);
@@ -50,10 +60,17 @@ void reqTask(void *params);
 void reqButtonPressedISR(void);
 
 // req.c
-err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool diagAllowed, uint8_t **rspJSON, uint32_t *rspJSONLen);
+err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool diagAllowed, J **retRsp);
 
 // diag.c
 err_t diagProcess(char *diagCommand);
+
+// montask.c
+void monTask(void *params);
+
+// monitor.c
+uint32_t monitor(void);
+void monitorReceivedHello(void);
 
 // Errors
 #define ERR_IO "{io}"

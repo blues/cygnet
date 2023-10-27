@@ -2,6 +2,9 @@
 // Use of this source code is governed by licenses granted by the
 // copyright holder including that found in the LICENSE file.
 
+// Allow overrides, but by defining them up-front rather than later
+#include "app_product.h"
+
 // Product version
 #ifndef PRODUCT_MANUFACTURER
 #error "In your IDE please define PRODUCT_MANUFACTURER as something like 'Acme Inc'"
