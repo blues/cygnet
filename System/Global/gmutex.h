@@ -14,15 +14,16 @@
 // Mutex definitions, low-order to high-order in order of layering - for deadlock detection.
 // These values can be changed as necessary when adding new ones, however be very careful because
 // this does define the one and only nested layering of semaphores necessary to prevent deadlock.
-#define MTX_MTX         0x0000000000000001
-#define MTX_TIME        0x0000000000000002
-#define MTX_EVENT       0x0000000000000004
-#define MTX_QUEUE       0x0000000000000008
-#define MTX_RAND        0x0000000000000010
-#define MTX_ERR         0x0000000000000020
-#define MTX_SERIAL_TX   0x0000000000000040
-                        // Anything needed when processing a request goe here
-#define MTX_SERIAL_RX   0x0000000000000080
+// Note that we assign these with 255 possible mutexes that may be inserted "between" them
+// so that apps using app_mutex.h may insert values without editing this file.
+#define MTX_MTX         0x0000000000000100
+#define MTX_TIME        0x0000000000000200
+#define MTX_EVENT       0x0000000000000400
+#define MTX_QUEUE       0x0000000000000800
+#define MTX_RAND        0x0000000000001000
+#define MTX_ERR         0x0000000000002000
+#define MTX_SERIAL_TX   0x0000000000004000
+#define MTX_SERIAL_RX   0x0000000000008000
 typedef uint64_t mtxtype_t;
 
 // mutex.c
@@ -86,3 +87,6 @@ void taskQueueWake(taskQueue *queue);
 void taskQueueFree(taskQueue *queue);
 bool taskQueuePut(taskQueue *queue, void *data, uint32_t waitMs);
 bool taskQueueGet(taskQueue *queue, void *data, uint32_t waitMs);
+
+// App's overrides to gmutex.h, which are resolved in the "weak" folder if the app doesn't define them
+#include "app_mutex.h"
