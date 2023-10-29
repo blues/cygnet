@@ -49,9 +49,13 @@ void MX_RTC_Init(void)
 {
 
     // Make sure that the RTC is fully uninitialized, or it will not initialize properly
-    // because of a call to __HAL_RTC_IS_CALENDAR_INITIALIZED()
+    // because of a call to __HAL_RTC_IS_CALENDAR_INITIALIZED().  Note that we also
+    // leave hrtc in an uninitialized (ready) state, which is important because
+    // the DeInit could fail and leave it in a TIMEOUT state which would block the
+    // subsequent Init().
     hrtc.Instance = RTC;
     HAL_RTC_DeInit(&hrtc);
+    memset(&hrtc, 0, sizeof(hrtc));
 
     // Initialize RTC
     hrtc.Instance = RTC;

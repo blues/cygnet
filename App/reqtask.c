@@ -68,11 +68,14 @@ bool processReq(UART_HandleTypeDef *huart)
     err_t err = reqProcess(huart == &huart1, reqJSON, reqJSONLen, diagAllowed, &rsp);
     serialUnlock(huart, true);
     if (err) {
-        uint8_t *rspJSON = NULL;
-        uint32_t rspJSONLen = 0;
-        errBody(err, &rspJSON, &rspJSONLen);
-        serialOutputLn(huart, rspJSON, rspJSONLen);
-        memFree(rspJSON);
+        char *reqstr = "\"req\":\"";
+        if (memmem(reqJSON, reqJSONLen, reqstr, strlen(reqstr)) != NULL) {
+            uint8_t *rspJSON = NULL;
+            uint32_t rspJSONLen = 0;
+            errBody(err, &rspJSON, &rspJSONLen);
+            serialOutputLn(huart, rspJSON, rspJSONLen);
+            memFree(rspJSON);
+        }
     } else {
         serialOutputObject(huart, rsp);
     }
