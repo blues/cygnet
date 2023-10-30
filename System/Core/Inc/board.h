@@ -52,10 +52,10 @@
 #define	USER_BTN_STATE_RELEASED			GPIO_PIN_SET
 #define	USER_BTN_IRQn                   EXTI3_IRQn
 #else
-#define	LED_BUILTIN_Pin					GPIO_PIN_13		// PD13 (LD4)
-#define	LED_BUILTIN_GPIO_Port			GPIOD
-#define	USER_BTN_Pin					GPIO_PIN_13		// PB13 (B1 USER)
-#define	USER_BTN_GPIO_Port				GPIOB
+#define	LED_BUILTIN_Pin					GPIO_PIN_13		// PB13 (LD4)
+#define	LED_BUILTIN_GPIO_Port			GPIOB
+#define	USER_BTN_Pin					GPIO_PIN_13		// PC13 (B1 USER)
+#define	USER_BTN_GPIO_Port				GPIOC
 #define	USER_BTN_IRQn                   EXTI15_10_IRQn
 #define	USER_BTN_STATE_PUSHED			GPIO_PIN_SET
 #define	USER_BTN_STATE_RELEASED			GPIO_PIN_RESET

@@ -108,6 +108,10 @@ void appInitGPIO(void)
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 
+    GPIO_InitStruct.Pin = LED_BUSY_Pin;
+    HAL_GPIO_Init(LED_BUSY_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(LED_BUSY_GPIO_Port, LED_BUSY_Pin, GPIO_PIN_RESET);
+
     GPIO_InitStruct.Pin = MODEM_POWER_Pin;
     HAL_GPIO_Init(MODEM_POWER_GPIO_Port, &GPIO_InitStruct);
     HAL_GPIO_WritePin(MODEM_POWER_GPIO_Port, MODEM_POWER_Pin, GPIO_PIN_RESET);
