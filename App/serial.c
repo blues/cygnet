@@ -366,7 +366,21 @@ void serialOutputObject(UART_HandleTypeDef *huart, J *msg)
 }
 
 // Output an object to the specified port, and free it, also outputting to the debug console if appropriate
-void serialOutputObjectToNotecard(J *msg)
+void serialSendMessageToNotecard(J *msg)
 {
     serialOutputObject(&hlpuart1, msg);
+}
+
+// Create an outgoing message object intended to be sent to the notecard
+J *serialCreateMessage(const char *msgType, J *body, uint8_t *payload, uint32_t payloadLen)
+{
+    J *msg = JCreateObject();
+    JAddStringToObject(msg, "cmd", "card.ntn");
+    JDeleteItemFromObject(body, FieldMsgType);
+    JAddStringToObject(body, FieldMsgType, MsgHello);
+    JAddItemToObject(msg, "body", body);
+    if (payload != NULL && payloadLen != 0) {
+        JAddBinaryToObject(msg, "payload", payload, payloadLen);
+    }
+    return msg;
 }

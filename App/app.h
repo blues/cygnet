@@ -40,7 +40,8 @@ void serialOutputString(UART_HandleTypeDef *huart, char *buf);
 void serialOutput(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen);
 void serialOutputLn(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen);
 void serialOutputObject(UART_HandleTypeDef *huart, J *msg);
-void serialOutputObjectToNotecard(J *msg);
+void serialSendMessageToNotecard(J *msg);
+J *serialCreateMessage(const char *msgType, J *body, uint8_t *payload, uint32_t payloadLen);
 
 // maintask.c
 void mainTask(void *params);

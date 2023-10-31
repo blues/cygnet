@@ -43,21 +43,29 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
     if (req == NULL) {
         // If this is a 'cmd', we need to suppress error messages
         // sent back to the host else we'll potentially get out of sync.
-        if (strstr((char *)reqJSON, "\"" FieldCmd "\":") != NULL) {
+        if (strstr((char *)reqJSON, "\"cmd\":") != NULL) {
             return errNone;
         }
         return errF("JSON object expected " ERR_IO);
     }
+
+    // A "req" implies "request/response".  Otherwise, it is simply a unidirectional
+    // message whose type is accepted in either a "cmd" or "type" field.
     bool noReplyRequired = false;
-    char *reqtype = JGetString(req, FieldReq);
+    char *reqtype = JGetString(req, "req");
     if (reqtype[0] == '\0') {
-        reqtype = JGetString(req, FieldCmd);
+        noReplyRequired = true;
+        reqtype = JGetString(req, "cmd");
+        if (reqtype[0] == '\0') {
+            reqtype = JGetString(req, "type");
+        }
         if (reqtype[0] == '\0') {
             JDelete(req);
             return errF("no request type specified");
         }
-        noReplyRequired = true;
     }
+
+    // Prepare for the response
     J *rsp = JCreateObject();
     if (rsp == NULL) {
         JDelete(req);
@@ -87,15 +95,7 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
     // Process requests
     for (;;) {
 
-        // Simple echo, for testing
-        if (strEQL(reqtype, ReqEcho)) {
-            J *temp = rsp;
-            rsp = req;
-            req = temp;
-            break;
-        }
-
-        if (strEQL(reqtype, ReqHello)) {
+        if (strEQL(reqtype, MsgHello)) {
             monitorReceivedHello();
             uint32_t time = JGetInt(req, "time");
             if (time != 0) {

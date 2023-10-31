@@ -1,12 +1,9 @@
 
 #pragma once
 
-#define FieldReq        "req"
-#define FieldRsp        "rsp"
-#define FieldCmd        "cmd"
+#define FieldMsgType    "type"
 #define FieldErr        "err"
 #define FieldID         "id"
 
-#define ReqEcho         "echo"
-#define ReqHello        "hello"
+#define MsgHello        "hello"
 

@@ -16,19 +16,14 @@ uint32_t monitor(void)
         if (timerMs() >= nextHelloDueMs) {
 
             J *body = JCreateObject();
-            JAddStringToObject(body, FieldReq, ReqHello);
-            JAddStringToObject(body, "id", STARNOTE_SCHEME ":" "<IMSI-GOES-HERE>");
+            JAddStringToObject(body, "id", STARNOTE_SCHEME "<IMSI-GOES-HERE>");
             JAddStringToObject(body, "modem", "<MODEM-FIRMWARE-GOES-HERE>");
             J *firmware = JParse(osBuildConfig());
             if (firmware != NULL) {
                 JAddItemToObject(body, "firmware", firmware);
             }
 
-            J *msg = JCreateObject();
-            JAddStringToObject(msg, "cmd", "card.ntn");
-            JAddItemToObject(msg, "body", body);
-
-            serialOutputObjectToNotecard(msg);
+            serialSendMessageToNotecard(serialCreateMessage(MsgHello, body, NULL, 0));
             nextHelloDueMs = timerMs() + (SEND_HELLO_SECS * ms1Sec);
         }
         returnInMs = GMIN(returnInMs, nextHelloDueMs - timerMs());
