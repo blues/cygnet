@@ -54,9 +54,13 @@ bool processReq(UART_HandleTypeDef *huart)
     if (reqJSONLen == 0) {
         serialUnlock(huart, true);
         serialOutputLn(huart, NULL, 0);
-        if (reqJSON != NULL) {
-            memFree(reqJSON);
-        }
+        return true;
+    }
+
+    // Process modem
+    if (huart == &huart2) {
+        debugR("modem: \"%.*s\"\n", reqJSONLen, reqJSON);
+        serialUnlock(huart, true);
         return true;
     }
 

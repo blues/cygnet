@@ -72,7 +72,11 @@ void serialInit(uint32_t taskID)
 
     // USART2 (modem port)
     MX_UART_RxConfigure(&huart2, usart2InterruptBuffer, sizeof(usart2InterruptBuffer), serialReceivedNotification);
-    MX_USART2_UART_Init(false, 9600);
+    MX_USART2_UART_Init(false, 115200);
+    for (int i=0; i<5; i++) {
+        serialSendLineToModem("AT");
+        timerMsSleep(500);
+    }
 
 }
 
@@ -383,4 +387,10 @@ J *serialCreateMessage(const char *msgType, J *body, uint8_t *payload, uint32_t 
         JAddBinaryToObject(msg, "payload", payload, payloadLen);
     }
     return msg;
+}
+
+// Output a line to the modem
+void serialSendLineToModem(char *text)
+{
+    serialOutputLn(&huart2, (uint8_t *)text, strlen(text));
 }
