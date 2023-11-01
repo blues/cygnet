@@ -275,7 +275,7 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
 
         // I2C1 GPIO Configuration
         GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Pull = GPIO_PULLUP;
         GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
         GPIO_InitStruct.Alternate = I2C1_AF;
         GPIO_InitStruct.Pin = GPIO_SCL_Pin;
@@ -305,7 +305,7 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
 
         // I2C3 GPIO Configuration
         GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Pull = GPIO_PULLUP;
         GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
         GPIO_InitStruct.Alternate = I2C3_AF;
         GPIO_InitStruct.Pin = I2C3_A5_SCL_Pin;

@@ -14,6 +14,7 @@ typedef struct {
     bool swallowNextNewline;
     mutex rxLock;
     mutex txLock;
+    int taskId;
 } serialDesc;
 STATIC serialDesc usart1Desc = {0};
 STATIC serialDesc usart2Desc = {0};
@@ -31,7 +32,6 @@ STATIC int64_t lastTimeDidWorkMs = 0L;
 
 // Task ID
 STATIC uint32_t serialTaskID = TASKID_UNKNOWN;
-STATIC uint32_t reqTaskID = TASKID_UNKNOWN;
 
 // Reset the USB appropriate
 STATIC bool resetUSB = false;
@@ -61,6 +61,11 @@ void serialInit(uint32_t taskID)
     mutexInit(&usart2Desc.rxLock, MTX_SERIAL_RX);
     mutexInit(&usart2Desc.txLock, MTX_SERIAL_TX);
 
+    // Set the tasks of the handlers
+    lpuart1Desc.taskId = TASKID_REQ;
+    usart1Desc.taskId = TASKID_REQ;
+    usart2Desc.taskId = TASKID_MODEM;
+
     // LPUART1 (notecard request port)
     MX_UART_RxConfigure(&hlpuart1, lpuart1InterruptBuffer, sizeof(lpuart1InterruptBuffer), serialReceivedNotification);
     MX_LPUART1_UART_Init(false, 9600);
@@ -73,10 +78,6 @@ void serialInit(uint32_t taskID)
     // USART2 (modem port)
     MX_UART_RxConfigure(&huart2, usart2InterruptBuffer, sizeof(usart2InterruptBuffer), serialReceivedNotification);
     MX_USART2_UART_Init(false, 115200);
-    for (int i=0; i<5; i++) {
-        serialSendLineToModem("AT");
-        timerMsSleep(500);
-    }
 
 }
 
@@ -104,7 +105,6 @@ void serialPoll(void)
         didSomething |= pollPort(&huart1);
         didSomething |= pollPort(&huart2);
         if (isrDebugOutputLen > 0) {
-            didSomething = true;
             serialOutput(&huart1, NULL, 0);
         }
         didWork |= didSomething;
@@ -156,6 +156,11 @@ bool pollPort(UART_HandleTypeDef *huart)
         return false;
     }
 
+    // Exit if we're already processing something for this task
+    if (mutexIsLocked(&desc->rxLock)) {
+        return false;
+    }
+
     // Exit immediately if nothing available
     if (!HAL_UART_RxAvailable(huart)) {
         return false;
@@ -169,9 +174,9 @@ bool pollPort(UART_HandleTypeDef *huart)
     mutexLock(&desc->rxLock);
     if (desc->bytesTerminated) {
         mutexUnlock(&desc->rxLock);
-        taskGive(reqTaskID);
+        taskGive(desc->taskId);
         timerMsSleep(50);
-        return true;
+        return false;
     }
 
     // Get the databyte
@@ -196,9 +201,9 @@ bool pollPort(UART_HandleTypeDef *huart)
     // Awaken request processing task if a control character, because it's a waste to do otherwise
     if (databyte == '\r' || databyte == '\n') {
         desc->swallowNextNewline = (databyte == '\r');
-        if (reqTaskID != TASKID_UNKNOWN) {
+        if (desc->taskId != TASKID_UNKNOWN) {
             desc->bytesTerminated = true;
-            taskGive(reqTaskID);
+            taskGive(desc->taskId);
         }
         mutexUnlock(&desc->rxLock);
         return true;
@@ -218,12 +223,6 @@ bool pollPort(UART_HandleTypeDef *huart)
     // Done
     mutexUnlock(&desc->rxLock);
     return true;
-}
-
-// Set the task ID of the request task
-void serialSetReqTaskID(uint32_t taskID)
-{
-    reqTaskID = taskID;
 }
 
 // See if there's data, and lock the receive buffer if so
@@ -325,24 +324,42 @@ void serialOutput(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen)
 // Output to the specified port with the Request Terminator (\r\n)
 void serialOutputLn(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen)
 {
+
+    // Change terminator based upon target
+    uint8_t *terminator;
+    uint32_t terminatorLen;
+    if (huart == &hlpuart1) {
+        terminator = "\n";
+        terminatorLen = 1;
+    } else if (huart == &huart1) {
+        terminator = "\r\n";
+        terminatorLen = 2;
+    } else if (huart == &huart2) {
+        terminator = "\r";
+        terminatorLen = 1;
+    } else {
+        return;
+    }
+
     serialDesc *desc = portDesc(huart);
     if (desc == NULL) {
         return;
     }
     mutexLock(&desc->txLock);
     if (buflen == 0) {
-        MX_UART_Transmit(huart, "\r\n", 2, 500);
+        MX_UART_Transmit(huart, terminator, terminatorLen, 500);
     } else {
         // We prefer to send it in a single chunk because it eliminates
         // an I2C poll iteration for the client.
         uint8_t *temp;
-        err_t err = memDup(buf, buflen+2, &temp);
+        err_t err = memDup(buf, buflen+terminatorLen, &temp);
         if (err) {
             MX_UART_Transmit(huart, buf, buflen, 500);
-            MX_UART_Transmit(huart, "\r\n", 2, 500);
+            MX_UART_Transmit(huart, terminator, terminatorLen, 500);
         } else {
-            temp[buflen++] = '\r';
-            temp[buflen++] = '\n';
+            for (int i=0; i<terminatorLen; i++) {
+                temp[buflen++] = terminator[i];
+            }
             MX_UART_Transmit(huart, temp, buflen, 500);
             memFree(temp);
         }

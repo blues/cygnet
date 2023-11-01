@@ -8,10 +8,10 @@
 #include "main.h"
 
 #define MUTEX_HELD_DURATION_WARNING_MS      500
-#define MUTEX_NEEDED_DURATION_WARNING_MS    200
+#define MUTEX_NEEDED_DURATION_WARNING_MS    100
 #define SHOW_MUTEX_DURATION_WARNINGS        false
 #define SHOW_MUTEX_LOCKS                    false
-#define debugMessage                        MX_USART1_Message
+#define debugMessage(x)                     MX_DBG(x, strlen(x))
 
 // Note that we cannot use these in here because we'd go recursive
 #undef debugf
@@ -107,7 +107,7 @@ void mutexLock(mutex *m)
     while (!xSemaphoreTake(m->state.handle, MUTEX_NEEDED_DURATION_WARNING_MS)) {
         char reason[128];
         uint32_t secsHeld = (uint32_t) (timerMs() - timerBegan)/1000;
-        snprintf(reason, sizeof(reason), "$$$$ mutex needed by %s:%u is being held for %us by %s:%u\n", debugFileName(filename), (unsigned)lineno, secsHeld, debugFileName(m->state.filename), m->state.lineno);
+        snprintf(reason, sizeof(reason), "$$$$ mutex needed by %s:%u (%d) is being held for %us by %s:%u (%d)\n", debugFileName(filename), (unsigned)lineno, taskID(), secsHeld, debugFileName(m->state.filename), m->state.lineno, m->state.lockedTask);
         debugMessage(reason);
     }
 #else

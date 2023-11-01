@@ -57,6 +57,9 @@ void mainTask(void *params)
     // Create the serial request processing task
     xTaskCreate(reqTask, TASKNAME_REQ, STACKWORDS(TASKSTACK_REQ), NULL, TASKPRI_REQ, NULL);
 
+    // Create the serial modem processing task
+    xTaskCreate(modemTask, TASKNAME_MODEM, STACKWORDS(TASKSTACK_MODEM), NULL, TASKPRI_MODEM, NULL);
+
     // Create the monitor task
     xTaskCreate(monTask, TASKNAME_MON, STACKWORDS(TASKSTACK_MON), NULL, TASKPRI_MON, NULL);
 

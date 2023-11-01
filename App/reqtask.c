@@ -20,15 +20,11 @@ void reqTask(void *params)
     // Init task
     taskRegister(TASKID_REQ, TASKNAME_REQ, TASKLETTER_REQ, TASKSTACK_REQ);
 
-    // Tell the serial subsystem what our taskID is, so it can awaken us
-    serialSetReqTaskID(TASKID_REQ);
-
     // Loop, extracting requests from the serial port and processing them
     while (true) {
         bool didSomething = false;
         didSomething |= processReq(&hlpuart1);
         didSomething |= processReq(&huart1);
-        didSomething |= processReq(&huart2);
         didSomething |= processButton();
         if (!didSomething) {
             taskTake(TASKID_REQ, ms1Day);
@@ -54,13 +50,6 @@ bool processReq(UART_HandleTypeDef *huart)
     if (reqJSONLen == 0) {
         serialUnlock(huart, true);
         serialOutputLn(huart, NULL, 0);
-        return true;
-    }
-
-    // Process modem
-    if (huart == &huart2) {
-        debugR("modem: \"%.*s\"\n", reqJSONLen, reqJSON);
-        serialUnlock(huart, true);
         return true;
     }
 

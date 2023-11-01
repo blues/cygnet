@@ -1098,6 +1098,9 @@
             <name>$PROJ_DIR$\..\..\App\maintask.c</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\..\App\modem.c</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\..\App\monitor.c</name>
         </file>
         <file>

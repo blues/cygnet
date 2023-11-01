@@ -504,7 +504,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 
         // GPIO Configuration
         GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Pull = GPIO_PULLUP;
         GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
         GPIO_InitStruct.Alternate = LPUART1_AF;
         if (!lpuart1UsingAlternatePins) {
@@ -540,7 +540,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 
         // GPIO Configuration
         GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Pull = GPIO_PULLUP;
         GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
         GPIO_InitStruct.Alternate = USART1_AF;
         GPIO_InitStruct.Pin = USART1_TX_Pin;
@@ -606,7 +606,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
         // GPIO Configuration
         if (!usart2UsingRS485) {
             GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-            GPIO_InitStruct.Pull = GPIO_NOPULL;
+            GPIO_InitStruct.Pull = GPIO_PULLUP;
             GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
             GPIO_InitStruct.Alternate = USART2_AF;
             GPIO_InitStruct.Pin = USART2_A2_TX_Pin;
@@ -615,7 +615,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
             HAL_GPIO_Init(USART2_A3_RX_GPIO_Port, &GPIO_InitStruct);
         } else {
             GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-            GPIO_InitStruct.Pull = GPIO_NOPULL;
+            GPIO_InitStruct.Pull = GPIO_PULLUP;
             GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
             GPIO_InitStruct.Alternate = RS485_AF;
             GPIO_InitStruct.Pin = RS485_A2_TX_Pin;

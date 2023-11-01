@@ -9,6 +9,8 @@ typedef enum {
     CMD_RESTART,
     CMD_POWER,
     CMD_MEM,
+    CMD_M,
+    CMD_TEST,
     CMD_BOOTLOADER_DIRECT,
     CMD_UNRECOGNIZED
 } allCommands;
@@ -21,6 +23,8 @@ typedef struct {
 STATIC const cmd_def cmdText[] = {
     {"restart", CMD_RESTART},
     {"mem", CMD_MEM},
+    {"m", CMD_M},
+    {"test", CMD_TEST},
     {"power", CMD_POWER},
     {"bootloader", CMD_BOOTLOADER_DIRECT},
     {"zxc", CMD_BOOTLOADER_DIRECT},
@@ -131,6 +135,25 @@ err_t diagProcess(char *diagCommand)
         char buf[100];
         MX_ActivePeripherals(buf, sizeof(buf));
         debugf("POWER: %s\n", buf);
+        break;
+    }
+
+    case CMD_M: {
+        serialSendLineToModem(&cmdline[2]);
+        break;
+    }
+
+    case CMD_TEST: {
+        for (int i=0; i<2; i++) {
+            serialSendLineToModem("ATE0");
+            timerMsSleep(500);
+        }
+        serialSendLineToModem("AT+QSCLK=0");    // Turn off 10 second auto sleep timer
+        timerMsSleep(500);
+        serialSendLineToModem("AT+CIMI");       // Get IMSI (returns ERROR if SIM not plugged in)
+        timerMsSleep(500);
+        serialSendLineToModem("AT+QGMR");       // Get firmware version
+        timerMsSleep(500);
         break;
     }
 

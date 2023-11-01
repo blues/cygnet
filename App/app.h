@@ -26,16 +26,24 @@
 #define TASKSTACK_MON               2500
 #define TASKPRI_MON                 ( configMAX_PRIORITIES - 2 )        // Normal
 
-#define TASKID_NUM_TASKS            3   // Total
+#define TASKID_MODEM                3           // Modem
+#define TASKNAME_MODEM              "modem"
+#define TASKLETTER_MODEM            'Q'
+#define TASKSTACK_MODEM             2500
+#define TASKPRI_MODEM               ( configMAX_PRIORITIES - 2 )        // Normal
+
+#define TASKID_NUM_TASKS            4           // Total
 #define TASKID_UNKNOWN              0xFFFF
 #define STACKWORDS(x)               ((x) / sizeof(StackType_t))
+
+// modem.c
+void modemTask(void *params);
 
 // serial.c
 void serialInit(uint32_t serialTaskID);
 void serialPoll(void);
 bool serialLock(UART_HandleTypeDef *huart, uint8_t **retData, uint32_t *retDataLen, bool *retDiagAllowed);
 void serialUnlock(UART_HandleTypeDef *huart, bool reset);
-void serialSetReqTaskID(uint32_t taskID);
 void serialOutputString(UART_HandleTypeDef *huart, char *buf);
 void serialOutput(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen);
 void serialOutputLn(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen);
