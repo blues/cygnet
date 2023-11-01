@@ -38,6 +38,7 @@
 
 // modem.c
 void modemTask(void *params);
+err_t modemSend(arrayString *retResults, char *format, ...);
 
 // serial.c
 void serialInit(uint32_t serialTaskID);
@@ -84,3 +85,5 @@ void monitorReceivedHello(void);
 
 // Errors
 #define ERR_IO "{io}"
+#define ERR_TIMEOUT "{timeout}"
+#define ERR_MODEM_COMMAND "{modem}"

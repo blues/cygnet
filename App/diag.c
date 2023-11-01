@@ -139,7 +139,19 @@ err_t diagProcess(char *diagCommand)
     }
 
     case CMD_M: {
-        serialSendLineToModem(&cmdline[2]);
+        arrayString results = {0};
+        err = modemSend(&results, &cmdline[2]);
+        if (err) {
+            break;
+        }
+        if (arrayEntries(&results) == 0) {
+            debugR("OK\n");
+        } else {
+            for (int i=0; i<arrayEntries(&results); i++) {
+                debugR("%s\n", arrayEntry(&results, i));
+            }
+            arrayReset(&results);
+        }
         break;
     }
 
