@@ -1462,7 +1462,7 @@
             <name>$PROJ_DIR$\..\Core\Src\adc.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\app_weak.c</name>
+            <name>$PROJ_DIR$\..\Core\Weak\app_weak.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\Core\Src\can.c</name>

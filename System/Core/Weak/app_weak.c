@@ -9,6 +9,12 @@ __weak void appInit(void)
 {
 }
 
+// Return true if sleep is allowed
+__weak bool appSleepAllowed(void)
+{
+    return false;
+}
+
 // Initialize the app's GPIOs
 __weak void appInitGPIO(void)
 {

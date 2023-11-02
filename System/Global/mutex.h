@@ -16,22 +16,16 @@
 // this does define the one and only nested layering of semaphores necessary to prevent deadlock.
 // Note that we assign these with 255 possible mutexes that may be inserted "between" them
 // so that apps using app_mutex.h may insert values without editing this file.
-#define MTX_MTX         0x0000000000000100
-#define MTX_TIME        0x0000000000000200
-#define MTX_EVENT       0x0000000000000400
-#define MTX_QUEUE       0x0000000000000800
-#define MTX_RAND        0x0000000000001000
-#define MTX_ERR         0x0000000000002000
-#define MTX_APP1        0x0000000000004000
-#define MTX_APP2        0x0000000000008000
-#define MTX_APP3        0x0000000000010000
-#define MTX_APP4        0x0000000000020000
-#define MTX_APP5        0x0000000000040000
-#define MTX_APP6        0x0000000000080000
-#define MTX_APP7        0x0000000000100000
-#define MTX_APP8        0x0000000000200000
-#define MTX_SERIAL_TX   0x0000000000400000
-#define MTX_SERIAL_RX   0x0000000000800000
+#define MTX_MTX         0x0000000000000001
+#define MTX_TIME        0x0000000000000002
+#define MTX_EVENT       0x0000000000000004
+#define MTX_QUEUE       0x0000000000000008
+#define MTX_RAND        0x0000000000000010
+#define MTX_ERR         0x0000000000000020
+#define MTX_SERIAL_TX   0x0000000000000040
+#define MTX_APP_FIRST   0x0000000000010000
+#define MTX_APP_LAST    0x0000800000000000
+#define MTX_SERIAL_RX   0x0001000000008000
 typedef uint64_t mtxtype_t;
 
 // mutex.c
@@ -96,5 +90,5 @@ void taskQueueFree(taskQueue *queue);
 bool taskQueuePut(taskQueue *queue, void *data, uint32_t waitMs);
 bool taskQueueGet(taskQueue *queue, void *data, uint32_t waitMs);
 
-// App's overrides to gmutex.h, which are resolved in the "weak" folder if the app doesn't define them
+// App's overrides to defs in this file, which are resolved in the "weak" folder if the app doesn't define them
 #include "app_mutex.h"

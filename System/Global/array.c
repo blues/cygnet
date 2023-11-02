@@ -3,7 +3,7 @@
 // copyright holder including that found in the LICENSE file.
 
 #include "global.h"
-#include "gmutex.h"
+#include "mutex.h"
 
 // Insert an entry into an array at the specified idnex
 err_t arrayInsert(array *ctx, uint16_t i, void *data)

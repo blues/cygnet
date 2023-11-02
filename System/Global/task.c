@@ -4,7 +4,7 @@
 
 #include "app.h"
 #include "global.h"
-#include "gmutex.h"
+#include "mutex.h"
 
 // The mutex to protect event queues
 STATIC mutex queueMutex = {MTX_QUEUE, {0}};

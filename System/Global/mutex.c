@@ -4,7 +4,7 @@
 
 #include "global.h"
 #include "app.h"
-#include "gmutex.h"
+#include "mutex.h"
 #include "main.h"
 
 #define MUTEX_HELD_DURATION_WARNING_MS      500

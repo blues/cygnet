@@ -48,9 +48,12 @@ int64_t MX_SteppedTickMs(void);
 
 // app_weak.c
 void appInit(void);
-void appHeartbeatISR(uint32_t heartbeatSecs);
 void appISR(uint16_t);
+void appHeartbeatISR(uint32_t heartbeatSecs);
+bool appSleepAllowed(void);
 void appInitGPIO(void);
+void appPreSleepProcessing(uint32_t ulExpectedIdleTime);
+void appPostSleepProcessing(uint32_t ulExpectedIdleTime);
 
 // debug_if.c
 void MX_Breakpoint(void);

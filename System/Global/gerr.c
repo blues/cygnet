@@ -9,7 +9,7 @@
 #include <stdarg.h>
 #include "global.h"
 #include "board.h"
-#include "gmutex.h"
+#include "mutex.h"
 
 // The core error entry data structure
 typedef struct {

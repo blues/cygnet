@@ -1,3 +1,0 @@
-3. build a project and get it all to compile and link and work
-4. fix app to work in theory, doing req/rsp echoing just on lpuart1
-7. have a diag that turns them on and off, to test them

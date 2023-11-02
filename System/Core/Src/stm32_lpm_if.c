@@ -58,6 +58,9 @@ void PWR_EnterStopMode(void)
     if (MX_DBG_Active()) {
         stayAwake = true;
     }
+    if (!appSleepAllowed()) {
+        stayAwake = true;
+    }
 #ifdef USB_DETECT_Pin
     if (HAL_GPIO_ReadPin(USB_DETECT_GPIO_Port, USB_DETECT_Pin) == GPIO_PIN_SET) {
         stayAwake = true;

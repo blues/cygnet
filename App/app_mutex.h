@@ -4,5 +4,9 @@
 
 #pragma once
 
-#define MTX_MODEM_RECEIVED  MTX_APP1
+// See MTX_APP_FIRST to MTX_APP_LAST
+#include "mutex.h"
+
+#define MTX_MODEM_RECEIVED      (MTX_APP_FIRST << 0)
+
 

@@ -4,7 +4,7 @@
 
 #include "main.h"
 #include "global.h"
-#include "gmutex.h"
+#include "mutex.h"
 #include "rng.h"
 
 STATIC bool rand_initialized = false;

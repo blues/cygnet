@@ -5,7 +5,7 @@
 #include "app.h"
 #include "main.h"
 #include "global.h"
-#include "gmutex.h"
+#include "mutex.h"
 #include "rtc.h"
 #include <time.h>
 

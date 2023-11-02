@@ -37,6 +37,17 @@ void appISR(uint16_t GPIO_Pin)
 
 }
 
+// RTC heartbeat, used for timeouts and watchdogs
+void appHeartbeatISR(uint32_t heartbeatSecs)
+{
+}
+
+// Return true if sleep is allowed
+bool appSleepAllowed(void)
+{
+    return true;
+}
+
 // See FreeRTOSConfig.h where this is registered via configPRE_SLEEP_PROCESSING()
 // Called by the kernel before it places the MCU into a sleep mode because
 void appPreSleepProcessing(uint32_t ulExpectedIdleTime)
@@ -53,11 +64,6 @@ void appPreSleepProcessing(uint32_t ulExpectedIdleTime)
     // Enter to sleep Mode using the HAL function HAL_PWR_EnterSLEEPMode with WFI instruction
     UTIL_PowerDriver.EnterStopMode();
 
-}
-
-// RTC heartbeat, used for timeouts and watchdogs
-void appHeartbeatISR(uint32_t heartbeatSecs)
-{
 }
 
 // See FreeRTOSConfig.h where this is registered via configPOST_SLEEP_PROCESSING()
