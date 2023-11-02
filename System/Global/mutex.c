@@ -129,11 +129,6 @@ void mutexLock(mutex *m)
     // external packages such as lwip create mutexes and manage their own nesting.
 #if mutexTrace
     if (m->mtx != 0) {
-        if (taskMutexes[thisTaskID] & m->mtx) {
-            char reason[128];
-            snprintf(reason, sizeof(reason), "*** %s 0x%016llx mutex already acquired (0x%016llx) %s:%u\n", taskLabel(thisTaskID), (unsigned long long)m->mtx, (unsigned long long)taskMutexes[thisTaskID], debugFileName(filename), (unsigned)lineno);
-            debugPanic(reason);
-        }
         mtxtype_t lowerLevelMask = m->mtx - 1;
         if (taskMutexes[thisTaskID] & lowerLevelMask) {
             char reason[128];

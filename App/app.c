@@ -45,6 +45,9 @@ void appHeartbeatISR(uint32_t heartbeatSecs)
 // Return true if sleep is allowed
 bool appSleepAllowed(void)
 {
+    if (modemIsOn()) {
+        return false;
+    }
     return true;
 }
 

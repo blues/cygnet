@@ -159,7 +159,7 @@ void timerMsDelay(uint32_t ms);
 void timerMsSleep(uint32_t ms);
 bool timerMsElapsed(int64_t began, uint32_t ms);
 uint32_t timerMsUntil(int64_t suppressionTimerMs);
-void timeSet(uint32_t newTimeSecs);
+bool timeSet(uint32_t newTimeSecs);
 bool timeIsValid(void);
 bool timeIsValidUnix(uint32_t t);
 uint32_t timeSecs(void);

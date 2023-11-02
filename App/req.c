@@ -95,12 +95,29 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
     // Process requests
     for (;;) {
 
+        // The hello message is required to supply a valid time, else we'll keep sending
+        // hello back to the notecard.
         if (strEQL(reqtype, MsgHello)) {
-            monitorReceivedHello();
             uint32_t time = JGetInt(req, "time");
             if (time != 0) {
-                timeSet(time);
+                if (timeSet(time)) {
+                    monitorReceivedHello();
+                }
             }
+            break;
+        }
+
+        // Request to use the modem
+        if (strEQL(reqtype, MsgModemRequest)) {
+            err = modemEnqueueWork(workModemRequest, req);
+            req = NULL;
+            break;
+        }
+
+        // Request to release the modem after work has been completed
+        if (strEQL(reqtype, MsgModemRelease)) {
+            modemRemoveWork(workModemRelease);
+            err = modemEnqueueWork(workModemRelease, NULL);
             break;
         }
 
@@ -114,8 +131,12 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
         MX_DBG_Enable(debugWasEnabled);
     }
 
+    // If we haven't already deleted the request, delete it
+    if (req != NULL) {
+        JDelete(req);
+    }
+
     // If no reply required, we're done
-    JDelete(req);
     if (noReplyRequired) {
         JDelete(rsp);
 #ifdef DEBUG_MEM

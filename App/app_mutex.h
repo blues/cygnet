@@ -8,5 +8,6 @@
 #include "mutex.h"
 
 #define MTX_MODEM_RECEIVED      (MTX_APP_FIRST << 0)
+#define MTX_MODEM_WORK          (MTX_APP_FIRST << 1)
 
 

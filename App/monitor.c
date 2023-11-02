@@ -11,23 +11,25 @@ uint32_t monitor(void)
 {
     uint32_t returnInMs = ms1Day;
 
-    // If we haven't yet received a hello, send one 
+    // If we haven't yet received a hello, poll on a periodic basis and send the
+    // notecard a 'hello' message introducing ourselves.
     if (!receivedHello) {
         if (timerMs() >= nextHelloDueMs) {
-
-            J *body = JCreateObject();
-            JAddStringToObject(body, "id", STARNOTE_SCHEME "<IMSI-GOES-HERE>");
-            JAddStringToObject(body, "modem", "<MODEM-FIRMWARE-GOES-HERE>");
-            J *firmware = JParse(osBuildConfig());
-            if (firmware != NULL) {
-                JAddItemToObject(body, "firmware", firmware);
-            }
-
-            serialSendMessageToNotecard(serialCreateMessage(MsgHello, body, NULL, 0));
             nextHelloDueMs = timerMs() + (SEND_HELLO_SECS * ms1Sec);
+            if (modemId[0] != '\0' && modemVersion[0] != '\0') {
+                J *body = JCreateObject();
+                JAddStringToObject(body, "id", modemId);
+                JAddStringToObject(body, "modem", modemVersion);
+                J *firmware = JParse(osBuildConfig());
+                if (firmware != NULL) {
+                    JAddItemToObject(body, "firmware", firmware);
+                }
+                serialSendMessageToNotecard(serialCreateMessage(MsgHello, body, NULL, 0));
+            }
         }
         returnInMs = GMIN(returnInMs, nextHelloDueMs - timerMs());
     }
+
 
     // Done
     return returnInMs;

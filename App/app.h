@@ -37,8 +37,22 @@
 #define STACKWORDS(x)               ((x) / sizeof(StackType_t))
 
 // modem.c
+extern char modemId[];
+extern char modemVersion[];
+typedef err_t (*modemWorker) (J *work);
 void modemTask(void *params);
 err_t modemSend(arrayString *retResults, char *format, ...);
+err_t modemEnqueueWork(modemWorker worker, J *work);
+err_t modemRemoveWork(modemWorker worker);
+bool modemIsOn(void);
+err_t modemPowerOn(void);
+void modemPowerOff(void);
+err_t modemRequireResults(arrayString *results, err_t err, uint32_t numResults, char *errType);
+
+// work.c
+err_t workInit(J *unused);
+err_t workModemRequest(J *req);
+err_t workModemRelease(J *req);
 
 // serial.c
 void serialInit(uint32_t serialTaskID);

@@ -1115,6 +1115,9 @@
         <file>
             <name>$PROJ_DIR$\..\..\App\serial.c</name>
         </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\work.c</name>
+        </file>
     </group>
     <group>
         <name>Core</name>

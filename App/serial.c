@@ -77,7 +77,6 @@ void serialInit(uint32_t taskID)
 
     // USART2 (modem port)
     MX_UART_RxConfigure(&huart2, usart2InterruptBuffer, sizeof(usart2InterruptBuffer), serialReceivedNotification);
-    MX_USART2_UART_Init(false, 115200);
 
 }
 
@@ -235,7 +234,12 @@ bool serialLock(UART_HandleTypeDef *huart, uint8_t **retData, uint32_t *retDataL
         return false;
     }
 
-    // Get data
+    // If a different task is already processing this serial, don't block
+    if (mutexIsLocked(&desc->rxLock)) {
+        return false;
+    }
+
+    // If no data is waiting, don't block
     if (desc->bytes == NULL) {
         return false;
     }
@@ -409,5 +413,6 @@ J *serialCreateMessage(const char *msgType, J *body, uint8_t *payload, uint32_t 
 // Output a line to the modem
 void serialSendLineToModem(char *text)
 {
+    debugR("modem: >> %s\n", text);
     serialOutputLn(&huart2, (uint8_t *)text, strlen(text));
 }

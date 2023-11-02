@@ -139,6 +139,23 @@ err_t diagProcess(char *diagCommand)
     }
 
     case CMD_M: {
+        if (strEQL(argv[1], "on")) {
+            err = modemPowerOn();
+            if (err) {
+                break;
+            }
+            debugf("modem is on\n");
+            break;
+        }
+        if (strEQL(argv[1], "off")) {
+            modemPowerOff();
+            debugf("modem is on\n");
+            break;
+        }
+        if (!modemIsOn()) {
+            debugf("modem must be powered on\n");
+            break;
+        }
         arrayString results = {0};
         err = modemSend(&results, &cmdline[2]);
         if (err) {
@@ -156,16 +173,6 @@ err_t diagProcess(char *diagCommand)
     }
 
     case CMD_TEST: {
-        for (int i=0; i<2; i++) {
-            serialSendLineToModem("ATE0");
-            timerMsSleep(500);
-        }
-        serialSendLineToModem("AT+QSCLK=0");    // Turn off 10 second auto sleep timer
-        timerMsSleep(500);
-        serialSendLineToModem("AT+CIMI");       // Get IMSI (returns ERROR if SIM not plugged in)
-        timerMsSleep(500);
-        serialSendLineToModem("AT+QGMR");       // Get firmware version
-        timerMsSleep(500);
         break;
     }
 

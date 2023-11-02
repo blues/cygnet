@@ -82,7 +82,7 @@ uint32_t timerMsUntil(int64_t suppressionTimerMs)
 }
 
 // Set the current time/date
-void timeSet(uint32_t newTimeSecs)
+bool timeSet(uint32_t newTimeSecs)
 {
 
     // Ensure that we notice when the time was set
@@ -90,7 +90,7 @@ void timeSet(uint32_t newTimeSecs)
 
     // Ensure that it's valid
     if (!timeIsValidUnix(newTimeSecs)) {
-        return;
+        return false;
     }
 
     // Lock
@@ -107,22 +107,22 @@ void timeSet(uint32_t newTimeSecs)
     if (t == NULL) {
         mutexUnlock(&timeMutex);    // cannot do debugf with locked
         debugf("time-set: error getting struct tm\n");
-    } else {
-        int year = t->tm_year+1900;
-        int mon1 = t->tm_mon+1;
-        int day1 = t->tm_mday;
-        int hour0 = t->tm_hour;
-        int min0 = t->tm_min;
-        int sec0 = t->tm_sec;
-        if (MX_RTC_SetDateTime(year, mon1, day1, hour0, min0, sec0)) {
-            mutexUnlock(&timeMutex);
-            debugf("time-set: %d %04d-%02d-%02dT%02d:%02d:%02dZ\n", newTimeSecs, year, mon1, day1, hour0, min0, sec0);
-        } else {
-            mutexUnlock(&timeMutex);
-            debugf("time-set: HAL error setting date/time\n");
-        }
+        return false;
     }
-
+    int year = t->tm_year+1900;
+    int mon1 = t->tm_mon+1;
+    int day1 = t->tm_mday;
+    int hour0 = t->tm_hour;
+    int min0 = t->tm_min;
+    int sec0 = t->tm_sec;
+    if (!MX_RTC_SetDateTime(year, mon1, day1, hour0, min0, sec0)) {
+        mutexUnlock(&timeMutex);
+        debugf("time-set: HAL error setting date/time\n");
+        return false;
+    }
+    mutexUnlock(&timeMutex);
+    debugf("time-set: %d %04d-%02d-%02dT%02d:%02d:%02dZ\n", newTimeSecs, year, mon1, day1, hour0, min0, sec0);
+    return true;
 }
 
 // See if the time is currently valid, and try to restore it from the RTC if not
