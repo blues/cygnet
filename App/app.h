@@ -48,11 +48,13 @@ bool modemIsOn(void);
 err_t modemPowerOn(void);
 void modemPowerOff(void);
 err_t modemRequireResults(arrayString *results, err_t err, uint32_t numResults, char *errType);
+int modemResult(arrayString *results, char *prefix);
 
 // work.c
 err_t workInit(J *body, uint8_t *payload, uint32_t payloadLen);
-err_t workModemRequest(J *body, uint8_t *payload, uint32_t payloadLen);
-err_t workModemRelease(J *body, uint8_t *payload, uint32_t payloadLen);
+err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen);
+err_t workModemDisconnect(J *body, uint8_t *payload, uint32_t payloadLen);
+err_t workModemUplink(J *body, uint8_t *payload, uint32_t payloadLen);
 
 // serial.c
 void serialInit(uint32_t serialTaskID);

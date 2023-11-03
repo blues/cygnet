@@ -94,8 +94,8 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
     if (time != 0) {
         timeSet(time);
     }
-    double lat = JGetInt(req, "lat");
-    double lon = JGetInt(req, "lon");
+    double lat = JGetNumber(req, "lat");
+    double lon = JGetNumber(req, "lon");
     if (lat != 0 || lon != 0) {
         locSet(lat, lon);
     }
@@ -112,15 +112,21 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
         }
 
         // Request to use the modem
-        if (strEQL(reqtype, ReqModemRequest)) {
-            err = modemEnqueueWork(workModemRequest, JDetachItemFromObject(req, "body"), NULL);
+        if (strEQL(reqtype, ReqConnect)) {
+            err = modemEnqueueWork(workModemConnect, JDetachItemFromObject(req, "body"), NULL);
             break;
         }
 
-        // Request to release the modem after work has been completed
-        if (strEQL(reqtype, ReqModemRelease)) {
-            modemRemoveWork(workModemRelease);
-            err = modemEnqueueWork(workModemRelease, NULL, NULL);
+        // Request to disconnect the modem after work has been completed
+        if (strEQL(reqtype, ReqDisconnect)) {
+            modemRemoveWork(workModemDisconnect);
+            err = modemEnqueueWork(workModemDisconnect, NULL, NULL);
+            break;
+        }
+
+        // Request to perform an uplink
+        if (strEQL(reqtype, ReqUplink)) {
+            err = modemEnqueueWork(workModemUplink, JDetachItemFromObject(req, "body"), JGetString(req, "payload"));
             break;
         }
 

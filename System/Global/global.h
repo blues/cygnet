@@ -328,8 +328,9 @@ bool streqlCI(const char *a, const char *b);
 bool memeqlCI(void *av, void *bv, int len);
 uint64_t atoh(char *p, int maxlen);
 void stoh(char *src, uint8_t *dst, uint32_t dstlen);
-void htoa16(uint16_t n, unsigned char *p);
 void htoa32(uint32_t n, char *p);
+void htoa16(uint16_t n, unsigned char *p);
+void htoa8(uint8_t n, unsigned char *p);
 
 // ERRORS
 #define ERR_MEM_ALLOC "{memory}"

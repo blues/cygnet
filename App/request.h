@@ -8,6 +8,8 @@
 #define FieldID         "id"
 
 #define ReqHello        "ntn.hello"
-#define ReqModemRequest "ntn.request"
-#define ReqModemRelease "ntn.release"
+#define ReqConnect      "ntn.connect"
+#define ReqDisconnect   "ntn.disconnect"
+#define ReqUplink       "ntn.uplink"
+#define ReqDownlink     "ntn.downlink"
 

@@ -86,6 +86,22 @@ void htoa16(uint16_t n, unsigned char *p)
     *p = '\0';
 }
 
+// Convert a byte to hex
+void htoa8(uint8_t n, unsigned char *p)
+{
+    int i;
+    for (i=0; i<2; i++) {
+        uint16_t nibble = (n >> 4) & 0xff;
+        n = n << 4;
+        if (nibble >= 10) {
+            *p++ = 'A' + (nibble-10);
+        } else {
+            *p++ = '0' + nibble;
+        }
+    }
+    *p = '\0';
+}
+
 // Convert a hex string to a number
 uint64_t atoh(char *p, int maxlen)
 {

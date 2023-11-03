@@ -92,16 +92,14 @@ err_t modemEnqueueWork(modemWorker worker, J *workBody, char *workPayloadB64)
     // Append the work
     work_t w = {0};
     w.worker = worker;
-    w.workBody = workBody;
+    w.workBody = (workBody == NULL ? JCreateObject() : workBody);
 
     // Allocate the payload if it's supplied.  As a convenience, guarantee
     // that the payload buffer is one larger than needed and null-terminated.
     if (workPayloadB64 != NULL && *workPayloadB64 != '\0') {
         err = memAlloc(JB64DecodeLen(workPayloadB64)+1, &w.workPayload);
         if (err) {
-            if (workBody != NULL) {
-                JDelete(workBody);
-            }
+            JDelete(w.workBody);
             return err;
         }
         w.workPayloadLen = JB64Decode((char *)w.workPayload, workPayloadB64);
@@ -113,6 +111,8 @@ err_t modemEnqueueWork(modemWorker worker, J *workBody, char *workPayloadB64)
         modemWorkReset(&w);
         return err;
     }
+    
+    taskGive(TASKID_MODEM);
 
     return errNone;
     
@@ -206,6 +206,11 @@ bool processModemSerialIncoming(void)
 err_t modemSend(arrayString *retResults, char *format, ...)
 {
     err_t err = errNone;
+
+    // Exit if already powered off
+    if (!poweredOn) {
+        return errF("ntn: modem not powered on");
+    }
 
     // If we don't want results, use a static array here
     arrayString staticResults;
@@ -314,6 +319,18 @@ err_t modemRequireResults(arrayString *results, err_t err, uint32_t numResults, 
         return errF("%s: %d results instead of %d", errType, arrayEntries(results), numResults);
     }
     return errNone;
+}
+
+// Return the index of a result containing the specified prefix, or -1 if not there
+int modemResult(arrayString *results, char *prefix)
+{
+    uint32_t prefixLen = strlen(prefix);
+    for (int i=0; i<arrayEntries(results); i++) {
+        if (memeql(prefix, (char *) arrayEntry(results, i), prefixLen)) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 // See if the modem has power
