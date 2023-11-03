@@ -1,11 +1,13 @@
 
 #pragma once
 
-#define FieldMsgType    "type"
+#define FieldCmd        "cmd"
+#define FieldBody       "body"
+#define FieldPayload    "payload"
 #define FieldErr        "err"
 #define FieldID         "id"
 
-#define MsgHello        "hello"
-#define MsgModemRequest "modem.request"
-#define MsgModemRelease "modem.release"
+#define ReqHello        "ntn.hello"
+#define ReqModemRequest "ntn.request"
+#define ReqModemRelease "ntn.release"
 

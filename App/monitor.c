@@ -17,14 +17,13 @@ uint32_t monitor(void)
         if (timerMs() >= nextHelloDueMs) {
             nextHelloDueMs = timerMs() + (SEND_HELLO_SECS * ms1Sec);
             if (modemId[0] != '\0' && modemVersion[0] != '\0') {
-                J *body = JCreateObject();
+                J *body = JParse(osBuildConfig());
+                if (body == NULL) {
+                    body = JCreateObject();
+                }
                 JAddStringToObject(body, "id", modemId);
                 JAddStringToObject(body, "modem", modemVersion);
-                J *firmware = JParse(osBuildConfig());
-                if (firmware != NULL) {
-                    JAddItemToObject(body, "firmware", firmware);
-                }
-                serialSendMessageToNotecard(serialCreateMessage(MsgHello, body, NULL, 0));
+                serialSendMessageToNotecard(serialCreateMessage(ReqHello, body, NULL, 0));
             }
         }
         returnInMs = GMIN(returnInMs, nextHelloDueMs - timerMs());

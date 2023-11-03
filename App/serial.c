@@ -400,12 +400,10 @@ void serialSendMessageToNotecard(J *msg)
 J *serialCreateMessage(const char *msgType, J *body, uint8_t *payload, uint32_t payloadLen)
 {
     J *msg = JCreateObject();
-    JAddStringToObject(msg, "cmd", "card.ntn");
-    JDeleteItemFromObject(body, FieldMsgType);
-    JAddStringToObject(body, FieldMsgType, MsgHello);
-    JAddItemToObject(msg, "body", body);
+    JAddStringToObject(msg, FieldCmd, msgType);
+    JAddItemToObject(msg, FieldBody, body);
     if (payload != NULL && payloadLen != 0) {
-        JAddBinaryToObject(msg, "payload", payload, payloadLen);
+        JAddBinaryToObject(msg, FieldPayload, payload, payloadLen);
     }
     return msg;
 }

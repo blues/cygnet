@@ -50,15 +50,12 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
     }
 
     // A "req" implies "request/response".  Otherwise, it is simply a unidirectional
-    // message whose type is accepted in either a "cmd" or "type" field.
+    // message whose type is indicated in the "cmd" field
     bool noReplyRequired = false;
     char *reqtype = JGetString(req, "req");
     if (reqtype[0] == '\0') {
         noReplyRequired = true;
         reqtype = JGetString(req, "cmd");
-        if (reqtype[0] == '\0') {
-            reqtype = JGetString(req, "type");
-        }
         if (reqtype[0] == '\0') {
             JDelete(req);
             return errF("no request type specified");
@@ -92,32 +89,38 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
         debugMessage("\n");
     }
 
+    // All requests are capable of accepting updates to location and time
+    uint32_t time = JGetInt(req, "time");
+    if (time != 0) {
+        timeSet(time);
+    }
+    double lat = JGetInt(req, "lat");
+    double lon = JGetInt(req, "lon");
+    if (lat != 0 || lon != 0) {
+        locSet(lat, lon);
+    }
+
     // Process requests
     for (;;) {
 
-        // The hello message is required to supply a valid time, else we'll keep sending
-        // hello back to the notecard.
-        if (strEQL(reqtype, MsgHello)) {
-            uint32_t time = JGetInt(req, "time");
-            if (time != 0) {
-                if (timeSet(time)) {
-                    monitorReceivedHello();
-                }
+        // Echo back a hello request if our time is up-to-date, because we can't continue otherwise
+        if (strEQL(reqtype, ReqHello)) {
+            if (timeIsValid()) {
+                monitorReceivedHello();
             }
             break;
         }
 
         // Request to use the modem
-        if (strEQL(reqtype, MsgModemRequest)) {
-            err = modemEnqueueWork(workModemRequest, req);
-            req = NULL;
+        if (strEQL(reqtype, ReqModemRequest)) {
+            err = modemEnqueueWork(workModemRequest, JDetachItemFromObject(req, "body"), NULL);
             break;
         }
 
         // Request to release the modem after work has been completed
-        if (strEQL(reqtype, MsgModemRelease)) {
+        if (strEQL(reqtype, ReqModemRelease)) {
             modemRemoveWork(workModemRelease);
-            err = modemEnqueueWork(workModemRelease, NULL);
+            err = modemEnqueueWork(workModemRelease, NULL, NULL);
             break;
         }
 

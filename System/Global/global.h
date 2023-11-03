@@ -150,6 +150,12 @@ void memFree(void *p);
 err_t memRealloc(uint32_t fromLength, uint32_t toLength, void *ptr);
 err_t memDup(void *pSrc, uint32_t srcLength, void *pCopy);
 
+// loc.c
+bool locSet(double lat, double lon);
+bool locGet(double *lat, double *lon, uint32_t *when);
+bool locValid(void);
+void locInvalidate(void);
+
 // timer.c
 int64_t timerMsSinceBoot(void);
 uint32_t timeSecsBoot(void);

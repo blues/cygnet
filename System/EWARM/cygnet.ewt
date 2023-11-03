@@ -1669,6 +1669,9 @@
             <name>$PROJ_DIR$\..\Global\gmem.c</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\Global\loc.c</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\Global\md5hash.c</name>
         </file>
         <file>

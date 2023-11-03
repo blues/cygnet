@@ -7,7 +7,9 @@
 // Modem work to do
 typedef struct {
     modemWorker worker;
-    J *work;
+    J *workBody;
+    uint8_t *workPayload;
+    uint32_t workPayloadLen;
 } work_t;
 STATIC mutex modemWorkMutex = {MTX_MODEM_WORK, {0}};
 STATIC array *work = NULL;
@@ -36,7 +38,7 @@ void modemTask(void *params)
     taskRegister(TASKID_MODEM, TASKNAME_MODEM, TASKLETTER_MODEM, TASKSTACK_MODEM);
 
     // Enqueue work to be performed at init
-    modemEnqueueWork(workInit, NULL);
+    modemEnqueueWork(workInit, NULL, NULL);
 
     // Loop, extracting requests from the serial port and processing them
     while (true) {
@@ -56,14 +58,20 @@ void modemTask(void *params)
 void modemWorkReset(void *we)
 {
     work_t *w = (work_t *) we;
-    if (w->work != NULL) {
-        JDelete(w->work);
-        w->work = NULL;
+    if (w->workBody != NULL) {
+        JDelete(w->workBody);
+        w->workBody = NULL;
+    }
+    if (w->workPayload != NULL) {
+        memFree(w->workPayload);
+        w->workPayload = NULL;
+        w->workPayloadLen = 0;
     }
 }
 
-// Enqueue work
-err_t modemEnqueueWork(modemWorker worker, J *workToDo)
+// Enqueue work.  Note that in all cases (even errors) workToDo is freed if supplied,
+// and b64Payload is NOT freed.
+err_t modemEnqueueWork(modemWorker worker, J *workBody, char *workPayloadB64)
 {
     err_t err;
     
@@ -73,6 +81,9 @@ err_t modemEnqueueWork(modemWorker worker, J *workToDo)
         err = arrayAlloc(sizeof(work_t), modemWorkReset, &work);
         if (err) {
             mutexUnlock(&modemWorkMutex);
+            if (workBody != NULL) {
+                JDelete(workBody);
+            }
             return err;
         }
     }
@@ -81,8 +92,29 @@ err_t modemEnqueueWork(modemWorker worker, J *workToDo)
     // Append the work
     work_t w = {0};
     w.worker = worker;
-    w.work = workToDo;
-    return arrayAppend(work, &w);
+    w.workBody = workBody;
+
+    // Allocate the payload if it's supplied.  As a convenience, guarantee
+    // that the payload buffer is one larger than needed and null-terminated.
+    if (workPayloadB64 != NULL && *workPayloadB64 != '\0') {
+        err = memAlloc(JB64DecodeLen(workPayloadB64)+1, &w.workPayload);
+        if (err) {
+            if (workBody != NULL) {
+                JDelete(workBody);
+            }
+            return err;
+        }
+        w.workPayloadLen = JB64Decode((char *)w.workPayload, workPayloadB64);
+        w.workPayload[w.workPayloadLen] = '\0';
+    }
+
+    err = arrayAppend(work, &w);
+    if (err) {
+        modemWorkReset(&w);
+        return err;
+    }
+
+    return errNone;
     
 }
 
@@ -122,7 +154,7 @@ bool processModemWork(void)
     }
     mutexUnlock(&modemWorkMutex);
     if (workToDo) {
-        err_t err = w.worker(w.work);
+        err_t err = w.worker(w.workBody, w.workPayload, w.workPayloadLen);
         modemWorkReset(&w);
         if (err) {
             debugf("modem: %s\n", errString(err));
