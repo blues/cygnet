@@ -50,6 +50,13 @@ int64_t timerMs(void)
     return MX_GetTickMs();
 }
 
+// Get the current timer tick in milliseconds from within an ISR, knowing that it will NOT
+// be changing from the value returned (and thus there must be no timing loops)
+int64_t timerMsFromISR(void)
+{
+    return MX_GetTickMsFromISR();
+}
+
 // Delay for the specified number of milliseconds in a compute loop, without yielding.
 // This is primarily used for operations that could potentially
 // be executed in STOP2 mode, during which our task timers are not accurate.

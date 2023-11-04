@@ -161,6 +161,7 @@ int64_t timerMsSinceBoot(void);
 uint32_t timeSecsBoot(void);
 void timerSetBootTime(void);
 int64_t timerMs(void);
+int64_t timerMsFromISR(void);
 void timerMsDelay(uint32_t ms);
 void timerMsSleep(uint32_t ms);
 bool timerMsElapsed(int64_t began, uint32_t ms);

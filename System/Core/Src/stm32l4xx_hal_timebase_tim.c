@@ -153,11 +153,23 @@ void HAL_Delay(__IO uint32_t delayMs)
 // Provide a tick value in milliseconds which pauses during STOP2 and which wraps
 uint32_t HAL_GetTick(void)
 {
+    if (MX_InISR() || (__get_PRIMASK() != 0) ){
+        MX_Breakpoint();
+    }
     return tickCount * MILLISECONDS_PER_TICK;
 }
 
 // Provide an approximate tick value in milliseconds with the illusion that it is continuous, across STOP2.
 int64_t MX_GetTickMs(void)
+{
+    if (MX_InterruptsDisabled()) {
+        MX_Breakpoint();
+    }
+    return MX_GetTickMsFromISR();
+}
+
+// Provide an approximate tick value in milliseconds with the illusion that it is continuous, across STOP2.
+int64_t MX_GetTickMsFromISR(void)
 {
     int64_t ticks = msCountFromTicks;
     return ticks + msCountFromSleep;

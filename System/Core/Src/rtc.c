@@ -273,10 +273,19 @@ bool MX_RTC_GetDateTime(int *retYear, int *retMon1, int *retDay1, int *retHour0,
     bool haveValidDateTime = false;
     // 2021-04-25 As a harmless defensive measure, because time is so critical, retry
     for (int i=0; i<25; i++) {
-        HAL_RTC_WaitForSynchro(&hrtc);
-        HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
-        HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
-        HAL_RTC_WaitForSynchro(&hrtc);
+        // Attempt to get the most reliable date that we can by synchronizing the registers.  Note that
+        // we can't call WaitForSynchro because when timer interrupts are disabled HAL_GetTick() won't advance.
+        if (MX_InterruptsDisabled()) {
+            for (int i=0; i<3; i++) {
+                HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
+                HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
+            }
+        } else {
+            HAL_RTC_WaitForSynchro(&hrtc);
+            HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
+            HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
+            HAL_RTC_WaitForSynchro(&hrtc);
+        }
         // GetDate MUST be called immediately after GetTime for consistency, according to HAL doc
         if (HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN) == HAL_OK) {
             if (HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN) == HAL_OK) {

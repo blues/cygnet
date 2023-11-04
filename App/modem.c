@@ -48,7 +48,7 @@ void modemTask(void *params)
             didSomething |= processModemWork();
         }
         if (!didSomething) {
-            taskTake(TASKID_MODEM, ms1Day);
+            taskTake(TASKID_MODEM, modemIsOn() ? ms1Sec : ms1Day);
         }
     }
 
@@ -360,6 +360,7 @@ err_t modemPowerOn(void)
 
     // Physically power-on the modem
     poweredOn = true;
+    debugf("modem: powered on\n");
 
     // Wait until RDY, flushing everything else that comes in
     bool ready = false;
@@ -452,5 +453,6 @@ void modemPowerOff(void)
     
     // Power off the modem
     poweredOn = false;
+    debugf("modem: powered off\n");
 
 }

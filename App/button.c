@@ -9,7 +9,7 @@ void buttonPressISR(bool pressed)
 {
 
     // Debounce
-    int64_t nowMs = timerMs();
+    int64_t nowMs = timerMsFromISR();
     if (lastPressedMs != 0 || !timerMsElapsed(lastPressedMs, 100)) {
         lastPressedMs = nowMs;
         return;

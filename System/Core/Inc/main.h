@@ -44,6 +44,7 @@ void HAL_IncTick(void);
 uint32_t HAL_GetTick(void);
 int64_t MX_GetTickMs(void);
 void MX_StepTickMs(uint32_t msElapsed);
+int64_t MX_GetTickMsFromISR(void);
 int64_t MX_SteppedTickMs(void);
 
 // app_weak.c
@@ -58,6 +59,7 @@ void appPostSleepProcessing(uint32_t ulExpectedIdleTime);
 // debug_if.c
 void MX_Breakpoint(void);
 bool MX_InISR(void);
+#define MX_InterruptsDisabled() (__get_PRIMASK() != 0)
 void MX_JumpToBootloader(void);
 bool MX_DBG_Active(void);
 void MX_DBG_Init(void);
