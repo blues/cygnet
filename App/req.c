@@ -113,20 +113,26 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
 
         // Request to use the modem
         if (strEQL(reqtype, ReqConnect)) {
-            err = modemEnqueueWork(workModemConnect, JDetachItemFromObject(req, "body"), NULL);
+            err = modemEnqueueWork(STATUS_WORK_CONNECTING, workModemConnect, JDetachItemFromObject(req, "body"), NULL);
             break;
         }
 
         // Request to disconnect the modem after work has been completed
         if (strEQL(reqtype, ReqDisconnect)) {
             modemRemoveWork(workModemDisconnect);
-            err = modemEnqueueWork(workModemDisconnect, NULL, NULL);
+            err = modemEnqueueWork(STATUS_WORK_DISCONNECTING, workModemDisconnect, NULL, NULL);
             break;
         }
 
         // Request to perform an uplink
         if (strEQL(reqtype, ReqUplink)) {
-            err = modemEnqueueWork(workModemUplink, JDetachItemFromObject(req, "body"), JGetString(req, "payload"));
+            err = modemEnqueueWork(STATUS_WORK_UPLINKING, workModemUplink, JDetachItemFromObject(req, "body"), JGetString(req, "payload"));
+            break;
+        }
+
+        // Request to send status info
+        if (strEQL(reqtype, ReqStatus)) {
+            err = modemReportStatus();
             break;
         }
 

@@ -6,6 +6,7 @@
 
 // Modem work to do
 typedef struct {
+    const char *status;
     modemWorker worker;
     J *workBody;
     uint8_t *workPayload;
@@ -13,11 +14,13 @@ typedef struct {
 } work_t;
 STATIC mutex modemWorkMutex = {MTX_MODEM_WORK, {0}};
 STATIC array *work = NULL;
+STATIC const char *workStatus = NULL;
 
-// Received lines
+// Received lines.  Note that we separate normal lines from
+// URC lines, and we always ensure uniqueness of URCs.
 STATIC mutex modemReceivedLinesMutex = {MTX_MODEM_RECEIVED, {0}};
 STATIC arrayString modemReceivedLines = {0};
-STATIC int64_t modemReceivedLineMs = {0};
+STATIC arrayString modemReceivedUrcLines = {0};
 
 // Identity
 char modemId[48] = {0};
@@ -25,10 +28,12 @@ char modemVersion[48] = {0};
 
 // Modem state
 STATIC bool poweredOn = false;
+STATIC bool connected = false;
 
 // Forwards
-bool processModemSerialIncoming(void);
 bool processModemWork(void);
+bool processUrcWork(void);
+void uModemUrcRemove(char *urc);
 
 // Request task
 void modemTask(void *params)
@@ -38,12 +43,15 @@ void modemTask(void *params)
     taskRegister(TASKID_MODEM, TASKNAME_MODEM, TASKLETTER_MODEM, TASKSTACK_MODEM);
 
     // Enqueue work to be performed at init
-    modemEnqueueWork(workInit, NULL, NULL);
+    modemEnqueueWork(STATUS_WORK_INIT, workInit, NULL, NULL);
 
     // Loop, extracting requests from the serial port and processing them
     while (true) {
         bool didSomething = false;
-        didSomething |= processModemSerialIncoming();
+        didSomething |= modemProcessSerialIncoming();
+        if (!didSomething) {
+            didSomething |= processUrcWork();
+        }
         if (!didSomething) {
             didSomething |= processModemWork();
         }
@@ -71,10 +79,10 @@ void modemWorkReset(void *we)
 
 // Enqueue work.  Note that in all cases (even errors) workToDo is freed if supplied,
 // and b64Payload is NOT freed.
-err_t modemEnqueueWork(modemWorker worker, J *workBody, char *workPayloadB64)
+err_t modemEnqueueWork(const char *status, modemWorker worker, J *workBody, char *workPayloadB64)
 {
     err_t err;
-    
+
     // Allocate the array if it has never yet been allocated
     mutexLock(&modemWorkMutex);
     if (work == NULL) {
@@ -91,6 +99,7 @@ err_t modemEnqueueWork(modemWorker worker, J *workBody, char *workPayloadB64)
 
     // Append the work
     work_t w = {0};
+    w.status = status;
     w.worker = worker;
     w.workBody = (workBody == NULL ? JCreateObject() : workBody);
 
@@ -111,11 +120,84 @@ err_t modemEnqueueWork(modemWorker worker, J *workBody, char *workPayloadB64)
         modemWorkReset(&w);
         return err;
     }
-    
+
     taskGive(TASKID_MODEM);
 
     return errNone;
-    
+
+}
+
+// Remove a URC from the received URCs, unlocked
+void uModemUrcRemove(char *urc)
+{
+    if (urc == NULL) {
+        arrayReset(&modemReceivedUrcLines);
+    } else {
+        char *colon = strchr(urc, ':');
+        uint32_t prefixLen = (colon == NULL ? strlen(urc) : (colon-urc)) + 1;
+        for (int i=0; i<arrayEntries(&modemReceivedUrcLines); i++) {
+            if (memeql(urc, arrayEntry(&modemReceivedUrcLines, i), prefixLen)) {
+                arrayRemove(&modemReceivedUrcLines, i);
+            }
+        }
+    }
+}
+
+// Remove a URC from the received URCs
+void modemUrcRemove(char *urc)
+{
+    mutexLock(&modemReceivedLinesMutex);
+    uModemUrcRemove(urc);
+    mutexUnlock(&modemReceivedLinesMutex);
+}
+
+// Get a URC from the received URCs
+bool modemUrcGet(char *urc, char *buf, uint32_t buflen)
+{
+    mutexLock(&modemReceivedLinesMutex);
+    char *colon = strchr(urc, ':');
+    uint32_t prefixLen = (colon == NULL ? strlen(urc) : (colon-urc)) + 1;
+    for (int i=0; i<arrayEntries(&modemReceivedUrcLines); i++) {
+        char *line = arrayEntry(&modemReceivedUrcLines, i);
+        if (memeql(urc, line, prefixLen)) {
+            strlcpy(buf, line, buflen);
+            mutexUnlock(&modemReceivedLinesMutex);
+            return true;
+        }
+    }
+    mutexUnlock(&modemReceivedLinesMutex);
+    return false;
+}
+
+// Show URC state
+void modemUrcShow()
+{
+    if (!modemIsOn()) {
+        debugR("modem is off\n");
+    } else {
+        mutexLock(&modemReceivedLinesMutex);
+        for (int i=0; i<arrayEntries(&modemReceivedUrcLines); i++) {
+            debugR("%s\n", (char *) arrayEntry(&modemReceivedUrcLines, i));
+        }
+        mutexUnlock(&modemReceivedLinesMutex);
+    }
+}
+
+// Test to see if a URC is present with an exact value
+bool modemUrc(char *urc, bool remove)
+{
+    mutexLock(&modemReceivedLinesMutex);
+    for (int i=0; i<arrayEntries(&modemReceivedUrcLines); i++) {
+        if (streql(urc, arrayEntry(&modemReceivedUrcLines, i))) {
+            if (remove) {
+                arrayRemove(&modemReceivedUrcLines, i);
+            }
+            mutexUnlock(&modemReceivedLinesMutex);
+            return true;
+        }
+    }
+    mutexUnlock(&modemReceivedLinesMutex);
+    return false;
 }
 
 // Delete the specified work if found
@@ -141,6 +223,29 @@ err_t modemRemoveWork(modemWorker worker)
     return errNone;
 }
 
+// Process one unit of pending URC work
+bool processUrcWork(void)
+{
+
+    // Exit if modem is not powered on
+    if (!modemIsOn()) {
+        return false;
+    }
+
+    // Send a location update if requested by the modem
+    if (modemUrc("+QGNSSINFO: 1", true)) {
+        double lat, lon;
+        if (locGet(&lat, &lon, NULL)) {
+            modemSend(NULL, "AT+QGNSSINFO=%f,%f,0,0,0", lat, lon);
+        }
+        return true;
+    }
+
+    // Nothing done
+    return false;
+
+}
+
 // Process one unit of pending modem work
 bool processModemWork(void)
 {
@@ -154,7 +259,12 @@ bool processModemWork(void)
     }
     mutexUnlock(&modemWorkMutex);
     if (workToDo) {
+        workStatus = w.status;
         err_t err = w.worker(w.workBody, w.workPayload, w.workPayloadLen);
+        workStatus = NULL;
+        if (w.worker == workModemConnect || w.worker == workModemDisconnect) {
+            modemReportStatus();
+        }
         modemWorkReset(&w);
         if (err) {
             debugf("modem: %s\n", errString(err));
@@ -164,7 +274,7 @@ bool processModemWork(void)
 }
 
 // Process incoming serial request
-bool processModemSerialIncoming(void)
+bool modemProcessSerialIncoming(void)
 {
 
     // Modem port
@@ -189,15 +299,24 @@ bool processModemSerialIncoming(void)
     // the fact that serial.c pollPort() uses arrayAppendStringBytes in such a
     // way that the buffer here is guaranteed to be null-terminated.
     mutexLock(&modemReceivedLinesMutex);
-    arrayAppend(&modemReceivedLines, modemResponse);
-    modemReceivedLineMs = timerMs();
+    if (modemResponse[0] == '+') {
+        uModemUrcRemove((char *)modemResponse);
+        arrayAppend(&modemReceivedUrcLines, modemResponse);
+    } else {
+        arrayAppend(&modemReceivedLines, modemResponse);
+    }
     mutexUnlock(&modemReceivedLinesMutex);
 
     // Unlock serial
     serialUnlock(huart, true);
 
-    // Trace and exit
+    // Trace
     debugR("modem: << %s\n", modemResponse);
+
+    // Process URC work that may have just been enqueued
+    processUrcWork();
+
+    // Done
     return true;
 
 }
@@ -224,7 +343,6 @@ err_t modemSend(arrayString *retResults, char *format, ...)
         debugf("modem: discarding \"%s\"\n", (char *) arrayEntry(&modemReceivedLines, i));
     }
     arrayReset(&modemReceivedLines);
-    modemReceivedLineMs = 0;
     mutexUnlock(&modemReceivedLinesMutex);
 
     // Initialize results
@@ -262,7 +380,7 @@ err_t modemSend(arrayString *retResults, char *format, ...)
             timerMsSleep(100);
             // In case we are being called from code in the modem task
             // itself, this is essential to process the input.
-            processModemSerialIncoming();
+            modemProcessSerialIncoming();
             continue;
         }
         expiresMs = timerMs() + 500;
@@ -289,7 +407,6 @@ err_t modemSend(arrayString *retResults, char *format, ...)
             arrayAppend(retResults, line);
         }
         arrayReset(&modemReceivedLines);
-        modemReceivedLineMs = 0;
         mutexUnlock(&modemReceivedLinesMutex);
     }
 
@@ -339,6 +456,18 @@ bool modemIsOn(void)
     return poweredOn;
 }
 
+// See if the modem has power
+bool modemIsConnected(void)
+{
+    return connected;
+}
+
+// Set whether or not we're connected
+void modemSetConnected(bool yesOrNo)
+{
+    connected = yesOrNo;
+}
+
 // Turn on modem power
 err_t modemPowerOn(void)
 {
@@ -349,6 +478,9 @@ err_t modemPowerOn(void)
     if (poweredOn) {
         return errNone;
     }
+
+    // Cleaer all pending URCs
+    modemUrcRemove(NULL);
 
     // Init the USART
     MX_USART2_UART_Init(false, 115200);
@@ -370,12 +502,12 @@ err_t modemPowerOn(void)
             modemPowerOff();
             return errF("modem power-on timeout");
         }
-        processModemSerialIncoming();
+        modemProcessSerialIncoming();
         mutexLock(&modemReceivedLinesMutex);
         if (arrayEntries(&modemReceivedLines) == 0) {
             mutexUnlock(&modemReceivedLinesMutex);
             timerMsSleep(100);
-            processModemSerialIncoming();
+            modemProcessSerialIncoming();
             continue;
         }
         for (int i=0; i<arrayEntries(&modemReceivedLines); i++) {
@@ -385,7 +517,6 @@ err_t modemPowerOn(void)
             }
         }
         arrayReset(&modemReceivedLines);
-        modemReceivedLineMs = 0;
         mutexUnlock(&modemReceivedLinesMutex);
     }
 
@@ -450,9 +581,40 @@ void modemPowerOff(void)
 
     // Uninit the USART
     MX_USART2_UART_DeInit();
-    
+
     // Power off the modem
     poweredOn = false;
+    modemSetConnected(false);
     debugf("modem: powered off\n");
+
+}
+
+// Report the current status
+err_t modemReportStatus(void)
+{
+
+    array *statusBytes;
+    err_t err = arrayAllocBytes(&statusBytes);
+    if (err) {
+        return err;
+    }
+
+    if (modemIsOn()) {
+        arrayAppendStringBytes(statusBytes, STATUS_POWER);
+    }
+    if (modemIsConnected()) {
+        arrayAppendStringBytes(statusBytes, STATUS_CONNECTED);
+    }
+    volatile const char *status = workStatus;
+    if (status != NULL) {
+        arrayAppendStringBytes(statusBytes, (char *) status);
+    }
+
+    J *body = JCreateObject();
+    JAddStringToObject(body, "status", (char *) arrayAddress(statusBytes));
+    arrayFree(statusBytes);
+    serialSendMessageToNotecard(serialCreateMessage(ReqStatus, body, NULL, 0));
+
+    return errNone;
 
 }

@@ -21,7 +21,11 @@ err_t workInit(J *body, uint8_t *payload, uint32_t payloadLen)
 // Connect that the modem be powered on
 err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
 {
-    arrayString results;
+
+    // Exit if already connected
+    if (modemIsConnected()) {
+        return errF("already connected");
+    }
 
     // The location will be needed below
     double lat, lon;
@@ -94,17 +98,6 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
         return err;
     }
 
-    // This command is used by the MCU to actively set and query the current GNSS position information of the
-    // terminal. The module will use the GNSS position information inputted by this command for satellite
-    // communication timing and frequency compensation. When the module needs GNSS position information,
-    // it will actively report URC +QGNSSINFO: 1 to notify the MCU when to input GNSS position information
-    // to the module, or +GNSSINFO: 0 to notify that the MCU no longer needs to provide GNSS information.
-    err = modemSend(NULL, "AT+QGNSSINFO=%f,%f,0,0,0", lat, lon);
-    if (err) {
-        modemPowerOff();
-        return err;
-    }
-
     // Enable radio.
     err = modemSend(NULL, "AT+CFUN=1");
     if (err) {
@@ -122,13 +115,12 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
     //    4 Unknown (e.g. out of coverage)
     //    5 Registered on roaming network
     for (int i=0;; i++) {
-        err = modemSend(&results, "AT+CPIN?");
+        err = modemSend(NULL, "AT+CPIN?");
         if (!err) {
-            if (modemResult(&results, "+CPIN: READY") == -1) {
+            if (!modemUrc("+CPIN: READY", false)) {
                 err = errF("SIM not ready");
             }
         }
-        arrayReset(&results);
         if (!err) {
             break;
         }
@@ -137,7 +129,40 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
             return errF("SIM not ready");
         }
         timerMsSleep(750);
+        modemProcessSerialIncoming();
     }
+
+    // Make sure that the module knows our location
+    err = modemSend(NULL, "AT+QGNSSINFO=%f,%f,0,0,0", lat, lon);
+    if (err) {
+        modemPowerOff();
+        return err;
+    }
+
+    // Wait for the registration to complete
+    bool registered = false;
+    int secs = 0;
+    int maxSecs = 90;
+    int64_t regExpiresMs = timerMs() + ((int64_t)maxSecs * ms1Sec);
+    while (timerMs() < regExpiresMs) {
+        if (modemUrc("+CEREG: 1", false) || modemUrc("+CEREG: 1,1", false) || modemUrc("+CEREG: 1,5", false)) {
+            registered = true;
+            break;
+        }
+        timerMsSleep(1000);
+        if ((++secs % 5) == 0) {
+            debugf("waiting for network registration (%d/%d)\n", secs, maxSecs);
+        }
+        modemSend(NULL, "AT+CEREG?");
+        modemProcessSerialIncoming();
+    }
+    if (!registered) {
+        modemPowerOff();
+        return errF("can't register with network");
+    }
+
+    // We're now connected
+    modemSetConnected(true);
 
     // Done
     return errNone;

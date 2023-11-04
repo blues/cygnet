@@ -1,5 +1,6 @@
 
 #include "app.h"
+#include "usart.h"
 
 // Maximum command
 #define maxCMD 256
@@ -48,25 +49,32 @@ err_t diagProcess(char *diagCommand)
     uint32_t diagCommandLen = strlen(diagCommand);
     int cmd = getCommand(diagCommand, diagCommandLen);
 
-    // Copy to a local buffer, cleaning and null-terminated for string processing
+    // If it looks like an AT command, do special processing.  Else, copy
+    // to a local buffer, cleaning and null-terminated for string processing
     char argbuf[maxCMD];
-    int j = 0;
-    for (int i=0; i<diagCommandLen; i++) {
-        if (j >= sizeof(argbuf)-1) {
-            break;
+    if (memeql(diagCommand, "at", 2) || memeql(diagCommand, "AT", 2)) {
+        strLcpy(argbuf, "m ");
+        strLcat(argbuf, diagCommand);
+        cmd = CMD_M;
+    } else {
+        int j = 0;
+        for (int i=0; i<diagCommandLen; i++) {
+            if (j >= sizeof(argbuf)-1) {
+                break;
+            }
+            bool goodChar = false;
+            if (isAsciiAlphaNumeric(diagCommand[i])) {
+                goodChar = true;
+            }
+            if (ispunct(diagCommand[i]) || diagCommand[i] == ' ') {
+                goodChar = true;
+            }
+            if (goodChar) {
+                argbuf[j++] = diagCommand[i];
+            }
         }
-        bool goodChar = false;
-        if (isAsciiAlphaNumeric(diagCommand[i])) {
-            goodChar = true;
-        }
-        if (ispunct(diagCommand[i]) || diagCommand[i] == ' ') {
-            goodChar = true;
-        }
-        if (goodChar) {
-            argbuf[j++] = diagCommand[i];
-        }
+        argbuf[j] = '\0';
     }
-    argbuf[j] = '\0';
 
     // Retain the argbuf before we write nulls into it
     char cmdline[maxCMD];
@@ -139,35 +147,42 @@ err_t diagProcess(char *diagCommand)
     }
 
     case CMD_M: {
-        if (strEQL(argv[1], "on")) {
+        if (argv[1][0] == '\0') {
+            modemUrcShow();
+        } else if (strEQL(argv[1], "t1")) {
+            MX_UART_RxStart(&huart2);
+            debugf("modem RX restarted\n");
+        } else if (strEQL(argv[1], "t2")) {
+            MX_USART2_UART_DeInit();
+            MX_USART2_UART_ReInit();
+            debugf("modem RX reinitialized\n");
+        } else if (strEQL(argv[1], "on")) {
             err = modemPowerOn();
             if (err) {
                 break;
             }
             debugf("modem is on\n");
-            break;
-        }
-        if (strEQL(argv[1], "off")) {
+        } else if (strEQL(argv[1], "off")) {
             modemPowerOff();
             debugf("modem is on\n");
-            break;
-        }
-        if (!modemIsOn()) {
-            debugf("modem must be powered on\n");
-            break;
-        }
-        arrayString results = {0};
-        err = modemSend(&results, &cmdline[2]);
-        if (err) {
-            break;
-        }
-        if (arrayEntries(&results) == 0) {
-            debugR("OK\n");
         } else {
-            for (int i=0; i<arrayEntries(&results); i++) {
-                debugR("%s\n", arrayEntry(&results, i));
+            if (!modemIsOn()) {
+                debugf("modem must be powered on\n");
+                break;
             }
-            arrayReset(&results);
+            arrayString results = {0};
+            err = modemSend(&results, &cmdline[2]);
+            if (err) {
+                break;
+            }
+            if (arrayEntries(&results) == 0) {
+                debugR("OK\n");
+            } else {
+                for (int i=0; i<arrayEntries(&results); i++) {
+                    debugR("%s\n", arrayEntry(&results, i));
+                }
+                arrayReset(&results);
+            }
         }
         break;
     }

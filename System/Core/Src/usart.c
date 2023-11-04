@@ -115,27 +115,25 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 // Start a receive
 void MX_UART_RxStart(UART_HandleTypeDef *huart)
 {
-    if (huart == &hlpuart1) {
-        if (rxioLPUART1.buf == NULL) {
-            return;
-        }
+    if (huart == &hlpuart1 && rxioLPUART1.buf != NULL) {
         rxioLPUART1.rxlen = UART_RXLEN;
-        HAL_UART_Receive_IT(huart, rxioLPUART1.iobuf, rxioLPUART1.rxlen);
-    }
-    if (huart == &huart1) {
-        if (rxioUSART1.buf == NULL) {
+        if (HAL_UART_Receive_IT(huart, rxioLPUART1.iobuf, rxioLPUART1.rxlen) == HAL_OK) {
             return;
         }
+    }
+    if (huart == &huart1 && rxioUSART1.buf != NULL) {
         rxioUSART1.rxlen = UART_RXLEN;
-        HAL_UART_Receive_DMA(huart, rxioUSART1.iobuf, rxioUSART1.rxlen);
-    }
-    if (huart == &huart2) {
-        if (rxioUSART2.buf == NULL) {
+        if (HAL_UART_Receive_DMA(huart, rxioUSART1.iobuf, rxioUSART1.rxlen) == HAL_OK) {
             return;
         }
-        rxioUSART2.rxlen = UART_RXLEN;
-        HAL_UART_Receive_DMA(huart, rxioUSART2.iobuf, rxioUSART2.rxlen);
     }
+    if (huart == &huart2 && rxioUSART2.buf != NULL) {
+        rxioUSART2.rxlen = UART_RXLEN;
+        if (HAL_UART_Receive_DMA(huart, rxioUSART2.iobuf, rxioUSART2.rxlen) == HAL_OK) {
+            return;
+        }
+    }
+    MX_Breakpoint();
 }
 
 // Register a completion callback and allocate receive buffer

@@ -42,13 +42,21 @@ extern char modemVersion[];
 typedef err_t (*modemWorker) (J *workBody, uint8_t *workPayload, uint32_t workPayloadLen);
 void modemTask(void *params);
 err_t modemSend(arrayString *retResults, char *format, ...);
-err_t modemEnqueueWork(modemWorker worker, J *workBody, char *workPayloadB64);
+err_t modemEnqueueWork(const char *status, modemWorker worker, J *workBody, char *workPayloadB64);
 err_t modemRemoveWork(modemWorker worker);
 bool modemIsOn(void);
 err_t modemPowerOn(void);
 void modemPowerOff(void);
 err_t modemRequireResults(arrayString *results, err_t err, uint32_t numResults, char *errType);
 int modemResult(arrayString *results, char *prefix);
+void modemUrcRemove(char *urc);
+bool modemUrcGet(char *urc, char *buf, uint32_t buflen);
+bool modemUrc(char *urc, bool remove);
+void modemUrcShow(void);
+bool modemIsConnected(void);
+void modemSetConnected(bool yesOrNo);
+err_t modemReportStatus(void);
+bool modemProcessSerialIncoming(void);
 
 // work.c
 err_t workInit(J *body, uint8_t *payload, uint32_t payloadLen);
