@@ -6,19 +6,6 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
 {
     err_t err;
 
-    // If we haven't yet received a hello, we must wait
-    if (!monitorHaveReceivedHello()) {
-        err = modemPowerOn();
-        if (err) {
-            return err;
-        }
-        modemPowerOff();
-        timerMsSleep(5000);
-        if (!monitorHaveReceivedHello()) {
-            return errF("haven't yet successfully heard from notecard");
-        }
-    }
-
     // Exit if already connected
     if (modemIsConnected()) {
         return errF("already connected");
@@ -110,6 +97,9 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
         return err;
     }
 
+    // Pause while radio is enabled
+    timerMsSleep(2500);
+
     // Enable network registration and location information via URC in this format:
     // +CEREG: <stat>
     // <stat> Integer type. EPS registration status.
@@ -177,8 +167,38 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
 // Request that the modem be powered off
 err_t workModemDisconnect(J *body, uint8_t *payload, uint32_t payloadLen)
 {
+
+    // Exit if already connected
+    if (!modemIsConnected()) {
+        return errF("already disconnected");
+    }
+
+    // Disconnect from the network
+    err_t err = modemSend(NULL, "AT+CFUN=0");
+    if (err) {
+        timerMsSleep(2500);
+    }
+    int maxSecs = 20;
+    int64_t unregExpiresMs = timerMs() + ((int64_t)maxSecs * ms1Sec);
+    while (timerMs() < unregExpiresMs) {
+        if (modemUrc("+CEREG: 0", false) || modemUrc("+CEREG: 1,0", false) || modemUrc("+CEREG: 0,0", false)) {
+            break;
+        }
+        modemSend(NULL, "AT+CEREG?");
+        timerMsSleep(1000);
+        modemProcessSerialIncoming();
+    }
+
+    // Do a power-down of the modem
+#ifndef MODEM_ALWAYS_ON
+    modemSend(NULL, "AT+QPOWD=0");
+#endif
+
+    // Power off
     modemPowerOff();
+
     return errNone;
+
 }
 
 // Request to uplink data

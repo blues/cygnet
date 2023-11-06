@@ -15,7 +15,7 @@ uint32_t monitor(void)
     if (modemInfoNeeded()) {
         err_t err = modemPowerOn();
         if (!err) {
-            modemPowerOff();
+            workModemDisconnect(NULL, NULL, 0);
         }
     }
 

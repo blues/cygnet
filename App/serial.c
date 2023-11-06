@@ -122,6 +122,11 @@ void serialPoll(void)
         lastTimeDidWorkMs = timerMs();
     }
 
+    // If modem is on, accelerate
+    if (modemIsOn() && pollMs > ms1Sec) {
+        pollMs = ms1Sec;
+    }
+
     // Wait until there's something to do
     taskTake(serialTaskID, pollMs);
 

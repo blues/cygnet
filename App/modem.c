@@ -249,7 +249,7 @@ bool processModemWork(void)
 {
 
     // Don't do anything while modem info is still needed
-    if (modemInfoNeeded()) {
+    if (modemInfoNeeded() || !monitorHaveReceivedHello()) {
         return false;
     }
 
@@ -402,7 +402,7 @@ err_t modemSend(arrayString *retResults, char *format, ...)
     }
 
     // Wait until any of the standard terminators, or timeout
-    int64_t expiresMs = timerMs() + 5000;
+    int64_t expiresMs = timerMs() + 10000;
     bool terminatorReceived = false;
     err = errNone;
     while (!err && !terminatorReceived) {
@@ -559,22 +559,24 @@ err_t modemPowerOn(void)
         mutexUnlock(&modemReceivedLinesMutex);
     }
 
+    // Let things settle a bit after power-on
+    timerMsSleep(2500);
+
     // Turn off echo
     err = errNone;
-    for (int i=0; i<5; i++) {
-        timerMsSleep(3000);
+    for (int i=0; i<6; i++) {
         err = modemSend(NULL, "ATE0");
         if (!err) {
             break;
         }
+        timerMsSleep(i < 3 ? 750 : 2500);
     }
     if (err) {
         modemPowerOff();
         return err;
     }
 
-    // Wait for stability
-    timerMsSleep(2000);
+    // Indicate that the modem is ready to take AT commands
     isReady = true;
 
     // Turn off 10 second auto sleep timer
@@ -657,6 +659,9 @@ err_t modemReportStatus(void)
         arrayAppendStringBytes(statusBytes, (char *) status);
     } else if (modemInfoNeeded()) {
         arrayAppendStringBytes(statusBytes, STATUS_WORK_INIT);
+    }
+    if (!locGet(NULL, NULL, NULL)) {
+        arrayAppendStringBytes(statusBytes, STATUS_NO_LOCATION);
     }
 
     char *p = (char *) arrayAddress(statusBytes);

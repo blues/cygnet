@@ -23,4 +23,4 @@
 #define STATUS_WORK_UPLINKING   "{uplinking}"
 #define STATUS_WORK_DOWNLINKING "{downlinking}"
 #define STATUS_IDLE             "{idle}"
-
+#define STATUS_NO_LOCATION      "{location}"
