@@ -61,23 +61,3 @@ void debugPanic(const char *message)
     debugSoftPanic(message);
     NVIC_SystemReset();
 }
-
-// Return a pointer to the filename portion of a path.  Do NOT use mutexes, because this is
-// too low level and is called by the mutex code itself.
-char *debugFileName(const char *fileName)
-{
-    if (fileName == NULL) {
-        return "";
-    }
-    char *lastName = (char *) fileName;
-    for (;;) {
-        char ch = *fileName++;
-        if (ch == '\0') {
-            break;
-        }
-        if (ch == '/' || ch == '\\') {
-            lastName = (char *) fileName;
-        }
-    }
-    return lastName;
-}

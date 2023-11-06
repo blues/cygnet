@@ -135,7 +135,6 @@ void debugf(const char *format, ...);
 void debugR(const char *format, ...);
 void debugMessage(const char *buf);
 void debugMessageLen(const char *buf, uint32_t buflen);
-char *debugFileName(const char *fileName);
 void debugPanic(const char *message);
 void debugSoftPanic(const char *message);
 
@@ -289,36 +288,11 @@ uint16_t crc16(uint8_t const *data, size_t size);
 // crc32.c
 int32_t crc32(const void* data, size_t length);
 
-// Virtual/Physical LED definitions, which may represent physical or neopixel LEDs
-#define VLED_YELLOW         0
-#define VLED_GREEN          1
-#define VLED_RED            2
-#define VLED_BLUE           3
-#define VLED_CYAN           4
-#define VLED_MAGENTA        5
-#define VLED_WHITE          6
-#define VLED_GRAY           7
-#define VLED_ORANGE         8
-#define VLED_TYPES          9
-#define VLED_UNKNOWN        99
-
 // base64.c
 int Base64encode_len(int len);
 int Base64encode(char * coded_dst, const char *plain_src,int len_plain_src);
 int Base64decode_len(const char * coded_src);
 int Base64decode(char * plain_dst, const char *coded_src, int *);
-
-// neo.c
-uint8_t neoCIColor(uint32_t vcolor);
-void neoPulseTest(int testIterations);
-err_t neoDisplayPattern(uint8_t *pattern, uint32_t patternLen, uint16_t repeatOverride);
-void neoConfigureVLED(uint8_t *priorityTable, uint8_t *muxTable, uint32_t count, uint32_t userLED);
-void neoVLED(uint32_t led, bool on);
-void neoUserVLED(uint8_t ciColor);
-err_t neoSetBrightness(uint32_t level);
-
-// neotest.c
-void neoTest(char *whichDemo, int iterations);
 
 // os.c
 uint32_t osBuildNum(void);

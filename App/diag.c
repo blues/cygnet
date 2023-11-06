@@ -166,10 +166,6 @@ err_t diagProcess(char *diagCommand)
             modemPowerOff();
             debugf("modem is on\n");
         } else {
-            if (!modemIsOn()) {
-                debugf("modem must be powered on\n");
-                break;
-            }
             arrayString results = {0};
             err = modemSend(&results, &cmdline[2]);
             if (err) {

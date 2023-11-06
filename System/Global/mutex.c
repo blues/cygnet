@@ -30,6 +30,9 @@ STATIC mtxtype_t taskMutexes[TASKID_NUM_TASKS] = {0};
 // The mutex to protect mutex creation
 STATIC mutex initMutex = {MTX_MTX, {0}};
 
+// Forwards
+char *justFilename(const char *fileName);
+
 // Init a mutex
 void mutexInit(mutex *m, mtxtype_t mtype)
 {
@@ -94,7 +97,7 @@ void mutexLock(mutex *m)
     if (m->state.lockedTask == thisTaskID) {
 #if mutexTrace
         char reason[128];
-        snprintf(reason, sizeof(reason), "*** mutexLock nested! %s:%u\n", debugFileName(m->state.filename), (unsigned)m->state.lineno);
+        snprintf(reason, sizeof(reason), "*** mutexLock nested! %s:%u\n", justFilename(m->state.filename), (unsigned)m->state.lineno);
         debugPanic(reason);
 #else
         debugPanic("*** mutexLock Nested!");
@@ -107,7 +110,7 @@ void mutexLock(mutex *m)
     while (!xSemaphoreTake(m->state.handle, MUTEX_NEEDED_DURATION_WARNING_MS)) {
         char reason[128];
         uint32_t secsHeld = (uint32_t) (timerMs() - timerBegan)/1000;
-        snprintf(reason, sizeof(reason), "$$$$ mutex needed by %s:%u (%d) is being held for %us by %s:%u (%d)\n", debugFileName(filename), (unsigned)lineno, taskID(), secsHeld, debugFileName(m->state.filename), m->state.lineno, m->state.lockedTask);
+        snprintf(reason, sizeof(reason), "$$$$ mutex needed by %s:%u (%d) is being held for %us by %s:%u (%d)\n", justFilename(filename), (unsigned)lineno, taskID(), secsHeld, justFilename(m->state.filename), m->state.lineno, m->state.lockedTask);
         debugMessage(reason);
     }
 #else
@@ -117,7 +120,7 @@ void mutexLock(mutex *m)
     // Trace
 #if SHOW_MUTEX_LOCKS
     char reason[128];
-    snprintf(reason, sizeof(reason), "mutexLock: %s 0x%016llx %s:%u\n", taskLabel(thisTaskID), (unsigned long long)m->mtx, debugFileName(filename), (unsigned)lineno);
+    snprintf(reason, sizeof(reason), "mutexLock: %s 0x%016llx %s:%u\n", taskLabel(thisTaskID), (unsigned long long)m->mtx, justFilename(filename), (unsigned)lineno);
     debugMessage(reason);
 #endif
 
@@ -132,7 +135,7 @@ void mutexLock(mutex *m)
         mtxtype_t lowerLevelMask = m->mtx - 1;
         if (taskMutexes[thisTaskID] & lowerLevelMask) {
             char reason[128];
-            snprintf(reason, sizeof(reason), "*** %s mutex ordering (want 0x%016llx while holding 0x%016llx) %s:%u\n", taskLabel(thisTaskID), (unsigned long long)m->mtx, (unsigned long long)taskMutexes[thisTaskID], debugFileName(filename), (unsigned)lineno);
+            snprintf(reason, sizeof(reason), "*** %s mutex ordering (want 0x%016llx while holding 0x%016llx) %s:%u\n", taskLabel(thisTaskID), (unsigned long long)m->mtx, (unsigned long long)taskMutexes[thisTaskID], justFilename(filename), (unsigned)lineno);
             debugSoftPanic(reason);
         }
         taskMutexes[thisTaskID] |= m->mtx;
@@ -151,13 +154,15 @@ void mutexLock(mutex *m)
 // multiple options for "work to do" and it's preferable to do something that you know would cause a
 // block.  This is used by the serial poll task, where other tasks may have receive buffers locked
 // because of work in progress.
-bool mutexIsLocked(mutex *m)
+bool mutexIsLocked(mutex *m, int *lockedTaskID)
 {
-    return m->state.lockedMs != 0;
-}
-bool mutexIsLockedByThisTask(mutex *m)
-{
-    return m->state.lockedTask == taskID();
+    if (m->state.lockedTask != -1 && m->state.lockedTask != taskID()) {
+        if (lockedTaskID != NULL) {
+            *lockedTaskID = m->state.lockedTask;
+        }
+        return true;
+    }
+    return false;
 }
 
 // Unlock the resource
@@ -174,7 +179,7 @@ void mutexUnlock(mutex *m)
     if (m->state.lockedTask == -1) {
 #if mutexTrace
         char reason[128];
-        snprintf(reason, sizeof(reason), "*** mutexUnlock of unlocked mutex!  %s:%u\n", debugFileName(m->state.filename), (unsigned)m->state.lineno);
+        snprintf(reason, sizeof(reason), "*** mutexUnlock of unlocked mutex!  %s:%u\n", justFilename(m->state.filename), (unsigned)m->state.lineno);
         debugPanic(reason);
 #else
         debugPanic("*** mutexUnlock of unlocked mutex!");
@@ -183,7 +188,7 @@ void mutexUnlock(mutex *m)
     if (m->state.lockedTask != taskID()) {
 #if mutexTrace
         char reason[128];
-        snprintf(reason, sizeof(reason), "*** mutexUnlock of mutex owned by another task! (cur:%d owner:%d)  %s:%u\n", taskID(), m->state.lockedTask, debugFileName(m->state.filename), (unsigned)m->state.lineno);
+        snprintf(reason, sizeof(reason), "*** mutexUnlock of mutex owned by another task! (cur:%d owner:%d)  %s:%u\n", taskID(), m->state.lockedTask, justFilename(m->state.filename), (unsigned)m->state.lineno);
         debugPanic(reason);
 #else
         debugPanic("*** mutexUnlock of mutex owned by another task!");
@@ -215,7 +220,7 @@ void mutexUnlock(mutex *m)
             if (m->mtx != MTX_EVENT) {      // Ignore simple waits for queue or timerMsSleep()
                 char *header = "=====\n";
                 char reason[128];
-                snprintf(reason, sizeof(reason), "===== mutexUnlock: locked for %dms %s:%u\n", (int) msElapsed, debugFileName(xFilename), (unsigned)xLineno);
+                snprintf(reason, sizeof(reason), "===== mutexUnlock: locked for %dms %s:%u\n", (int) msElapsed, justFilename(xFilename), (unsigned)xLineno);
                 debugMessage(header);
                 debugMessage(header);
                 debugMessage(reason);
@@ -226,4 +231,24 @@ void mutexUnlock(mutex *m)
     }
 #endif
 
+}
+
+// Return a pointer to the filename portion of a path.  Do NOT use mutexes, because this is
+// too low level and is called by the mutex code itself.
+char *justFilename(const char *fileName)
+{
+    if (fileName == NULL) {
+        return "";
+    }
+    char *lastName = (char *) fileName;
+    for (;;) {
+        char ch = *fileName++;
+        if (ch == '\0') {
+            break;
+        }
+        if (ch == '/' || ch == '\\') {
+            lastName = (char *) fileName;
+        }
+    }
+    return lastName;
 }

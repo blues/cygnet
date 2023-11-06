@@ -11,6 +11,14 @@ uint32_t monitor(void)
 {
     uint32_t returnInMs = ms1Day;
 
+    // If we don't have our modem info yet, try to fetch it
+    if (modemInfoNeeded()) {
+        err_t err = modemPowerOn();
+        if (!err) {
+            modemPowerOff();
+        }
+    }
+
     // If we haven't yet received a hello, poll on a periodic basis and send the
     // notecard a 'hello' message introducing ourselves.
     if (!receivedHello) {
@@ -23,7 +31,7 @@ uint32_t monitor(void)
                 }
                 JAddStringToObject(body, "id", modemId);
                 JAddStringToObject(body, "modem", modemVersion);
-                serialSendMessageToNotecard(serialCreateMessage(ReqHello, body, NULL, 0));
+                serialSendMessageToNotecard(serialCreateMessage(ReqHello, NULL, body, NULL, 0));
             }
         }
         returnInMs = GMIN(returnInMs, nextHelloDueMs - timerMs());
@@ -39,4 +47,10 @@ uint32_t monitor(void)
 void monitorReceivedHello(void)
 {
     receivedHello = true;
+}
+
+// Have we received hello?
+bool monitorHaveReceivedHello(void)
+{
+    return receivedHello;
 }

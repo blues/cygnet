@@ -77,6 +77,9 @@ void serialInit(uint32_t taskID)
 
     // USART2 (modem port)
     MX_UART_RxConfigure(&huart2, usart2InterruptBuffer, sizeof(usart2InterruptBuffer), serialReceivedNotification);
+#ifdef MODEM_ALWAYS_ON
+    MX_USART2_UART_Init(false, 115200);
+#endif
 
 }
 
@@ -156,7 +159,7 @@ bool pollPort(UART_HandleTypeDef *huart)
     }
 
     // Exit if we're already processing something for this task
-    if (mutexIsLocked(&desc->rxLock)) {
+    if (mutexIsLocked(&desc->rxLock, NULL)) {
         return false;
     }
 
@@ -235,7 +238,7 @@ bool serialLock(UART_HandleTypeDef *huart, uint8_t **retData, uint32_t *retDataL
     }
 
     // If a different task is already processing this serial, don't block
-    if (mutexIsLocked(&desc->rxLock)) {
+    if (mutexIsLocked(&desc->rxLock, NULL)) {
         return false;
     }
 
@@ -397,11 +400,16 @@ void serialSendMessageToNotecard(J *msg)
 }
 
 // Create an outgoing message object intended to be sent to the notecard
-J *serialCreateMessage(const char *msgType, J *body, uint8_t *payload, uint32_t payloadLen)
+J *serialCreateMessage(const char *msgType, char *status, J *body, uint8_t *payload, uint32_t payloadLen)
 {
     J *msg = JCreateObject();
     JAddStringToObject(msg, FieldCmd, msgType);
-    JAddItemToObject(msg, FieldBody, body);
+    if (status != NULL && status[0] != '\0') {
+        JAddStringToObject(msg, FieldStatus, status);
+    }
+    if (body != NULL) {
+        JAddItemToObject(msg, FieldBody, body);
+    }
     if (payload != NULL && payloadLen != 0) {
         JAddBinaryToObject(msg, FieldPayload, payload, payloadLen);
     }

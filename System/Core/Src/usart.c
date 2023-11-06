@@ -24,6 +24,7 @@ DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
 bool usart2UsingRS485 = false;
 uint32_t usart2BaudRate = 0;
+#define USART2_USE_DMA
 
 // For UART receive
 // UART receive I/O descriptor.  Note that if we ever fill the buffer
@@ -129,9 +130,15 @@ void MX_UART_RxStart(UART_HandleTypeDef *huart)
     }
     if (huart == &huart2 && rxioUSART2.buf != NULL) {
         rxioUSART2.rxlen = UART_RXLEN;
+#ifdef USART2_USE_DMA
         if (HAL_UART_Receive_DMA(huart, rxioUSART2.iobuf, rxioUSART2.rxlen) == HAL_OK) {
             return;
         }
+#else
+        if (HAL_UART_Receive_IT(huart, rxioUSART2.iobuf, rxioUSART2.rxlen) == HAL_OK) {
+            return;
+        }
+#endif
     }
     MX_Breakpoint();
 }
@@ -209,7 +216,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         uio = &rxioUSART1;
     }
     if (huart == &huart2) {
+#ifdef USART2_USE_DMA
         receivedBytes = rxioUSART2.rxlen - __HAL_DMA_GET_COUNTER(huart->hdmarx);
+#else
+        receivedBytes = rxioUSART2.rxlen - huart->RxXferCount;
+#endif
         uio = &rxioUSART2;
     }
     if (huart->ErrorCode != HAL_UART_ERROR_NONE) {
@@ -412,9 +423,6 @@ void MX_USART1_UART_DeInit(void)
     __HAL_RCC_USART1_FORCE_RESET();
     __HAL_RCC_USART1_RELEASE_RESET();
 
-    // Disable IDLE interrupt
-    __HAL_UART_DISABLE_IT(&huart1, UART_IT_IDLE);
-
     // Deinit
     HAL_UART_DeInit(&huart1);
 
@@ -462,19 +470,16 @@ void MX_USART2_UART_DeInit(void)
     // Deconfigure RX buffer
     rxioUSART2.fill = rxioUSART2.drain = 0;
 
-    // Stop any pending DMA, if any
+    // Stop any pending DMA and disable DMA intnerrupts
+#ifdef USART2_USE_DMA
     HAL_UART_DMAStop(&huart2);
-
-    // Deinit DMA interrupts
     HAL_NVIC_DisableIRQ(USART2_RX_DMA_IRQn);
     HAL_NVIC_DisableIRQ(USART2_TX_DMA_IRQn);
+#endif
 
     // Reset peripheral
     __HAL_RCC_USART2_FORCE_RESET();
     __HAL_RCC_USART2_RELEASE_RESET();
-
-    // Disable IDLE interrupt
-    __HAL_UART_DISABLE_IT(&huart2, UART_IT_IDLE);
 
     // Deinit
     HAL_UART_DeInit(&huart2);
@@ -598,7 +603,9 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
         }
 
         // USART2 clock enable
+#ifdef USART2_USE_DMA
         MX_DMA_Init();
+#endif
         __HAL_RCC_USART2_CLK_ENABLE();
 
         // GPIO Configuration
@@ -624,7 +631,8 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
             HAL_GPIO_Init(RS485_A1_DE_GPIO_Port, &GPIO_InitStruct);
         }
 
-        // USART2_RX Init
+        // USART2_RX DMA Init
+#ifdef USART2_USE_DMA
         hdma_usart2_rx.Instance = USART2_RX_DMA_Channel;
         hdma_usart2_rx.Init.Request = DMA_REQUEST_2;
         hdma_usart2_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
@@ -637,10 +645,11 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
         if (HAL_DMA_Init(&hdma_usart2_rx) != HAL_OK) {
             Error_Handler();
         }
-
         __HAL_LINKDMA(uartHandle,hdmarx,hdma_usart2_rx);
+#endif
 
-        // USART2_TX Init
+        // USART2_TX DMA Init
+#ifdef USART2_USE_DMA
         hdma_usart2_tx.Instance = USART2_TX_DMA_Channel;
         hdma_usart2_tx.Init.Request = DMA_REQUEST_2;
         hdma_usart2_tx.Init.Direction = DMA_MEMORY_TO_PERIPH;
@@ -653,16 +662,18 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
         if (HAL_DMA_Init(&hdma_usart2_tx) != HAL_OK) {
             Error_Handler();
         }
-
         __HAL_LINKDMA(uartHandle,hdmatx,hdma_usart2_tx);
+#endif
 
         // USART2 interrupt Init
         HAL_NVIC_SetPriority(USART2_IRQn, INTERRUPT_PRIO_SERIAL, 0);
         HAL_NVIC_EnableIRQ(USART2_IRQn);
+#ifdef USART2_USE_DMA
         HAL_NVIC_SetPriority(USART2_RX_DMA_IRQn, INTERRUPT_PRIO_SERIAL, 0);
         HAL_NVIC_EnableIRQ(USART2_RX_DMA_IRQn);
         HAL_NVIC_SetPriority(USART2_TX_DMA_IRQn, INTERRUPT_PRIO_SERIAL, 0);
         HAL_NVIC_EnableIRQ(USART2_TX_DMA_IRQn);
+#endif
 
     }
 
@@ -727,13 +738,17 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
         }
 
         // USART2 DMA DeInit
+#ifdef USART2_USE_DMA
         HAL_DMA_DeInit(uartHandle->hdmarx);
         HAL_DMA_DeInit(uartHandle->hdmatx);
+#endif
 
         // USART2 interrupt Deinit
         HAL_NVIC_DisableIRQ(USART2_IRQn);
+#ifdef USART2_USE_DMA
         HAL_NVIC_DisableIRQ(USART2_RX_DMA_IRQn);
         HAL_NVIC_DisableIRQ(USART2_TX_DMA_IRQn);
+#endif
 
     }
 

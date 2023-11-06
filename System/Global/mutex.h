@@ -55,8 +55,7 @@ void mutexLockHandler(const char *filename, uint32_t lineno, mutex *m);
 void mutexLock(mutex *m);
 #endif
 void mutexUnlock(mutex *m);
-bool mutexIsLocked(mutex *m);
-bool mutexIsLockedByThisTask(mutex *m);
+bool mutexIsLocked(mutex *m, int *lockedTaskID);
 void mutexShow(mutex *m);
 void mutexInit(mutex *m, mtxtype_t mtype);
 void mutexDeInit(mutex *m);

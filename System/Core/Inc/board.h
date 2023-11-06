@@ -280,5 +280,10 @@
 #define RTC_PREDIV_S                    ((1<<RTC_N_PREDIV_S)-1)
 #define RTC_PREDIV_A                    ((1<<(15-RTC_N_PREDIV_S))-1)
 
+// Modem stays on if we don't have a power switch
+#if (CURRENT_BOARD == BOARD_NUCLEO)
+#define MODEM_ALWAYS_ON
+#endif
+
 // App's overrides to board.h, which are resolved in the "weak" folder if the app doesn't define them
 #include "app_board.h"

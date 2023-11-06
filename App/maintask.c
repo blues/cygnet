@@ -31,6 +31,9 @@ void mainTask(void *params)
     // Initialize serial, thus enabling debug output
     serialInit(TASKID_MAIN);
 
+    // Initialize the modem package
+    modemInit();
+
     // Enable debug info at startup, by policy
     MX_DBG_Enable(true);
 

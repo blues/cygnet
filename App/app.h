@@ -39,6 +39,7 @@
 // modem.c
 extern char modemId[];
 extern char modemVersion[];
+err_t modemInit(void);
 typedef err_t (*modemWorker) (J *workBody, uint8_t *workPayload, uint32_t workPayloadLen);
 void modemTask(void *params);
 err_t modemSend(arrayString *retResults, char *format, ...);
@@ -56,13 +57,14 @@ void modemUrcShow(void);
 bool modemIsConnected(void);
 void modemSetConnected(bool yesOrNo);
 err_t modemReportStatus(void);
-bool modemProcessSerialIncoming(void);
+void modemProcessSerialIncoming(void);
+bool modemInfoNeeded(void);
 
 // work.c
-err_t workInit(J *body, uint8_t *payload, uint32_t payloadLen);
 err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen);
 err_t workModemDisconnect(J *body, uint8_t *payload, uint32_t payloadLen);
 err_t workModemUplink(J *body, uint8_t *payload, uint32_t payloadLen);
+err_t workModemDownlink(J *hexData, uint8_t *payload, uint32_t payloadLen);
 
 // serial.c
 void serialInit(uint32_t serialTaskID);
@@ -74,7 +76,7 @@ void serialOutput(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen);
 void serialOutputLn(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen);
 void serialOutputObject(UART_HandleTypeDef *huart, J *msg);
 void serialSendMessageToNotecard(J *msg);
-J *serialCreateMessage(const char *msgType, J *body, uint8_t *payload, uint32_t payloadLen);
+J *serialCreateMessage(const char *msgType, char *status, J *body, uint8_t *payload, uint32_t payloadLen);
 void serialSendLineToModem(char *text);
 
 // maintask.c
@@ -106,6 +108,7 @@ void monTask(void *params);
 // monitor.c
 uint32_t monitor(void);
 void monitorReceivedHello(void);
+bool monitorHaveReceivedHello(void);
 
 // Errors
 #define ERR_IO "{io}"

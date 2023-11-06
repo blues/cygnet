@@ -1,26 +1,23 @@
 
 #include "app.h"
 
-// One-time initialization
-err_t workInit(J *body, uint8_t *payload, uint32_t payloadLen)
-{
-    err_t err;
-
-    // Power-on the modem, and then power it off, to get the parameters
-    err = modemPowerOn();
-    if (err) {
-        return err;
-    }
-    modemPowerOff();
-
-    // Done
-    return errNone;
-
-}
-
 // Connect that the modem be powered on
 err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
 {
+    err_t err;
+
+    // If we haven't yet received a hello, we must wait
+    if (!monitorHaveReceivedHello()) {
+        err = modemPowerOn();
+        if (err) {
+            return err;
+        }
+        modemPowerOff();
+        timerMsSleep(5000);
+        if (!monitorHaveReceivedHello()) {
+            return errF("haven't yet successfully heard from notecard");
+        }
+    }
 
     // Exit if already connected
     if (modemIsConnected()) {
@@ -34,7 +31,7 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
     }
 
     // Power-on the modem, and then power it off, to get the parameters
-    err_t err = modemPowerOn();
+    err = modemPowerOn();
     if (err) {
         return err;
     }
@@ -68,6 +65,14 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
     //    0 Idle
     //    1 Connected
     err = modemSend(NULL, "AT+CSCON=1");
+    if (err) {
+        modemPowerOff();
+        return err;
+    }
+
+    // Enable downlink URC reporting
+    // +CRTDCP: <cid>,<cpdata_lenth>,<cpdata>;
+    err = modemSend(NULL, "AT+CRTDCP=1");
     if (err) {
         modemPowerOff();
         return err;
@@ -145,7 +150,7 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
     int maxSecs = 90;
     int64_t regExpiresMs = timerMs() + ((int64_t)maxSecs * ms1Sec);
     while (timerMs() < regExpiresMs) {
-        if (modemUrc("+CEREG: 1", false) || modemUrc("+CEREG: 1,1", false) || modemUrc("+CEREG: 1,5", false)) {
+        if (modemUrc("+CEREG: 1", false) || modemUrc("+CEREG: 5", false) || modemUrc("+CEREG: 1,1", false) || modemUrc("+CEREG: 1,5", false)) {
             registered = true;
             break;
         }
@@ -217,4 +222,23 @@ err_t workModemUplink(J *body, uint8_t *payload, uint32_t payloadLen)
     // Done
     memFree(cmd);
     return errNone;
+}
+
+// Handle a downlink
+err_t workModemDownlink(J *hexData, uint8_t *unused, uint32_t unusedLen)
+{
+
+    char *hex = JGetStringValue(hexData);
+    uint32_t payloadLen = strlen(hex)/2;
+    uint8_t *payload;
+    err_t err = memAlloc(payloadLen, &payload);
+    if (err) {
+        return err;
+    }
+
+    stoh(hex, payload, payloadLen);
+
+    serialSendMessageToNotecard(serialCreateMessage(ReqDownlink, NULL, NULL, payload, payloadLen));
+    return errNone;
+
 }
