@@ -36,9 +36,23 @@
 #define TASKID_UNKNOWN              0xFFFF
 #define STACKWORDS(x)               ((x) / sizeof(StackType_t))
 
+// config.c
+#define cstrsz 48
+extern bool configReceivedHello;
+extern char configModemVersion[cstrsz];
+extern char configModemId[cstrsz];
+extern char configPolicy[cstrsz];
+extern char configSku[cstrsz];
+extern char configOc[cstrsz];
+extern char configApn[cstrsz];
+extern char configBand[cstrsz];
+extern char configChannel[cstrsz];
+extern uint16_t configMtu;
+void configSetDefaults(void);
+void configSet(J *body);
+
 // modem.c
-extern char modemId[];
-extern char modemVersion[];
+extern char workDetailedStatus[64];
 err_t modemInit(void);
 typedef err_t (*modemWorker) (J *workBody, uint8_t *workPayload, uint32_t workPayloadLen);
 void modemTask(void *params);
@@ -59,6 +73,7 @@ void modemSetConnected(bool yesOrNo);
 err_t modemReportStatus(void);
 void modemProcessSerialIncoming(void);
 bool modemInfoNeeded(void);
+bool modemWorkExists(modemWorker worker);
 
 // work.c
 err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen);

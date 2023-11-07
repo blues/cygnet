@@ -1429,6 +1429,9 @@
             <name>$PROJ_DIR$\..\..\App\button.c</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\..\App\config.c</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\..\App\diag.c</name>
         </file>
         <file>

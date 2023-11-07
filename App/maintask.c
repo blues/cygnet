@@ -25,6 +25,9 @@ void mainTask(void *params)
         UTIL_LPM_SetStopMode((1 << CFG_LPM_APPLI_Id), UTIL_LPM_DISABLE);
     }
 
+    // Set config defaults
+    configSetDefaults();
+
     // Remember the timer value when we booted
     timerSetBootTime();
 

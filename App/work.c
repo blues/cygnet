@@ -1,10 +1,34 @@
 
 #include "app.h"
 
+// Utility method to count commas in a string
+int countCommaSeparated(char *p)
+{
+
+    // 0 if empty string
+    if (p == NULL || p[0] == '\0') {
+        return 0;
+    }
+
+    // Return number of commas plus one
+    int count = 1;
+    while (true) {
+        char *s = strchr(p, ',');
+        if (s == NULL) {
+            break;
+        }
+        count++;
+        p = s+1;
+    }
+    return count;
+
+}
+
 // Connect that the modem be powered on
 err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
 {
     err_t err;
+    char cmd[48];
 
     // Exit if already connected
     if (modemIsConnected()) {
@@ -18,18 +42,14 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
     }
 
     // Power-on the modem, and then power it off, to get the parameters
+    strLcpy(workDetailedStatus, "powering up");
+    modemReportStatus();
     err = modemPowerOn();
     if (err) {
         return err;
     }
-
-    // Disable radio.  This is required before executing a QFLOCK request,
-    // as well as things related to band, APN, etc.
-    err = modemSend(NULL, "AT+CFUN=0");
-    if (err) {
-        modemPowerOff();
-        return err;
-    }
+    strLcpy(workDetailedStatus, "initializing modem");
+    modemReportStatus();
 
     // Enable network registration and location information via URC in this format:
     // +CEREG: <stat>
@@ -65,26 +85,55 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
         return err;
     }
 
-    // Remove lock.  I don't know why, but Skylo recommends
-    // removing the lock before re-activating it
-    err = modemSend(NULL, "AT+QLOCKF=0");
+    // Pause while radio is enabled
+    timerMsSleep(2500);
+
+    // Clear qflock
+    err = modemSend(NULL, "AT+QLOCKF=0", cmd);
     if (err) {
         modemPowerOff();
         return err;
     }
 
     // Lock to the specific NB-IoT frequency and channel
-    int skyloEarfcn = 7697;         // For The Rocks
-    int skyloEarfcnOffset = 2;      // For The Rocks
-    err = modemSend(NULL, "AT+QLOCKF=1,%d,%d", skyloEarfcn, skyloEarfcnOffset);
+    int args = countCommaSeparated(configChannel);
+    if (args != 0) {
+        if (args == 1) {
+            // 3 means offset is 0 according to AT docs
+            snprintf(cmd, sizeof(cmd), "1,%s,3", configChannel);
+        } else {
+            strLcpy(cmd, "1,");
+            strLcat(cmd, configChannel);
+        }
+        err = modemSend(NULL, "AT+QLOCKF=%s", cmd);
+        if (err) {
+            modemPowerOff();
+            return err;
+        }
+    }
+
+    // Set to NIDD and set our APN
+    err = modemSend(NULL, "AT+QCGDEFCONT=\"Non-IP\",\"%s\"", configApn);
     if (err) {
         modemPowerOff();
         return err;
     }
 
-    // Set to NIDD and set our APN
-    char *skyloApn = "blues.demo";    // For Blues
-    err = modemSend(NULL, "AT+QCGDEFCONT=\"Non-IP\",\"%s\"", skyloApn);
+    // Set bands
+    int count = countCommaSeparated(configBand);
+    if (count == 0) {
+        strLcpy(cmd, "0");
+    } else {
+        snprintf(cmd, sizeof(cmd), "%d,%s", count, configBand);
+    }
+    err = modemSend(NULL, "AT+QBAND=%s", cmd);
+    if (err) {
+        modemPowerOff();
+        return err;
+    }
+
+    // Validate the APN for trace purposes
+    err = modemSend(NULL, "AT+QCGDEFCONT?");
     if (err) {
         modemPowerOff();
         return err;
@@ -97,8 +146,21 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
         return err;
     }
 
-    // Pause while radio is enabled
-    timerMsSleep(2500);
+    // Network status (generally fails)
+#if 0
+    err = modemSend(NULL, "AT*MENGINFO=1");
+    if (err) {
+        modemPowerOff();
+        return err;
+    }
+#endif
+
+    // Make sure that the module knows our location
+    err = modemSend(NULL, "AT+QGNSSINFO=%f,%f,0,0,0", lat, lon);
+    if (err) {
+        modemPowerOff();
+        return err;
+    }
 
     // Enable network registration and location information via URC in this format:
     // +CEREG: <stat>
@@ -127,27 +189,26 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
         modemProcessSerialIncoming();
     }
 
-    // Make sure that the module knows our location
-    err = modemSend(NULL, "AT+QGNSSINFO=%f,%f,0,0,0", lat, lon);
-    if (err) {
-        modemPowerOff();
-        return err;
-    }
-
     // Wait for the registration to complete
     bool registered = false;
-    int secs = 0;
-    int maxSecs = 90;
-    int64_t regExpiresMs = timerMs() + ((int64_t)maxSecs * ms1Sec);
-    while (timerMs() < regExpiresMs) {
+    int maxSecs = 120;
+    int64_t beganMs = timerMs();
+    int64_t expiresMs = beganMs + ((int64_t)maxSecs * ms1Sec);
+    int messageSecs = 0;
+    while (timerMs() < expiresMs) {
         if (modemUrc("+CEREG: 1", false) || modemUrc("+CEREG: 5", false) || modemUrc("+CEREG: 1,1", false) || modemUrc("+CEREG: 1,5", false)) {
             registered = true;
             break;
         }
-        timerMsSleep(1000);
-        if ((++secs % 5) == 0) {
-            debugf("waiting for network registration (%d/%d)\n", secs, maxSecs);
+        int elapsedSecs = (int) (timerMs() - beganMs) / 1000;
+        if (elapsedSecs/5 != messageSecs/5) {
+            messageSecs = elapsedSecs;
+            snprintf(cmd, sizeof(cmd), "waiting for satellite network (%d/%d secs)", elapsedSecs, maxSecs);
+            strLcpy(workDetailedStatus, cmd);
+            modemReportStatus();
         }
+        timerMsSleep(1000);
+        modemSend(NULL, "AT+QENG=0");
         modemSend(NULL, "AT+CEREG?");
         modemProcessSerialIncoming();
     }
@@ -169,7 +230,7 @@ err_t workModemDisconnect(J *body, uint8_t *payload, uint32_t payloadLen)
 {
 
     // Exit if already connected
-    if (!modemIsConnected()) {
+    if (!modemIsOn()) {
         return errF("already disconnected");
     }
 
@@ -208,6 +269,11 @@ err_t workModemUplink(J *body, uint8_t *payload, uint32_t payloadLen)
     // Exit if nothing to do
     if (payloadLen == 0) {
         return errNone;
+    }
+
+    // Exit if the payload violates policy
+    if (payloadLen > configMtu) {
+        return errF("packet length of %d is larger than allowed MTU of %d", payloadLen, configMtu);
     }
 
     // Prefix and suffix for hex string

@@ -15,6 +15,7 @@ typedef struct {
 STATIC mutex modemWorkMutex = {MTX_MODEM_WORK, {0}};
 STATIC array *work = NULL;
 STATIC const char *workStatus = NULL;
+char workDetailedStatus[64] = {0};
 
 // Received lines.  Note that we separate normal lines from
 // URC lines, and we always ensure uniqueness of URCs.
@@ -22,14 +23,11 @@ STATIC mutex modemReceivedLinesMutex = {MTX_MODEM_RECEIVED, {0}};
 STATIC arrayString modemReceivedLines = {0};
 STATIC arrayString modemReceivedUrcLines = {0};
 
-// Identity
-char modemId[48] = {0};
-char modemVersion[48] = {0};
-
 // Modem state
 STATIC bool poweredOn = false;
 STATIC bool isReady = false;
 STATIC bool connected = false;
+STATIC bool modemConnectFailure = false;
 
 // Forwards
 bool processModemWork(void);
@@ -221,6 +219,22 @@ err_t modemRemoveWork(modemWorker worker)
     return errNone;
 }
 
+// See if work already exists
+bool modemWorkExists(modemWorker worker)
+{
+    bool found = false;
+    mutexLock(&modemWorkMutex);
+    for (int i=0; i<arrayEntries(work); i++) {
+        work_t *w = (work_t *) arrayEntry(work, i);
+        if (w->worker == worker) {
+            found = true;
+            break;
+        }
+    }
+    mutexUnlock(&modemWorkMutex);
+    return found;
+}
+
 // Process one unit of pending URC work
 bool processUrcWork(void)
 {
@@ -249,7 +263,7 @@ bool processModemWork(void)
 {
 
     // Don't do anything while modem info is still needed
-    if (modemInfoNeeded() || !monitorHaveReceivedHello()) {
+    if (modemInfoNeeded() || !configReceivedHello) {
         return false;
     }
 
@@ -264,10 +278,20 @@ bool processModemWork(void)
     }
     mutexUnlock(&modemWorkMutex);
     if (workToDo) {
+        workDetailedStatus[0] = '\0';
         workStatus = w.status;
+        if (w.worker == workModemConnect || w.worker == workModemDisconnect) {
+            if (w.worker == workModemConnect) {
+                modemConnectFailure = false;
+            }
+            modemReportStatus();
+        }
         err_t err = w.worker(w.workBody, w.workPayload, w.workPayloadLen);
         workStatus = NULL;
         if (w.worker == workModemConnect || w.worker == workModemDisconnect) {
+            if (w.worker == workModemConnect) {
+                modemConnectFailure = (err != errNone);
+            }
             modemReportStatus();
         }
         modemWorkReset(&w);
@@ -319,7 +343,7 @@ bool processSerialIncoming(void)
             if (q2 != NULL) {
                 *q2 = '\0';
                 J *work = JCreateString(hex);
-                modemEnqueueWork(STATUS_WORK_DOWNLINKING, workModemDownlink, work, NULL);
+                modemEnqueueWork(NTN_DOWNLINKING, workModemDownlink, work, NULL);
             }
         }
         modemResponseLen = 0;
@@ -524,9 +548,10 @@ err_t modemPowerOn(void)
     // Init the USART
 #ifndef MODEM_ALWAYS_ON
     MX_USART2_UART_Init(false, 115200);
-#else
-    serialSendLineToModem("AT+QRST=1");
 #endif
+
+    // Reset the modem
+    serialSendLineToModem("AT+QRST=1");
 
     // Physically power-on the modem
     isReady = false;
@@ -587,27 +612,27 @@ err_t modemPowerOn(void)
     }
 
     // Get IMSI if necessary
-    if (modemId[0] == '\0') {
+    if (configModemId[0] == '\0') {
         err = modemSend(&results, "AT+CIMI");
         err = modemRequireResults(&results, err, 1, "can't get modem IMSI");
         if (err) {
             modemPowerOff();
             return err;
         }
-        strLcpy(modemId, STARNOTE_SCHEME);
-        strLcat(modemId, (char *) arrayEntry(&results, 0));
+        strLcpy(configModemId, STARNOTE_ID_SCHEME);
+        strLcat(configModemId, (char *) arrayEntry(&results, 0));
         arrayReset(&results);
     }
 
     // Get firmware version
-    if (modemVersion[0] == '\0') {
+    if (configModemVersion[0] == '\0') {
         err = modemSend(&results, "AT+QGMR");
         err = modemRequireResults(&results, err, 1, "can't get modem firmware version");
         if (err) {
             modemPowerOff();
             return err;
         }
-        strLcpy(modemVersion, (char *) arrayEntry(&results, 0));
+        strLcpy(configModemVersion, (char *) arrayEntry(&results, 0));
         arrayReset(&results);
     }
 
@@ -648,27 +673,39 @@ err_t modemReportStatus(void)
         return err;
     }
 
-    if (modemIsOn()) {
-        arrayAppendStringBytes(statusBytes, STATUS_POWER);
-    }
-    if (modemIsConnected()) {
-        arrayAppendStringBytes(statusBytes, STATUS_CONNECTED);
-    }
+    // See if it's currently performing work
     volatile const char *status = workStatus;
     if (status != NULL) {
-        arrayAppendStringBytes(statusBytes, (char *) status);
+        char msg[128] = {0};
+        if (workDetailedStatus[0] == '\0') {
+            strLcpy(msg, workStatus);
+        } else {
+            strLcpy(msg, workDetailedStatus);
+            strLcat(msg, " ");
+            strLcat(msg, workStatus);
+        }
+        arrayAppendStringBytes(statusBytes, msg);
     } else if (modemInfoNeeded()) {
-        arrayAppendStringBytes(statusBytes, STATUS_WORK_INIT);
-    }
-    if (!locGet(NULL, NULL, NULL)) {
-        arrayAppendStringBytes(statusBytes, STATUS_NO_LOCATION);
+        arrayAppendStringBytes(statusBytes, NTN_INIT);
+    } else {
+        arrayAppendStringBytes(statusBytes, NTN_IDLE);
     }
 
-    char *p = (char *) arrayAddress(statusBytes);
-    if (p == NULL || p[0] == '\0') {
-        p = STATUS_IDLE;
+    // Append state
+    if (modemIsOn()) {
+        arrayAppendStringBytes(statusBytes, NTN_POWER);
     }
-    serialSendMessageToNotecard(serialCreateMessage(ReqStatus, p, NULL, NULL, 0));
+    if (modemIsConnected()) {
+        arrayAppendStringBytes(statusBytes, NTN_CONNECTED);
+    }
+    if (modemConnectFailure) {
+        arrayAppendStringBytes(statusBytes, NTN_CONNECT_FAILURE);
+    }
+    if (!locGet(NULL, NULL, NULL)) {
+        arrayAppendStringBytes(statusBytes, NTN_NO_LOCATION);
+    }
+
+    serialSendMessageToNotecard(serialCreateMessage(ReqStatus, (char *) arrayAddress(statusBytes), NULL, NULL, 0));
     arrayFree(statusBytes);
 
     return errNone;
@@ -678,5 +715,5 @@ err_t modemReportStatus(void)
 // See if modem info is still needed
 bool modemInfoNeeded(void)
 {
-    return (modemId[0] == '\0' || modemVersion[0] == '\0');
+    return (configModemId[0] == '\0' || configModemVersion[0] == '\0');
 }

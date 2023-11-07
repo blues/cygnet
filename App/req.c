@@ -24,6 +24,12 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
         *retRsp = NULL;
     }
 
+    // If we've received a line containing ^Q it is the notecard booting up
+    if (memchr(reqJSON, 0x11, reqJSONLen) != NULL) {
+        configReceivedHello = false;
+        return errNone;
+    }
+
     // Process diagnostic commands, taking advantage of the fact that it is null-terminated
     if (reqJSON[0] != '{') {
         if (!diagAllowed) {
@@ -100,33 +106,38 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
         locSet(lat, lon);
     }
 
+    // If any of the config items happen to be present in the body, on any request, set them
+    configSet(JGetObjectItem(req, "body"));
+
     // Process requests
     for (;;) {
 
         // Echo back a hello request if our time is up-to-date, because we can't continue otherwise
         if (strEQL(reqtype, ReqHello)) {
             if (timeIsValid()) {
-                monitorReceivedHello();
+                configReceivedHello = true;
             }
             break;
         }
 
         // Request to use the modem
         if (strEQL(reqtype, ReqConnect)) {
-            err = modemEnqueueWork(STATUS_WORK_CONNECTING, workModemConnect, JDetachItemFromObject(req, "body"), NULL);
+            if (!modemWorkExists(workModemConnect)) {
+                err = modemEnqueueWork(NTN_CONNECTING, workModemConnect, JDetachItemFromObject(req, "body"), NULL);
+            }
             break;
         }
 
         // Request to disconnect the modem after work has been completed
         if (strEQL(reqtype, ReqDisconnect)) {
             modemRemoveWork(workModemDisconnect);
-            err = modemEnqueueWork(STATUS_WORK_DISCONNECTING, workModemDisconnect, NULL, NULL);
+            err = modemEnqueueWork(NTN_DISCONNECTING, workModemDisconnect, NULL, NULL);
             break;
         }
 
         // Request to perform an uplink
         if (strEQL(reqtype, ReqUplink)) {
-            err = modemEnqueueWork(STATUS_WORK_UPLINKING, workModemUplink, JDetachItemFromObject(req, "body"), JGetString(req, "payload"));
+            err = modemEnqueueWork(NTN_UPLINKING, workModemUplink, JDetachItemFromObject(req, "body"), JGetString(req, "payload"));
             break;
         }
 
