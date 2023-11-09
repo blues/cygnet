@@ -51,6 +51,10 @@ extern uint16_t configMtu;
 void configSetDefaults(void);
 void configSet(J *body);
 
+// From Notecard CID definitions in notehub-defs.h
+#define CID_NONE                    0
+#define CID_RANDOM                  1
+
 // modem.c
 extern char workDetailedStatus[64];
 err_t modemInit(void);

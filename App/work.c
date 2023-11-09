@@ -285,7 +285,7 @@ err_t workModemUplink(J *body, uint8_t *payload, uint32_t payloadLen)
 
     // Allocate the hex buffer
     char *cmd;
-    err_t err = memAlloc(prefixLen + (payloadLen*2) + suffixLen, &cmd);
+    err_t err = memAlloc(prefixLen + (payloadLen*2) + suffixLen + 1, &cmd);
     if (err) {
         return err;
     }
@@ -297,6 +297,8 @@ err_t workModemUplink(J *body, uint8_t *payload, uint32_t payloadLen)
         p += 2;
     }
     memcpy(p, suffix, suffixLen);
+    p += suffixLen;
+    *p = '\0';
 
     // Send the uplink command and data
     err = modemSend(NULL, cmd);

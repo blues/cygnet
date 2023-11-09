@@ -29,7 +29,7 @@ uint32_t monitor(void)
                     body = JCreateObject();
                 }
                 JAddStringToObject(body, STARNOTE_ID_FIELD, configModemId);
-                JAddBoolToObject(body, STARNOTE_IMPLICIT_FIELD, STARNOTE_ID_IMPLICIT);
+                JAddIntToObject(body, STARNOTE_CID_FIELD, STARNOTE_CID_TYPE);
                 JAddStringToObject(body, STARNOTE_MODEM_FIELD, configModemVersion);
                 JAddStringToObject(body, STARNOTE_POLICY_FIELD, configPolicy);
                 JAddIntToObject(body, STARNOTE_MTU_FIELD, configMtu);

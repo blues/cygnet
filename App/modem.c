@@ -263,7 +263,7 @@ bool processModemWork(void)
 {
 
     // Don't do anything while modem info is still needed
-    if (modemInfoNeeded() || !configReceivedHello) {
+    if (modemInfoNeeded()) {
         return false;
     }
 

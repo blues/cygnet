@@ -97,7 +97,7 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
 
     // All requests are capable of accepting updates to location and time
     uint32_t time = JGetInt(req, "time");
-    if (time != 0) {
+    if (timeIsValidUnix(time)) {
         timeSet(time);
     }
     double lat = JGetNumber(req, "lat");
@@ -114,9 +114,7 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
 
         // Echo back a hello request if our time is up-to-date, because we can't continue otherwise
         if (strEQL(reqtype, ReqHello)) {
-            if (timeIsValid()) {
-                configReceivedHello = true;
-            }
+            configReceivedHello = true;
             break;
         }
 

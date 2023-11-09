@@ -7,7 +7,7 @@
 #define PRODUCT_MINOR_VERSION       1
 #define PRODUCT_PATCH_VERSION       1
 
-#define STARNOTE_ID_IMPLICIT        true
+#define STARNOTE_CID_TYPE           CID_NONE
 #define STARNOTE_ID_SCHEME          "skylo:"
 #define STARNOTE_DEFAULT_MTU        256
 #define STARNOTE_DEFAULT_POLICY     "10TPM"
@@ -24,6 +24,6 @@
 #define STARNOTE_APN_FIELD          "apn"
 #define STARNOTE_BAND_FIELD         "band"
 #define STARNOTE_CHANNEL_FIELD      "channel"
-#define STARNOTE_IMPLICIT_FIELD     "implicit"
+#define STARNOTE_CID_FIELD          "cid"
 #define STARNOTE_ID_FIELD           "id"
 #define STARNOTE_MODEM_FIELD        "modem"
