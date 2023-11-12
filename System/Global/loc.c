@@ -11,16 +11,27 @@ STATIC double locationLat = 0;
 STATIC double locationLon = 0;
 STATIC uint32_t locationSecs = 0;
 
+// Set the location if it's better than what we've got
+bool locSetIfBetter(double lat, double lon, uint32_t ltime)
+{
+    if (!timeIsValidUnix(ltime)) {
+        ltime = 0;
+    }
+    if (!locValid() || !timeIsValidUnix(locationSecs)) {
+        return locSet(lat, lon, ltime);
+    }
+    if (ltime >= locationSecs) {
+        return locSet(lat, lon, ltime);
+    }
+    return false;
+}
+
 // Set the location
-bool locSet(double lat, double lon)
+bool locSet(double lat, double lon, uint32_t ltime)
 {
     locationLat = lat;
     locationLon = lon;
-    if (timeIsValid()) {
-        locationSecs = timeSecs();
-    } else {
-        locationSecs = 0;
-    }
+    locationSecs = ltime;
     locationValid = true;
     return true;
 }

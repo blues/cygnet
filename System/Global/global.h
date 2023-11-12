@@ -150,7 +150,8 @@ err_t memRealloc(uint32_t fromLength, uint32_t toLength, void *ptr);
 err_t memDup(void *pSrc, uint32_t srcLength, void *pCopy);
 
 // loc.c
-bool locSet(double lat, double lon);
+bool locSet(double lat, double lon, uint32_t ltime);
+bool locSetIfBetter(double lat, double lon, uint32_t ltime);
 bool locGet(double *lat, double *lon, uint32_t *when);
 bool locValid(void);
 void locInvalidate(void);
@@ -165,6 +166,7 @@ void timerMsDelay(uint32_t ms);
 void timerMsSleep(uint32_t ms);
 bool timerMsElapsed(int64_t began, uint32_t ms);
 uint32_t timerMsUntil(int64_t suppressionTimerMs);
+bool timeSetIfBetter(uint32_t newTimeSecs);
 bool timeSet(uint32_t newTimeSecs);
 bool timeIsValid(void);
 bool timeIsValidUnix(uint32_t t);

@@ -85,8 +85,8 @@ int main(void)
     // Start scheduler
     osKernelStart();
 
-	// Must never return here
-	Error_Handler();
+    // Must never return here
+    Error_Handler();
 
 }
 

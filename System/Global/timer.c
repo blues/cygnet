@@ -88,6 +88,20 @@ uint32_t timerMsUntil(int64_t suppressionTimerMs)
     return ((uint32_t)(suppressionTimerMs - now));
 }
 
+// Set the current time/date if it's better than what we already have
+bool timeSetIfBetter(uint32_t newTimeSecs)
+{
+    if (!timeIsValid()) {
+        return timeSet(newTimeSecs);
+    }
+    int64_t diff = (int64_t) timeSecs() - (int64_t) newTimeSecs;
+    if (diff > 10 || diff < -10) {
+        return timeSet(newTimeSecs);
+    }
+    return false;
+
+}
+
 // Set the current time/date
 bool timeSet(uint32_t newTimeSecs)
 {

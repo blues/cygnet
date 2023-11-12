@@ -1,0 +1,223 @@
+
+#include <stdarg.h>
+#include "app.h"
+#include "serial.h"
+#include "usart.h"
+
+// Power state
+bool modemPoweredOn = false;
+bool gpsPoweredOn = false;
+uint32_t powerNeeds = 0;
+bool modemIsReady = false;
+
+// Turn on modem power
+err_t powerOn(uint32_t reason)
+{
+    err_t err;
+    arrayString results;
+
+    // Add a reason
+    powerNeeds |= reason;
+
+    // If GPS needs to be powered on, do so, knowing that both DATA and GPS need gps
+    if ((powerNeeds & (POWER_GPS|POWER_DATA)) != 0 && !gpsPoweredOn) {
+        HAL_GPIO_WritePin(GPS_POWER_GPIO_Port, GPS_POWER_Pin, GPIO_PIN_SET);
+        gpsPoweredOn = true;
+        debugf("gps: powered on\n");
+    }
+
+    // If the modem doesn't need to be powered on, exit
+    if ((powerNeeds & POWER_DATA) == 0) {
+        return errNone;
+    }
+
+    // If the modem needs to be powered-on but it's already on, exit
+    if (modemPoweredOn) {
+        return errNone;
+    }
+
+    // Cleaer all pending URCs before we power-on
+    modemUrcRemove(NULL);
+
+    // Init the USART before we power-on, so we can capture all output
+#ifndef MODEM_ALWAYS_ON
+    MX_USART2_UART_Init(false, 115200);
+#endif
+
+    // Physically turn on the power
+#ifndef MODEM_ALWAYS_ON
+
+    // Disable discharge and enable the power pin
+    HAL_GPIO_WritePin(MODEM_DISCHARGE_GPIO_Port, MODEM_DISCHARGE_Pin, GPIO_PIN_SET);
+
+    // Make sure RESET# and PWRKEY# are both high before we power-on
+    HAL_GPIO_WritePin(MODEM_RESET_GPIO_Port, MODEM_RESET_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(MODEM_PWRKEY_GPIO_Port, MODEM_PWRKEY_Pin, GPIO_PIN_SET);
+
+    // Power-on the modem
+    timerMsSleep(100);
+    HAL_GPIO_WritePin(MODEM_POWER_GPIO_Port, MODEM_POWER_Pin, GPIO_PIN_SET);
+
+    // Wait for the modem to stabilize and then drive PWRKEY low for at least 500ms
+    timerMsSleep(750);
+    HAL_GPIO_WritePin(MODEM_PWRKEY_GPIO_Port, MODEM_PWRKEY_Pin, GPIO_PIN_RESET);
+    timerMsSleep(750);
+    HAL_GPIO_WritePin(MODEM_PWRKEY_GPIO_Port, MODEM_PWRKEY_Pin, GPIO_PIN_SET);
+
+#endif // MODEM_ALWAYS_ON
+
+    // If the modem is always on, do a reset to simulate power-on
+#ifdef MODEM_ALWAYS_ON
+    timerMsSleep(1000);
+    serialSendLineToModem("AT+QRST=1");
+    timerMsSleep(750);
+#endif
+
+    // Physically power-on the modem
+    modemIsReady = false;
+    modemPoweredOn = true;
+    debugf("modem: powered on\n");
+
+    // Wait until RDY, flushing everything else that comes in
+    bool ready = false;
+    int64_t timeoutMs = timerMs() + (30 * ms1Sec);
+    while (!ready) {
+        if (timerMs() >= timeoutMs) {
+            powerOff(reason);
+            return errF("modem power-on timeout");
+        }
+        ready = modemHasReceivedLine("RDY");
+    }
+
+    // Let things settle a bit after power-on
+    timerMsSleep(2500);
+
+    // Turn off echo
+    err = errNone;
+    for (int i=0; i<6; i++) {
+        err = modemSend(NULL, "ATE0");
+        if (!err) {
+            break;
+        }
+        timerMsSleep(i < 3 ? 750 : 2500);
+    }
+    if (err) {
+        powerOff(reason);
+        return err;
+    }
+
+    // Indicate that the modem is ready to take AT commands via modemSend
+    modemIsReady = true;
+
+    // Turn off 10 second auto sleep timer
+    err = modemSend(NULL, "AT+QSCLK=0");
+    if (err) {
+        powerOff(reason);
+        return err;
+    }
+
+    // Get IMSI if necessary
+    if (configModemId[0] == '\0') {
+        err = modemSend(&results, "AT+CIMI");
+        err = modemRequireResults(&results, err, 1, "can't get modem IMSI");
+        if (err) {
+            powerOff(reason);
+            return err;
+        }
+        strLcpy(configModemId, STARNOTE_ID_SCHEME);
+        strLcat(configModemId, (char *) arrayEntry(&results, 0));
+        arrayReset(&results);
+    }
+
+    // Get firmware version
+    if (configModemVersion[0] == '\0') {
+        err = modemSend(&results, "AT+QGMR");
+        err = modemRequireResults(&results, err, 1, "can't get modem firmware version");
+        if (err) {
+            powerOff(reason);
+            return err;
+        }
+        strLcpy(configModemVersion, (char *) arrayEntry(&results, 0));
+        arrayReset(&results);
+    }
+
+    // Done
+    return errNone;
+
+}
+
+// Turn off power
+void powerOff(uint32_t reason)
+{
+
+    // Remove reasons.  If we still need to stay on, exit
+    powerNeeds &= ~reason;
+
+    // If GPS needs to be powered down, do so, knowing that both DATA and GPS need gps
+    if ((powerNeeds & (POWER_GPS|POWER_DATA)) == 0 && gpsPoweredOn) {
+        HAL_GPIO_WritePin(GPS_POWER_GPIO_Port, GPS_POWER_Pin, GPIO_PIN_RESET);
+        gpsPoweredOn = false;
+        debugf("gps: powered off\n");
+    }
+
+    // If the modem can stay powered on, we're done
+    if ((powerNeeds & POWER_DATA) != 0) {
+        return;
+    }
+
+    // Exit if already powered off
+    if (!modemPoweredOn) {
+        return;
+    }
+
+    // Disconnect from the network
+    err_t err = modemSend(NULL, "AT+CFUN=0");
+    if (err) {
+        timerMsSleep(2500);
+    }
+    int maxSecs = 20;
+    int64_t unregExpiresMs = timerMs() + ((int64_t)maxSecs * ms1Sec);
+    while (timerMs() < unregExpiresMs) {
+        if (modemUrc("+CEREG: 0", false) || modemUrc("+CEREG: 1,0", false) || modemUrc("+CEREG: 0,0", false)) {
+            break;
+        }
+        modemSend(NULL, "AT+CEREG?");
+        timerMsSleep(1000);
+        modemProcessSerialIncoming();
+    }
+
+    // Do a soft power-down of the modem, giving it a bit to flush
+#ifndef MODEM_ALWAYS_ON
+    modemSend(NULL, "AT+QPOWD=0");
+    timerMsSleep(3000);
+#endif
+
+    // Uninit the USART
+#ifndef MODEM_ALWAYS_ON
+    MX_USART2_UART_DeInit();
+#endif
+
+    // Physically turn off the power
+#ifndef MODEM_ALWAYS_ON
+
+    // Make sure we leave RESET# and PWRKEY# high
+    HAL_GPIO_WritePin(MODEM_RESET_GPIO_Port, MODEM_RESET_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(MODEM_PWRKEY_GPIO_Port, MODEM_PWRKEY_Pin, GPIO_PIN_SET);
+
+    // Power-off the modem
+    HAL_GPIO_WritePin(MODEM_POWER_GPIO_Port, MODEM_POWER_Pin, GPIO_PIN_RESET);
+
+    // Discharge any charge held by capacitance in the modem that would leave it turned on
+    HAL_GPIO_WritePin(MODEM_DISCHARGE_GPIO_Port, MODEM_DISCHARGE_Pin, GPIO_PIN_RESET);
+    timerMsSleep(2500);
+    HAL_GPIO_WritePin(MODEM_DISCHARGE_GPIO_Port, MODEM_DISCHARGE_Pin, GPIO_PIN_SET);
+
+#endif // MODEM_ALWAYS_ON
+
+    // We're powered off.
+    modemPoweredOn = false;
+    modemIsReady = false;
+    modemSetConnected(false);
+    debugf("modem: powered off\n");
+
+}

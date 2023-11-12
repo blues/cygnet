@@ -63,14 +63,12 @@ void modemTask(void *params);
 err_t modemSend(arrayString *retResults, char *format, ...);
 err_t modemEnqueueWork(const char *status, modemWorker worker, J *workBody, char *workPayloadB64);
 err_t modemRemoveWork(modemWorker worker);
-bool modemIsOn(void);
-err_t modemPowerOn(void);
-void modemPowerOff(void);
 err_t modemRequireResults(arrayString *results, err_t err, uint32_t numResults, char *errType);
 int modemResult(arrayString *results, char *prefix);
 void modemUrcRemove(char *urc);
 bool modemUrcGet(char *urc, char *buf, uint32_t buflen);
 bool modemUrc(char *urc, bool remove);
+bool modemHasReceivedLine(char *line);
 void modemUrcShow(void);
 bool modemIsConnected(void);
 void modemSetConnected(bool yesOrNo);
@@ -79,11 +77,24 @@ void modemProcessSerialIncoming(void);
 bool modemInfoNeeded(void);
 bool modemWorkExists(modemWorker worker);
 
+// power.c
+#define POWER_DATA      0x00000001
+#define POWER_GPS       0x00000002
+extern uint32_t powerNeeds;
+extern bool gpsPoweredOn;
+extern bool modemPoweredOn;
+extern bool modemIsReady;
+err_t powerOn(uint32_t reason);
+void powerOff(uint32_t reason);
+
 // work.c
 err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen);
 err_t workModemDisconnect(J *body, uint8_t *payload, uint32_t payloadLen);
 err_t workModemUplink(J *body, uint8_t *payload, uint32_t payloadLen);
 err_t workModemDownlink(J *hexData, uint8_t *payload, uint32_t payloadLen);
+err_t workModemSend(J *jcmd, uint8_t *unused, uint32_t unusedLen);
+err_t workEnableGps(J *junused, uint8_t *unused, uint32_t unusedLen);
+err_t workDisableGps(J *junused, uint8_t *unused, uint32_t unusedLen);
 
 // serial.c
 void serialInit(uint32_t serialTaskID);
@@ -97,6 +108,7 @@ void serialOutputObject(UART_HandleTypeDef *huart, J *msg);
 void serialSendMessageToNotecard(J *msg);
 J *serialCreateMessage(const char *msgType, char *status, J *body, uint8_t *payload, uint32_t payloadLen);
 void serialSendLineToModem(char *text);
+void serialSendLineToNotecard(char *msg);
 
 // maintask.c
 void mainTask(void *params);
@@ -128,6 +140,15 @@ void monTask(void *params);
 uint32_t monitor(void);
 void monitorReceivedHello(void);
 bool monitorHaveReceivedHello(void);
+
+// gps.c
+extern double gpsLastHDOP;
+extern double gpsLastLat;
+extern double gpsLastLon;
+extern int64_t gpsLastLatLonMs;
+extern uint32_t gpsLastLatLonSecs;
+extern uint32_t gpsLastTimeSecs;
+bool gpsReceivedLine(char *line);
 
 // Errors
 #define ERR_IO "{io}"

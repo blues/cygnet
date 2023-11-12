@@ -18,13 +18,14 @@ UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
 DMA_HandleTypeDef hdma_usart1_tx;
 uint32_t usart1BaudRate = 0;
+//#define USART1_USE_DMA
 
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
 bool usart2UsingRS485 = false;
 uint32_t usart2BaudRate = 0;
-#define USART2_USE_DMA
+//#define USART2_USE_DMA
 
 // For UART receive
 // UART receive I/O descriptor.  Note that if we ever fill the buffer
@@ -80,11 +81,19 @@ void MX_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t len, uin
         waitWhileUartBusy = true;
     }
     if (huart == &huart1) {
+#ifdef USART1_USE_DMA
         HAL_UART_Transmit_DMA(huart, buf, len);
+#else
+        HAL_UART_Transmit_IT(huart, buf, len);
+#endif
         waitWhileUartBusy = true;
     }
     if (huart == &huart2) {
+#ifdef USART2_USE_DMA
         HAL_UART_Transmit_DMA(huart, buf, len);
+#else
+        HAL_UART_Transmit_IT(huart, buf, len);
+#endif
         waitWhileUartBusy = true;
     }
 
@@ -124,9 +133,15 @@ void MX_UART_RxStart(UART_HandleTypeDef *huart)
     }
     if (huart == &huart1 && rxioUSART1.buf != NULL) {
         rxioUSART1.rxlen = UART_RXLEN;
+#ifdef USART1_USE_DMA
         if (HAL_UART_Receive_DMA(huart, rxioUSART1.iobuf, rxioUSART1.rxlen) == HAL_OK) {
             return;
         }
+#else
+        if (HAL_UART_Receive_IT(huart, rxioUSART1.iobuf, rxioUSART1.rxlen) == HAL_OK) {
+            return;
+        }
+#endif
     }
     if (huart == &huart2 && rxioUSART2.buf != NULL) {
         rxioUSART2.rxlen = UART_RXLEN;
@@ -212,7 +227,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         uio = &rxioLPUART1;
     }
     if (huart == &huart1) {
+#ifdef USART1_USE_DMA
         receivedBytes = rxioUSART1.rxlen - __HAL_DMA_GET_COUNTER(huart->hdmarx);
+#else
+        receivedBytes = rxioUSART1.rxlen - huart->RxXferCount;
+#endif
         uio = &rxioUSART1;
     }
     if (huart == &huart2) {
@@ -232,7 +251,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     } else {
         if (!uioReceivedBytes(uio, uio->iobuf, receivedBytes)) {
             // Overrun error
-            MX_Breakpoint();
+//            MX_Breakpoint();
             if (uio->notifyReceivedFn != NULL) {
                 uio->notifyReceivedFn(huart, true);
             }
@@ -413,11 +432,11 @@ void MX_USART1_UART_DeInit(void)
     rxioUSART1.fill = rxioUSART1.drain = 0;
 
     // Stop any pending DMA, if any
+#ifdef USART1_USE_DMA
     HAL_UART_DMAStop(&huart1);
-
-    // Deinit DMA interrupts
     HAL_NVIC_DisableIRQ(USART1_RX_DMA_IRQn);
     HAL_NVIC_DisableIRQ(USART1_TX_DMA_IRQn);
+#endif
 
     // Reset peripheral
     __HAL_RCC_USART1_FORCE_RESET();
@@ -538,7 +557,9 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
         }
 
         // USART1 clock enable
+#ifdef USART1_USE_DMA
         MX_DMA_Init();
+#endif
         __HAL_RCC_USART1_CLK_ENABLE();
 
         // GPIO Configuration
@@ -552,6 +573,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
         HAL_GPIO_Init(USART1_RX_GPIO_Port, &GPIO_InitStruct);
 
         // USART1_RX Init
+#ifdef USART1_USE_DMA
         hdma_usart1_rx.Instance = USART1_RX_DMA_Channel;
         hdma_usart1_rx.Init.Request = DMA_REQUEST_2;
         hdma_usart1_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
@@ -564,10 +586,11 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
         if (HAL_DMA_Init(&hdma_usart1_rx) != HAL_OK) {
             Error_Handler();
         }
-
         __HAL_LINKDMA(uartHandle,hdmarx,hdma_usart1_rx);
+#endif
 
         // USART1_TX Init
+#ifdef USART1_USE_DMA
         hdma_usart1_tx.Instance = USART1_TX_DMA_Channel;
         hdma_usart1_tx.Init.Request = DMA_REQUEST_2;
         hdma_usart1_tx.Init.Direction = DMA_MEMORY_TO_PERIPH;
@@ -580,16 +603,18 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
         if (HAL_DMA_Init(&hdma_usart1_tx) != HAL_OK) {
             Error_Handler();
         }
-
         __HAL_LINKDMA(uartHandle,hdmatx,hdma_usart1_tx);
+#endif
 
         // USART1 interrupt Init
         HAL_NVIC_SetPriority(USART1_IRQn, INTERRUPT_PRIO_SERIAL, 0);
         HAL_NVIC_EnableIRQ(USART1_IRQn);
+#ifdef USART1_USE_DMA
         HAL_NVIC_SetPriority(USART1_RX_DMA_IRQn, INTERRUPT_PRIO_SERIAL, 0);
         HAL_NVIC_EnableIRQ(USART1_RX_DMA_IRQn);
         HAL_NVIC_SetPriority(USART1_TX_DMA_IRQn, INTERRUPT_PRIO_SERIAL, 0);
         HAL_NVIC_EnableIRQ(USART1_TX_DMA_IRQn);
+#endif
 
     }
 
@@ -712,13 +737,17 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
         HAL_GPIO_DeInit(USART1_RX_GPIO_Port, USART1_RX_Pin);
 
         // USART1 DMA DeInit
+#ifdef USART1_USE_DMA
         HAL_DMA_DeInit(uartHandle->hdmarx);
         HAL_DMA_DeInit(uartHandle->hdmatx);
+#endif
 
         // USART1 interrupt Deinit
         HAL_NVIC_DisableIRQ(USART1_IRQn);
+#ifdef USART1_USE_DMA
         HAL_NVIC_DisableIRQ(USART1_RX_DMA_IRQn);
         HAL_NVIC_DisableIRQ(USART1_TX_DMA_IRQn);
+#endif
 
     }
 

@@ -32,7 +32,7 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
 
     // Exit if already connected
     if (modemIsConnected()) {
-        return errF("already connected");
+        return errNone;
     }
 
     // The location will be needed below
@@ -44,7 +44,7 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
     // Power-on the modem, and then power it off, to get the parameters
     strLcpy(workDetailedStatus, "powering up");
     modemReportStatus();
-    err = modemPowerOn();
+    err = powerOn(POWER_DATA);
     if (err) {
         return err;
     }
@@ -62,7 +62,7 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
     //    5 Registered on roaming network
     err = modemSend(NULL, "AT+CEREG=1");
     if (err) {
-        modemPowerOff();
+        powerOff(POWER_DATA);
         return err;
     }
 
@@ -73,7 +73,7 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
     //    1 Connected
     err = modemSend(NULL, "AT+CSCON=1");
     if (err) {
-        modemPowerOff();
+        powerOff(POWER_DATA);
         return err;
     }
 
@@ -81,7 +81,7 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
     // +CRTDCP: <cid>,<cpdata_lenth>,<cpdata>;
     err = modemSend(NULL, "AT+CRTDCP=1");
     if (err) {
-        modemPowerOff();
+        powerOff(POWER_DATA);
         return err;
     }
 
@@ -91,14 +91,16 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
     // Clear qflock
     err = modemSend(NULL, "AT+QLOCKF=0", cmd);
     if (err) {
-        modemPowerOff();
+        powerOff(POWER_DATA);
         return err;
     }
 
     // Lock to the specific NB-IoT frequency and channel
     int args = countCommaSeparated(configChannel);
     if (args != 0) {
-        if (args == 1) {
+        if (args == 1 && streql(configChannel, "0")) {
+            strLcpy(cmd, configChannel);
+        } else if (args == 1) {
             // 3 means offset is 0 according to AT docs
             snprintf(cmd, sizeof(cmd), "1,%s,3", configChannel);
         } else {
@@ -107,7 +109,7 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
         }
         err = modemSend(NULL, "AT+QLOCKF=%s", cmd);
         if (err) {
-            modemPowerOff();
+            powerOff(POWER_DATA);
             return err;
         }
     }
@@ -115,7 +117,7 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
     // Set to NIDD and set our APN
     err = modemSend(NULL, "AT+QCGDEFCONT=\"Non-IP\",\"%s\"", configApn);
     if (err) {
-        modemPowerOff();
+        powerOff(POWER_DATA);
         return err;
     }
 
@@ -123,42 +125,35 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
     int count = countCommaSeparated(configBand);
     if (count == 0) {
         strLcpy(cmd, "0");
+    } else if (count == 1 && streql(configBand, "0")) {
+        strLcpy(cmd, "0");
     } else {
         snprintf(cmd, sizeof(cmd), "%d,%s", count, configBand);
     }
     err = modemSend(NULL, "AT+QBAND=%s", cmd);
     if (err) {
-        modemPowerOff();
+        powerOff(POWER_DATA);
         return err;
     }
 
     // Validate the APN for trace purposes
     err = modemSend(NULL, "AT+QCGDEFCONT?");
     if (err) {
-        modemPowerOff();
+        powerOff(POWER_DATA);
         return err;
     }
 
     // Enable radio.
     err = modemSend(NULL, "AT+CFUN=1");
     if (err) {
-        modemPowerOff();
+        powerOff(POWER_DATA);
         return err;
     }
-
-    // Network status (generally fails)
-#if 0
-    err = modemSend(NULL, "AT*MENGINFO=1");
-    if (err) {
-        modemPowerOff();
-        return err;
-    }
-#endif
 
     // Make sure that the module knows our location
     err = modemSend(NULL, "AT+QGNSSINFO=%f,%f,0,0,0", lat, lon);
     if (err) {
-        modemPowerOff();
+        powerOff(POWER_DATA);
         return err;
     }
 
@@ -182,7 +177,7 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
             break;
         }
         if (i >= 10) {
-            modemPowerOff();
+            powerOff(POWER_DATA);
             return errF("SIM not ready");
         }
         timerMsSleep(750);
@@ -213,7 +208,7 @@ err_t workModemConnect(J *body, uint8_t *payload, uint32_t payloadLen)
         modemProcessSerialIncoming();
     }
     if (!registered) {
-        modemPowerOff();
+        powerOff(POWER_DATA);
         return errF("can't register with network");
     }
 
@@ -230,33 +225,15 @@ err_t workModemDisconnect(J *body, uint8_t *payload, uint32_t payloadLen)
 {
 
     // Exit if already connected
-    if (!modemIsOn()) {
+    if (!modemIsConnected()) {
         return errF("already disconnected");
     }
 
-    // Disconnect from the network
-    err_t err = modemSend(NULL, "AT+CFUN=0");
-    if (err) {
-        timerMsSleep(2500);
-    }
-    int maxSecs = 20;
-    int64_t unregExpiresMs = timerMs() + ((int64_t)maxSecs * ms1Sec);
-    while (timerMs() < unregExpiresMs) {
-        if (modemUrc("+CEREG: 0", false) || modemUrc("+CEREG: 1,0", false) || modemUrc("+CEREG: 0,0", false)) {
-            break;
-        }
-        modemSend(NULL, "AT+CEREG?");
-        timerMsSleep(1000);
-        modemProcessSerialIncoming();
-    }
-
-    // Do a power-down of the modem
-#ifndef MODEM_ALWAYS_ON
-    modemSend(NULL, "AT+QPOWD=0");
-#endif
+    // We're now disconnected
+    modemSetConnected(false);
 
     // Power off
-    modemPowerOff();
+    powerOff(POWER_DATA);
 
     return errNone;
 
@@ -329,4 +306,23 @@ err_t workModemDownlink(J *hexData, uint8_t *unused, uint32_t unusedLen)
     serialSendMessageToNotecard(serialCreateMessage(ReqDownlink, NULL, NULL, payload, payloadLen));
     return errNone;
 
+}
+
+// Just send data to the modem, for test purposes
+err_t workModemSend(J *jcmd, uint8_t *unused, uint32_t unusedLen)
+{
+    return modemSend(NULL, JGetStringValue(jcmd));
+}
+
+// Power up the module so that it starts reporting GPS position
+err_t workEnableGps(J *junused, uint8_t *unused, uint32_t unusedLen)
+{
+    return powerOn(POWER_GPS);
+}
+
+// Power down the module so that it stops reporting GPS position
+err_t workDisableGps(J *junused, uint8_t *unused, uint32_t unusedLen)
+{
+    powerOff(POWER_GPS);
+    return errNone;
 }

@@ -72,7 +72,7 @@ void serialInit(uint32_t taskID)
 
     // USART1 (debug port)
     MX_UART_RxConfigure(&huart1, usart1InterruptBuffer, sizeof(usart1InterruptBuffer), serialReceivedNotification);
-    MX_USART1_UART_Init(115200);
+    MX_USART1_UART_Init(9600);
     MX_DBG_SetOutput(&huart1, serialOutput);
 
     // USART2 (modem port)
@@ -123,7 +123,7 @@ void serialPoll(void)
     }
 
     // If modem is on, accelerate
-    if (modemIsOn() && pollMs > ms1Sec) {
+    if (modemPoweredOn && pollMs > ms1Sec) {
         pollMs = ms1Sec;
     }
 
@@ -404,11 +404,20 @@ void serialSendMessageToNotecard(J *msg)
     serialOutputObject(&hlpuart1, msg);
 }
 
+// Output a text line to the notecard
+void serialSendLineToNotecard(char *msg)
+{
+    serialOutputLn(&hlpuart1, (uint8_t *)msg, strlen(msg));
+}
+
 // Create an outgoing message object intended to be sent to the notecard
 J *serialCreateMessage(const char *msgType, char *status, J *body, uint8_t *payload, uint32_t payloadLen)
 {
     J *msg = JCreateObject();
     JAddStringToObject(msg, FieldCmd, msgType);
+    if (timeIsValid()) {
+        JAddIntToObject(msg, FieldTime, timeSecs());
+    }
     if (status != NULL && status[0] != '\0') {
         JAddStringToObject(msg, FieldStatus, status);
     }

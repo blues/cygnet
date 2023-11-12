@@ -58,6 +58,7 @@ void appPostSleepProcessing(uint32_t ulExpectedIdleTime);
 
 // debug_if.c
 void MX_Breakpoint(void);
+void MX_Restart(void);
 bool MX_InISR(void);
 #define MX_InterruptsDisabled() (__get_PRIMASK() != 0)
 void MX_JumpToBootloader(void);

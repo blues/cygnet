@@ -24,12 +24,6 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
         *retRsp = NULL;
     }
 
-    // If we've received a line containing ^Q it is the notecard booting up
-    if (memchr(reqJSON, 0x11, reqJSONLen) != NULL) {
-        configReceivedHello = false;
-        return errNone;
-    }
-
     // Process diagnostic commands, taking advantage of the fact that it is null-terminated
     if (reqJSON[0] != '{') {
         if (!diagAllowed) {
@@ -96,15 +90,8 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
     }
 
     // All requests are capable of accepting updates to location and time
-    uint32_t time = JGetInt(req, "time");
-    if (timeIsValidUnix(time)) {
-        timeSet(time);
-    }
-    double lat = JGetNumber(req, "lat");
-    double lon = JGetNumber(req, "lon");
-    if (lat != 0 || lon != 0) {
-        locSet(lat, lon);
-    }
+    timeSetIfBetter(JGetInt(req, "time"));
+    locSetIfBetter(JGetNumber(req, "lat"), JGetNumber(req, "lon"), JGetInt(req, "ltime"));
 
     // If any of the config items happen to be present in the body, on any request, set them
     configSet(JGetObjectItem(req, "body"));
@@ -142,6 +129,18 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
         // Request to send status info
         if (strEQL(reqtype, ReqStatus)) {
             err = modemReportStatus();
+            break;
+        }
+
+        // Request to enable the GPS
+        if (strEQL(reqtype, ReqGpsEnable)) {
+            err = modemEnqueueWork(NTN_ENABLING_GPS, workEnableGps, NULL, NULL);
+            break;
+        }
+
+        // Request to disable the GPS
+        if (strEQL(reqtype, ReqGpsDisable)) {
+            err = modemEnqueueWork(NTN_DISABLING_GPS, workDisableGps, NULL, NULL);
             break;
         }
 

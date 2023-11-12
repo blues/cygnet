@@ -1095,6 +1095,9 @@
             <name>$PROJ_DIR$\..\..\App\diag.c</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\..\App\gps.c</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\..\App\led.c</name>
         </file>
         <file>
@@ -1108,6 +1111,9 @@
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\App\montask.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\App\power.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\App\req.c</name>

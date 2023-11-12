@@ -14,8 +14,8 @@
 #define STARNOTE_DEFAULT_SKU        "NTN-SKYLO"
 #define STARNOTE_DEFAULT_OC         ""
 #define STARNOTE_DEFAULT_APN        "blues.demo"
-#define STARNOTE_DEFAULT_BAND       "23"
-#define STARNOTE_DEFAULT_CHANNEL    "7697,2"
+#define STARNOTE_DEFAULT_BAND       "0"             // "23" is best for Manchester
+#define STARNOTE_DEFAULT_CHANNEL    "0"             // "7697,2" is best for manchester
 
 #define STARNOTE_MTU_FIELD          "mtu"
 #define STARNOTE_POLICY_FIELD       "policy"

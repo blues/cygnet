@@ -10,7 +10,9 @@ typedef enum {
     CMD_RESTART,
     CMD_POWER,
     CMD_MEM,
-    CMD_M,
+    CMD_CONNECT,
+    CMD_DISCONNECT,
+    CMD_AT,
     CMD_TEST,
     CMD_BOOTLOADER_DIRECT,
     CMD_UNRECOGNIZED
@@ -24,7 +26,9 @@ typedef struct {
 STATIC const cmd_def cmdText[] = {
     {"restart", CMD_RESTART},
     {"mem", CMD_MEM},
-    {"m", CMD_M},
+    {"connect", CMD_CONNECT},
+    {"disconnect", CMD_DISCONNECT},
+    {"at", CMD_AT},
     {"test", CMD_TEST},
     {"power", CMD_POWER},
     {"bootloader", CMD_BOOTLOADER_DIRECT},
@@ -49,13 +53,23 @@ err_t diagProcess(char *diagCommand)
     uint32_t diagCommandLen = strlen(diagCommand);
     int cmd = getCommand(diagCommand, diagCommandLen);
 
+    // If it looks like GNSS, do special processing
+    if (diagCommand[0] == '$') {
+        if (gpsReceivedLine(diagCommand)) {
+            if ((powerNeeds & POWER_GPS) != 0) {
+                serialSendLineToNotecard(diagCommand);
+            }
+        }
+        return errNone;
+    }
+
     // If it looks like an AT command, do special processing.  Else, copy
     // to a local buffer, cleaning and null-terminated for string processing
     char argbuf[maxCMD];
     if (memeql(diagCommand, "at", 2) || memeql(diagCommand, "AT", 2)) {
-        strLcpy(argbuf, "m ");
+        strLcpy(argbuf, "at ");
         strLcat(argbuf, diagCommand);
-        cmd = CMD_M;
+        cmd = CMD_AT;
     } else {
         int j = 0;
         for (int i=0; i<diagCommandLen; i++) {
@@ -146,39 +160,21 @@ err_t diagProcess(char *diagCommand)
         break;
     }
 
-    case CMD_M: {
+    case CMD_CONNECT: {
+        err = modemEnqueueWork(NULL, workModemConnect, NULL, NULL);
+        break;
+    }
+
+    case CMD_DISCONNECT: {
+        err = modemEnqueueWork(NULL, workModemDisconnect, NULL, NULL);
+        break;
+    }
+
+    case CMD_AT: {
         if (argv[1][0] == '\0') {
             modemUrcShow();
-        } else if (strEQL(argv[1], "t1")) {
-            MX_UART_RxStart(&huart2);
-            debugf("modem RX restarted\n");
-        } else if (strEQL(argv[1], "t2")) {
-            MX_USART2_UART_DeInit();
-            MX_USART2_UART_ReInit();
-            debugf("modem RX reinitialized\n");
-        } else if (strEQL(argv[1], "on")) {
-            err = modemPowerOn();
-            if (err) {
-                break;
-            }
-            debugf("modem is on\n");
-        } else if (strEQL(argv[1], "off")) {
-            modemPowerOff();
-            debugf("modem is on\n");
         } else {
-            arrayString results = {0};
-            err = modemSend(&results, &cmdline[2]);
-            if (err) {
-                break;
-            }
-            if (arrayEntries(&results) == 0) {
-                debugR("OK\n");
-            } else {
-                for (int i=0; i<arrayEntries(&results); i++) {
-                    debugR("%s\n", arrayEntry(&results, i));
-                }
-                arrayReset(&results);
-            }
+            err = modemEnqueueWork(NULL, workModemSend, JCreateString(&cmdline[3]), NULL);
         }
         break;
     }
@@ -187,9 +183,15 @@ err_t diagProcess(char *diagCommand)
         break;
     }
 
-    case CMD_UNRECOGNIZED:
-        debugf("unrecognized command\n");
+    case CMD_UNRECOGNIZED: {
+        static bool initialGpsGarbageIgnored = false;
+        if (!initialGpsGarbageIgnored) {
+            initialGpsGarbageIgnored = true;
+            break;
+        }
+        debugf("'%s' ??\n", diagCommand);
         break;
+    }
 
     }
 

@@ -153,7 +153,7 @@ void HAL_Delay(__IO uint32_t delayMs)
 // Provide a tick value in milliseconds which pauses during STOP2 and which wraps
 uint32_t HAL_GetTick(void)
 {
-    if (MX_InISR() || (__get_PRIMASK() != 0) ){
+    if (MX_InISR() || (__get_PRIMASK() != 0) ) {
         MX_Breakpoint();
     }
     return tickCount * MILLISECONDS_PER_TICK;

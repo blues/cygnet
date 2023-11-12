@@ -6,6 +6,7 @@
 #define FieldBody       "body"
 #define FieldPayload    "payload"
 #define FieldErr        "err"
+#define FieldTime       "time"
 #define FieldID         "id"
 
 #define ReqHello        "ntn.hello"
@@ -14,6 +15,8 @@
 #define ReqUplink       "ntn.uplink"
 #define ReqDownlink     "ntn.downlink"
 #define ReqStatus       "ntn.status"
+#define ReqGpsEnable    "ntn.gps.enable"
+#define ReqGpsDisable   "ntn.gps.disable"
 
 #define NTN_INIT                "{ntn-initializing}"
 #define NTN_CONNECTED           "{ntn-connected}"
@@ -25,3 +28,7 @@
 #define NTN_IDLE                "{ntn-idle}"
 #define NTN_NO_LOCATION         "{ntn-need-location}"
 #define NTN_CONNECT_FAILURE     "{ntn-connect-failure}"
+#define NTN_GPS_ENABLED         "{ntn-gps}"
+#define NTN_ENABLING_GPS        "{ntn-enabling-gps}"
+#define NTN_DISABLING_GPS       "{ntn-disabling-gps}"
+

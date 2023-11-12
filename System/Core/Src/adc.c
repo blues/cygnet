@@ -13,12 +13,12 @@ GPIO_TypeDef *adcGpioPort;
 uint32_t MX_ADC1_ReadChannel(uint32_t adcChannel, uint16_t gpioPin, GPIO_TypeDef *gpioPort)
 {
 
-	// Peripheral active
-	peripherals |= PERIPHERAL_ADC1;
+    // Peripheral active
+    peripherals |= PERIPHERAL_ADC1;
 
-	// Save for msp init/deinit
-	adcGpioPin = gpioPin;
-	adcGpioPort = gpioPort;
+    // Save for msp init/deinit
+    adcGpioPin = gpioPin;
+    adcGpioPort = gpioPort;
 
     // Common config
     hadc1.Instance = ADC1;
@@ -70,11 +70,11 @@ uint32_t MX_ADC1_ReadChannel(uint32_t adcChannel, uint16_t gpioPin, GPIO_TypeDef
     // Deinit
     HAL_ADC_DeInit(&hadc1);
 
-	// Peripheral inactive
-	peripherals &= ~PERIPHERAL_ADC1;
+    // Peripheral inactive
+    peripherals &= ~PERIPHERAL_ADC1;
 
-	// Done
-	return convertedValue;
+    // Done
+    return convertedValue;
 
 }
 
@@ -97,12 +97,12 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
         __HAL_RCC_ADC_CLK_ENABLE();
 
         // ADC1 GPIO Configuration
-		if (adcGpioPort != NULL) {
-	        GPIO_InitStruct.Pin = adcGpioPin;
-	        GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-	        GPIO_InitStruct.Pull = GPIO_NOPULL;
-	        HAL_GPIO_Init(adcGpioPort, &GPIO_InitStruct);
-		}
+        if (adcGpioPort != NULL) {
+            GPIO_InitStruct.Pin = adcGpioPin;
+            GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+            GPIO_InitStruct.Pull = GPIO_NOPULL;
+            HAL_GPIO_Init(adcGpioPort, &GPIO_InitStruct);
+        }
 
     }
 }
@@ -117,9 +117,9 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
         __HAL_RCC_ADC_CLK_DISABLE();
 
         // Deinit pins
-		if (adcGpioPort != NULL) {
-	        HAL_GPIO_DeInit(adcGpioPort, adcGpioPin);
-		}
+        if (adcGpioPort != NULL) {
+            HAL_GPIO_DeInit(adcGpioPort, adcGpioPin);
+        }
 
     }
 }

@@ -27,6 +27,9 @@
 #define	MODEM_DISCHARGE_Pin             D6_Pin
 #define	MODEM_DISCHARGE_GPIO_Port       D6_GPIO_Port
 
+#define	GPS_POWER_Pin                   D11_Pin
+#define	GPS_POWER_GPIO_Port             D11_GPIO_Port
+
 #define	LED_BUSY_Pin                    LED_BUILTIN_Pin
 #define	LED_BUSY_GPIO_Port              LED_BUILTIN_GPIO_Port
 

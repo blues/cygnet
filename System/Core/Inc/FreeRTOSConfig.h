@@ -137,7 +137,11 @@ extern uint32_t SystemCoreClock;
 
 // Normal assert() semantics without relying on the provision of an assert.h
 // header file.
-#define configASSERT( x ) if ((x) == 0) {taskDISABLE_INTERRUPTS(); for( ;; );}
+//#define configASSERT( x ) if ((x) == 0) {taskDISABLE_INTERRUPTS(); for( ;; );}
+#if defined(__ICCARM__) || defined(__CC_ARM) || defined(__GNUC__)
+void MX_Restart(void);
+#define configASSERT( x ) if ((x) == 0) {MX_Restart();}
+#endif
 
 // Definitions that map the FreeRTOS port interrupt handlers to their CMSIS
 // standard names.

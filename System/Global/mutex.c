@@ -38,6 +38,8 @@ void mutexInit(mutex *m, mtxtype_t mtype)
 {
     memset(m, 0, sizeof(mutex));
     m->mtx = mtype;
+    mutexLock(m);
+    mutexUnlock(m);
 }
 
 // For debugging, display which mutexes are owned by the current task.  Note that
@@ -156,7 +158,7 @@ void mutexLock(mutex *m)
 // because of work in progress.
 bool mutexIsLocked(mutex *m, int *lockedTaskID)
 {
-    if (m->state.lockedTask != -1 && m->state.lockedTask != taskID()) {
+    if (m->state.initialized && m->state.lockedTask != -1 && m->state.lockedTask != taskID()) {
         if (lockedTaskID != NULL) {
             *lockedTaskID = m->state.lockedTask;
         }

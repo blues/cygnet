@@ -45,7 +45,7 @@ void appHeartbeatISR(uint32_t heartbeatSecs)
 // Return true if sleep is allowed
 bool appSleepAllowed(void)
 {
-    if (modemIsOn()) {
+    if (modemPoweredOn || gpsPoweredOn) {
         return false;
     }
     return true;
@@ -124,6 +124,10 @@ void appInitGPIO(void)
     GPIO_InitStruct.Pin = MODEM_POWER_Pin;
     HAL_GPIO_Init(MODEM_POWER_GPIO_Port, &GPIO_InitStruct);
     HAL_GPIO_WritePin(MODEM_POWER_GPIO_Port, MODEM_POWER_Pin, GPIO_PIN_RESET);
+
+    GPIO_InitStruct.Pin = GPS_POWER_Pin;
+    HAL_GPIO_Init(GPS_POWER_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(GPS_POWER_GPIO_Port, GPS_POWER_Pin, GPIO_PIN_RESET);
 
     // Initialize inputs as floats for until we are ready to use them
     memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));

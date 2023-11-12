@@ -25,6 +25,13 @@ void MX_Breakpoint()
     }
 }
 
+// For true fatal reboot
+void MX_Restart()
+{
+    MX_Breakpoint();
+    NVIC_SystemReset();
+}
+
 // See if in an ISR
 bool MX_InISR()
 {

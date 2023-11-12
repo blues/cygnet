@@ -24,8 +24,6 @@ STATIC arrayString modemReceivedLines = {0};
 STATIC arrayString modemReceivedUrcLines = {0};
 
 // Modem state
-STATIC bool poweredOn = false;
-STATIC bool isReady = false;
 STATIC bool connected = false;
 STATIC bool modemConnectFailure = false;
 
@@ -53,7 +51,7 @@ void modemTask(void *params)
             didSomething |= processModemWork();
         }
         if (!didSomething) {
-            taskTake(TASKID_MODEM, modemIsOn() ? ms1Sec : ms1Day);
+            taskTake(TASKID_MODEM, modemPoweredOn ? ms1Sec : ms1Day);
         }
     }
 
@@ -168,7 +166,7 @@ bool modemUrcGet(char *urc, char *buf, uint32_t buflen)
 // Show URC state
 void modemUrcShow()
 {
-    if (!modemIsOn()) {
+    if (!modemPoweredOn) {
         debugR("modem is off\n");
     } else {
         mutexLock(&modemReceivedLinesMutex);
@@ -240,7 +238,7 @@ bool processUrcWork(void)
 {
 
     // Exit if modem is not powered on
-    if (!modemIsOn() || !isReady) {
+    if (!modemPoweredOn || !modemIsReady) {
         return false;
     }
 
@@ -310,6 +308,25 @@ void modemProcessSerialIncoming(void)
 {
     processSerialIncoming();
     processUrcWork();
+}
+
+// See if the modem has received the specified line
+bool modemHasReceivedLine(char *line)
+{
+    timerMsSleep(100);
+    processSerialIncoming();
+    mutexLock(&modemReceivedLinesMutex);
+    if (arrayEntries(&modemReceivedLines) != 0) {
+        for (int i=0; i<arrayEntries(&modemReceivedLines); i++) {
+            char *line = arrayEntry(&modemReceivedLines, i);
+            if (strEQL(line, "RDY")) {
+                mutexUnlock(&modemReceivedLinesMutex);
+                return true;
+            }
+        }
+    }
+    mutexUnlock(&modemReceivedLinesMutex);
+    return false;
 }
 
 // Process incoming serial request
@@ -385,7 +402,7 @@ err_t modemSend(arrayString *retResults, char *format, ...)
 
     // Exit if already powered off
 #ifndef MODEM_ALWAYS_ON
-    if (!poweredOn) {
+    if (!modemPoweredOn) {
         return errF("ntn: modem not powered on");
     }
 #endif
@@ -514,12 +531,6 @@ int modemResult(arrayString *results, char *prefix)
 }
 
 // See if the modem has power
-bool modemIsOn(void)
-{
-    return poweredOn;
-}
-
-// See if the modem has power
 bool modemIsConnected(void)
 {
     return connected;
@@ -529,138 +540,6 @@ bool modemIsConnected(void)
 void modemSetConnected(bool yesOrNo)
 {
     connected = yesOrNo;
-}
-
-// Turn on modem power
-err_t modemPowerOn(void)
-{
-    err_t err;
-    arrayString results;
-
-    // Exit if already powered on
-    if (poweredOn) {
-        return errNone;
-    }
-
-    // Cleaer all pending URCs
-    modemUrcRemove(NULL);
-
-    // Init the USART
-#ifndef MODEM_ALWAYS_ON
-    MX_USART2_UART_Init(false, 115200);
-#endif
-
-    // Reset the modem
-    serialSendLineToModem("AT+QRST=1");
-
-    // Physically power-on the modem
-    isReady = false;
-    poweredOn = true;
-    debugf("modem: powered on\n");
-
-    // Wait until RDY, flushing everything else that comes in
-    bool ready = false;
-    int64_t timeoutMs = timerMs() + (30 * ms1Sec);
-    while (!ready) {
-        if (timerMs() >= timeoutMs) {
-            modemPowerOff();
-            return errF("modem power-on timeout");
-        }
-        processSerialIncoming();
-        mutexLock(&modemReceivedLinesMutex);
-        if (arrayEntries(&modemReceivedLines) == 0) {
-            mutexUnlock(&modemReceivedLinesMutex);
-            timerMsSleep(100);
-            processSerialIncoming();
-            continue;
-        }
-        for (int i=0; i<arrayEntries(&modemReceivedLines); i++) {
-            char *line = arrayEntry(&modemReceivedLines, i);
-            if (strEQL(line, "RDY")) {
-                ready = true;
-            }
-        }
-        arrayReset(&modemReceivedLines);
-        mutexUnlock(&modemReceivedLinesMutex);
-    }
-
-    // Let things settle a bit after power-on
-    timerMsSleep(2500);
-
-    // Turn off echo
-    err = errNone;
-    for (int i=0; i<6; i++) {
-        err = modemSend(NULL, "ATE0");
-        if (!err) {
-            break;
-        }
-        timerMsSleep(i < 3 ? 750 : 2500);
-    }
-    if (err) {
-        modemPowerOff();
-        return err;
-    }
-
-    // Indicate that the modem is ready to take AT commands
-    isReady = true;
-
-    // Turn off 10 second auto sleep timer
-    err = modemSend(NULL, "AT+QSCLK=0");
-    if (err) {
-        modemPowerOff();
-        return err;
-    }
-
-    // Get IMSI if necessary
-    if (configModemId[0] == '\0') {
-        err = modemSend(&results, "AT+CIMI");
-        err = modemRequireResults(&results, err, 1, "can't get modem IMSI");
-        if (err) {
-            modemPowerOff();
-            return err;
-        }
-        strLcpy(configModemId, STARNOTE_ID_SCHEME);
-        strLcat(configModemId, (char *) arrayEntry(&results, 0));
-        arrayReset(&results);
-    }
-
-    // Get firmware version
-    if (configModemVersion[0] == '\0') {
-        err = modemSend(&results, "AT+QGMR");
-        err = modemRequireResults(&results, err, 1, "can't get modem firmware version");
-        if (err) {
-            modemPowerOff();
-            return err;
-        }
-        strLcpy(configModemVersion, (char *) arrayEntry(&results, 0));
-        arrayReset(&results);
-    }
-
-    // Done
-    return errNone;
-
-}
-
-// Turn off modem power
-void modemPowerOff(void)
-{
-
-    // Exit if already powered off
-    if (!poweredOn) {
-        return;
-    }
-
-    // Uninit the USART
-#ifndef MODEM_ALWAYS_ON
-    MX_USART2_UART_DeInit();
-#endif
-
-    // Power off the modem
-    poweredOn = false;
-    isReady = false;
-    modemSetConnected(false);
-    debugf("modem: powered off\n");
-
 }
 
 // Report the current status
@@ -692,8 +571,11 @@ err_t modemReportStatus(void)
     }
 
     // Append state
-    if (modemIsOn()) {
+    if (modemPoweredOn) {
         arrayAppendStringBytes(statusBytes, NTN_POWER);
+    }
+    if (gpsPoweredOn) {
+        arrayAppendStringBytes(statusBytes, NTN_GPS_ENABLED);
     }
     if (modemIsConnected()) {
         arrayAppendStringBytes(statusBytes, NTN_CONNECTED);

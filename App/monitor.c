@@ -8,13 +8,13 @@ STATIC int64_t nextHelloDueMs = 0;
 // Monitor poller - return 0 if wait forever, else ms of the latest to come back
 uint32_t monitor(void)
 {
-    uint32_t returnInMs = ms1Day;
+    uint32_t returnInMs = 0xffff;
 
     // If we don't have our modem info yet, try to fetch it
     if (modemInfoNeeded()) {
-        err_t err = modemPowerOn();
+        err_t err = powerOn(POWER_DATA);
         if (!err) {
-            workModemDisconnect(NULL, NULL, 0);
+            powerOff(POWER_DATA);
         }
     }
 
@@ -23,6 +23,7 @@ uint32_t monitor(void)
     if (!configReceivedHello) {
         if (timerMs() >= nextHelloDueMs) {
             nextHelloDueMs = timerMs() + (SEND_HELLO_SECS * ms1Sec);
+            returnInMs = GMIN(returnInMs, (uint32_t) (nextHelloDueMs - timerMs()));
             if (configModemId[0] != '\0' && configModemVersion[0] != '\0') {
                 J *body = JParse(osBuildConfig());
                 if (body == NULL) {
@@ -41,7 +42,6 @@ uint32_t monitor(void)
                 serialSendMessageToNotecard(serialCreateMessage(ReqHello, NULL, body, NULL, 0));
             }
         }
-        returnInMs = GMIN(returnInMs, nextHelloDueMs - timerMs());
     }
 
 
