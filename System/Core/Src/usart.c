@@ -122,6 +122,12 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
     }
 }
 
+// We must restart the receive if there is a receive or transmit error
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+    HAL_UART_RxCpltCallback(huart);
+}
+
 // Start a receive
 void MX_UART_RxStart(UART_HandleTypeDef *huart)
 {
