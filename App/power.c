@@ -23,7 +23,7 @@ err_t powerOn(uint32_t reason)
 	// Set the power pins appropriately
 	bool turnGpsOn = ((powerNeeds & POWER_GPS) != 0);
 	bool turnModemOn = ((powerNeeds & POWER_DATA) != 0);
-	bool turnMainOn = gpsOn || modemOn;
+	bool turnMainOn = turnGpsOn || turnModemOn;
 	if (turnMainOn && !mainPoweredOn) {
 		if (!turnModemOn && !modemPoweredOn) {
 		    HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);

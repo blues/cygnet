@@ -13,7 +13,7 @@
 #define	MODEM_PWRKEY_NOD_GPIO_Port		D10_GPIO_Port
 
 #define	MODEM_RESET_NOD_Pin             D9_Pin
-#define	MODEM_RESET_NODGPIO_Port		D9_GPIO_Port
+#define	MODEM_RESET_NOD_GPIO_Port		D9_GPIO_Port
 
 #define	MODEM_RI_Pin                    D12_Pin
 #define	MODEM_RI_GPIO_Port              D12_GPIO_Port
