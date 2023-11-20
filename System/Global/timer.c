@@ -155,12 +155,16 @@ bool timeIsValid()
     return true;
 }
 
-// See if the time is plausibly a valid Unix time for the operations of our module,
-// which is determined by the build date.
+// See if the time is plausibly a valid Unix time for the operations of our module
 // Function taking a uint32_t argument in seconds.
 bool timeIsValidUnix(uint32_t t)
 {
-    return (t > 1684171787 && t < 0xfffffff0);
+    // Note that this is going to stop working in 2038 (intentionally), so make
+    // sure you update the 0x7fffffff appropriately when it gets closer.  This
+    // was chosen simply because I noticed that the L86 returns dates of
+    // 2080 when it is first powered on, as in:
+    // $GPRMC,000332.099,V,,,,,0.00,0.00,060180,,,N,V*3A
+    return (t > 1700000000 && t < 0x7fffffff);
 }
 
 // Get the current time in seconds, rather than Ns.  This has a special semantic in that it is intended
