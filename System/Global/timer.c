@@ -255,11 +255,11 @@ bool timeLocal(uint32_t time, uint32_t *year, uint32_t *mon1, uint32_t *day1, ui
 void timeDateStr(uint32_t time, char *str, uint32_t length)
 {
     if (length < 21) {
-        strlcpy(str, "(too small)", length);
+        strlcpy(str, "(timebuf too small)", length);
         return;
     }
-    if (time == 0) {
-        strlcpy(str, "(uninitialized)", length);
+    if (!timeIsValidUnix(time)) {
+        strlcpy(str, "(invalid time)", length);
         return;
     }
     mutexLock(&timeMutex);

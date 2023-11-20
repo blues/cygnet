@@ -13,6 +13,7 @@ double gpsLastLon = 0;
 int64_t gpsLastLatLonMs = 0;
 uint32_t gpsLastLatLonSecs = 0;
 uint32_t gpsLastTimeSecs = 0;
+int64_t gpsLastMessageMs = 0;
 
 // Forwards
 double gpsEncodingToDegrees(char *inlocation, char *inzone);
@@ -248,6 +249,14 @@ bool gpsReceivedLine(char *linebuf)
     if (memcmp(&line[3], "GSV", 3) == 0) {
         processedLine = true;
     }   // if GxGSV
+
+    // If we processed a line, periodically report
+    if (processedLine && timerMs() >= gpsLastMessageMs + 30000) {
+        char timebuf[48];
+        timeDateStr(gpsLastTimeSecs, timebuf, sizeof(timebuf));
+        debugf("%s %f %f\n", gpsLastLat, gpsLastLon);
+        gpsLastMessageMs = timerMs();
+    }
 
     // Done
     return processedLine;
