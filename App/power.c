@@ -22,7 +22,7 @@ err_t powerOn(uint32_t reason)
 
 	// Set the power pins appropriately
 	bool turnGpsOn = ((powerNeeds & POWER_GPS) != 0);
-	bool turnModemOn = ((powerNeeds & POWER_DATA) != 0);
+	bool turnModemOn = ((powerNeeds & (POWER_DATA|POWER_INIT)) != 0);
 	bool turnMainOn = turnGpsOn || turnModemOn;
 	if (turnMainOn && !mainPoweredOn) {
 		if (!turnModemOn && !modemPoweredOn) {
@@ -162,7 +162,7 @@ void powerOff(uint32_t reason)
 
 	// Set the power pins appropriately
 	bool turnGpsOff = ((powerNeeds & POWER_GPS) == 0);
-	bool turnModemOff = ((powerNeeds & POWER_DATA) == 0);
+	bool turnModemOff = ((powerNeeds & (POWER_DATA|POWER_INIT)) == 0);
 
     // Exit if already powered off
     if (turnModemOff && modemPoweredOn) {

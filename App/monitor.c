@@ -12,9 +12,9 @@ uint32_t monitor(void)
 
     // If we don't have our modem info yet, try to fetch it
     if (modemInfoNeeded()) {
-        err_t err = powerOn(POWER_DATA);
+        err_t err = powerOn(POWER_INIT);
         if (!err) {
-            powerOff(POWER_DATA);
+            powerOff(POWER_INIT);
         }
     }
 

@@ -36,6 +36,34 @@
 #define TASKID_UNKNOWN              0xFFFF
 #define STACKWORDS(x)               ((x) / sizeof(StackType_t))
 
+// Test certificate
+#define tcFieldDeviceUID                "device"
+#define tcFieldError                    "err"
+#define tcFieldStatus                   "status"
+#define tcFieldTests                    "tests"
+#define tcFieldFailTest                 "fail_test"
+#define tcFieldFailReason               "fail_reason"
+#define tcFieldInfo                     "info"
+#define tcFieldModem                    "modem"
+#define tcFieldWhen                     "when"
+#define tcFieldSKU                      "sku"
+#define tcFieldOrderingCode             "ordering_code"
+#define tcFieldStation                  "station"
+#define tcFieldOperator                 "operator"
+#define tcFieldCheck                    "check"
+#define tcFieldFirmwareOrg              "org"
+#define tcFieldFirmwareProduct          "product"
+#define tcFieldFirmwareVersion          "version"
+#define tcFieldFirmwareMajor            "ver_major"
+#define tcFieldFirmwareMinor            "ver_minor"
+#define tcFieldFirmwarePatch            "ver_patch"
+#define tcFieldFirmwareBuilt            "built"
+
+// post.c
+err_t postSelfTest(bool performHardwareTest, J *tc);
+J *postGetTestCert(void);
+J *postGetCachedTestCert(void);
+
 // config.c
 #define cstrsz 48
 extern bool configReceivedHello;
@@ -78,8 +106,9 @@ bool modemInfoNeeded(void);
 bool modemWorkExists(modemWorker worker);
 
 // power.c
-#define POWER_DATA      0x00000001
-#define POWER_GPS       0x00000002
+#define POWER_INIT      0x00000001
+#define POWER_DATA      0x00000002
+#define POWER_GPS       0x00000004
 extern uint32_t powerNeeds;
 extern bool gpsPoweredOn;
 extern bool modemPoweredOn;

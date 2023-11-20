@@ -144,6 +144,30 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
             break;
         }
 
+        // Request to get or set the test certificate
+        // If body is specified, this request is from the test fixture to set
+        // the test certificate in flash, else it's a request to display it.
+        if (strEQL(reqtype, ReqCardTest)) {
+            J *body = JGetObjectItem(req, "body");
+            if (body != NULL) {
+                err = postSelfTest(JGetBool(req, "verify"), body);
+                break;
+            }
+            J *tcert = postGetTestCert();
+            if (tcert == NULL) {
+                err = errF("no test certificate found");
+            } else {
+                JAddItemToObject(rsp, "body", tcert);
+            }
+            break;
+        }
+
+        // Restart
+        if (strEQL(reqtype, ReqCardRestart)) {
+            MX_Restart();
+            break;
+        }
+
         // Unrecognized request
         err = errF("unrecognized request: %s", reqtype);
         break;

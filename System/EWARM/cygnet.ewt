@@ -1453,6 +1453,9 @@
             <name>$PROJ_DIR$\..\..\App\montask.c</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\..\App\post.c</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\..\App\power.c</name>
         </file>
         <file>

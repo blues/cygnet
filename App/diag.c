@@ -160,6 +160,10 @@ err_t diagProcess(char *diagCommand)
         break;
     }
 
+    case CMD_RESTART:
+        MX_Restart();
+        break;
+
     case CMD_CONNECT: {
         err = modemEnqueueWork(NULL, workModemConnect, NULL, NULL);
         break;

@@ -17,6 +17,8 @@
 #define ReqStatus       "ntn.status"
 #define ReqGpsEnable    "ntn.gps.enable"
 #define ReqGpsDisable   "ntn.gps.disable"
+#define ReqCardTest     "card.test"
+#define ReqCardRestart  "card.restart"
 
 #define NTN_INIT                "{ntn-initializing}"
 #define NTN_CONNECTED           "{ntn-connected}"

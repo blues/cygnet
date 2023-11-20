@@ -597,5 +597,21 @@ err_t modemReportStatus(void)
 // See if modem info is still needed
 bool modemInfoNeeded(void)
 {
+
+    // See if they're cached
+    if (configModemId[0] != '\0' && configModemVersion[0] != '\0') {
+        return false;
+    }
+
+    // Try extracting them out of the test cert
+    J *tcert = postGetCachedTestCert();
+    if (tcert == NULL) {
+        return true;
+    }
+    strLcpy(configModemId, JGetString(tcert, tcFieldDeviceUID));
+    strLcpy(configModemVersion, JGetString(tcert, tcFieldModem));
+    
+    // Return whether or not they're still needed
     return (configModemId[0] == '\0' || configModemVersion[0] == '\0');
+
 }

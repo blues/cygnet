@@ -31,3 +31,7 @@
 #define	LED_BUSY_Pin                    LED_BUILTIN_Pin
 #define	LED_BUSY_GPIO_Port              LED_BUILTIN_GPIO_Port
 
+// We keep the test cert in the high page of flash
+#define TESTCERT_FLASH_ADDRESS          ((void *)((FLASH_BASE+FLASH_SIZE)-FLASH_PAGE_SIZE))
+#define TESTCERT_FLASH_LEN              FLASH_PAGE_SIZE
+

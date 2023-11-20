@@ -136,6 +136,7 @@ void MX_UART_RxStart(UART_HandleTypeDef *huart)
         if (HAL_UART_Receive_IT(huart, rxioLPUART1.iobuf, rxioLPUART1.rxlen) == HAL_OK) {
             return;
         }
+        return;
     }
     if (huart == &huart1 && rxioUSART1.buf != NULL) {
         rxioUSART1.rxlen = UART_RXLEN;
@@ -148,6 +149,7 @@ void MX_UART_RxStart(UART_HandleTypeDef *huart)
             return;
         }
 #endif
+        return;
     }
     if (huart == &huart2 && rxioUSART2.buf != NULL) {
         rxioUSART2.rxlen = UART_RXLEN;
@@ -160,6 +162,7 @@ void MX_UART_RxStart(UART_HandleTypeDef *huart)
             return;
         }
 #endif
+        return;
     }
     MX_Breakpoint();
 }
