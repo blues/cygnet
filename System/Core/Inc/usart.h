@@ -10,6 +10,8 @@ extern UART_HandleTypeDef hlpuart1;
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 
+void MY_UART_IRQHandler(UART_HandleTypeDef *huart);
+
 void MX_LPUART1_UART_Init(bool altPins, uint32_t baudRate);
 void MX_LPUART1_UART_ReInit(void);
 void MX_LPUART1_UART_DeInit(void);

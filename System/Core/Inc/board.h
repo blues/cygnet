@@ -192,6 +192,7 @@
 #define USART1_TX_DMA_Channel			DMA2_Channel6
 #define USART1_TX_DMA_IRQn				DMA2_Channel6_IRQn
 #define USART1_TX_DMA_IRQHandler		DMA2_Channel6_IRQHandler
+#define USART1_USE_DMA                  true
 
 #define	USART2_A2_TX_Pin				A2_Pin
 #define	USART2_A2_TX_GPIO_Port			A2_GPIO_Port
@@ -205,6 +206,7 @@
 #define USART2_TX_DMA_Channel			DMA1_Channel7
 #define USART2_TX_DMA_IRQn				DMA1_Channel7_IRQn
 #define USART2_TX_DMA_IRQHandler		DMA1_Channel7_IRQHandler
+#define USART2_USE_DMA                  true
 
 #define	GPIO_SCL_Pin					GPIO_PIN_6		// PB6
 #define	GPIO_SCL_GPIO_Port				GPIOB

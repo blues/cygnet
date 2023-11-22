@@ -3,6 +3,7 @@
 // copyright holder including that found in the LICENSE file.
 
 #include "main.h"
+#include "usart.h"
 #include "stm32l4xx_it.h"
 
 extern LPTIM_HandleTypeDef hlptim1;
@@ -175,18 +176,21 @@ void I2C3_ER_IRQHandler(void)
 void LPUART1_IRQHandler(void)
 {
     HAL_UART_IRQHandler(&hlpuart1);
+    MY_UART_IRQHandler(&hlpuart1);
 }
 
 // This function handles USART1 global interrupt.
 void USART1_IRQHandler(void)
 {
     HAL_UART_IRQHandler(&huart1);
+    MY_UART_IRQHandler(&huart1);
 }
 
 // This function handles USART2 global interrupt.
 void USART2_IRQHandler(void)
 {
     HAL_UART_IRQHandler(&huart2);
+    MY_UART_IRQHandler(&huart2);
 }
 
 // This function handles SPI1 global interrupt.

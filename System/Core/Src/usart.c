@@ -9,6 +9,7 @@
 #include "usart.h"
 #include "global.h"
 #include "dma.h"
+#include <stdatomic.h>
 
 UART_HandleTypeDef hlpuart1;
 bool lpuart1UsingAlternatePins = false;
@@ -18,14 +19,12 @@ UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
 DMA_HandleTypeDef hdma_usart1_tx;
 uint32_t usart1BaudRate = 0;
-//#define USART1_USE_DMA
 
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
 bool usart2UsingRS485 = false;
 uint32_t usart2BaudRate = 0;
-//#define USART2_USE_DMA
 
 // For UART receive
 // UART receive I/O descriptor.  Note that if we ever fill the buffer
@@ -34,6 +33,7 @@ uint32_t usart2BaudRate = 0;
 // always be at least one byte available to start a receive.
 typedef struct {
     uint8_t *iobuf;
+    uint16_t iobuflen;
     uint8_t *buf;
     uint16_t buflen;
     uint16_t fill;
@@ -45,8 +45,10 @@ UARTIO rxioLPUART1 = {0};
 UARTIO rxioUSART1 = {0};
 UARTIO rxioUSART2 = {0};
 
-// Number of bytes for UART receives.  (We can just use this until there's a perf issue)
-#define UART_RXLEN 1
+// Number of bytes for UART receives, and a temporary RXBUF for double-buffering
+#define UART_IOBUF_LEN 512
+atomic_int rxtempInUse = 0;
+uint8_t rxtemp[UART_IOBUF_LEN];
 
 // Forwards
 bool uioReceivedBytes(UARTIO *uio, uint8_t *buf, uint32_t buflen);
@@ -81,7 +83,7 @@ void MX_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t len, uin
         waitWhileUartBusy = true;
     }
     if (huart == &huart1) {
-#ifdef USART1_USE_DMA
+#if USART1_USE_DMA
         HAL_UART_Transmit_DMA(huart, buf, len);
 #else
         HAL_UART_Transmit_IT(huart, buf, len);
@@ -89,7 +91,7 @@ void MX_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t len, uin
         waitWhileUartBusy = true;
     }
     if (huart == &huart2) {
-#ifdef USART2_USE_DMA
+#if USART2_USE_DMA
         HAL_UART_Transmit_DMA(huart, buf, len);
 #else
         HAL_UART_Transmit_IT(huart, buf, len);
@@ -128,42 +130,99 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
     HAL_UART_RxCpltCallback(huart);
 }
 
+// Get rx port
+UARTIO *rxPort(UART_HandleTypeDef *huart, uint16_t *rxBytes)
+{
+
+    UARTIO *uio = NULL;
+    uint16_t receivedBytes = 0;
+    if (huart == &hlpuart1) {
+        uio = &rxioLPUART1;
+        receivedBytes = uio->iobuflen - huart->RxXferCount;
+    }
+    if (huart == &huart1) {
+        uio = &rxioUSART1;
+#if USART1_USE_DMA
+        receivedBytes = uio->iobuflen - __HAL_DMA_GET_COUNTER(huart->hdmarx);
+#else
+        receivedBytes = uio->iobuflen - huart->RxXferCount;
+#endif
+    }
+    if (huart == &huart2) {
+        uio = &rxioUSART2;
+#if USART2_USE_DMA
+        receivedBytes = uio->iobuflen - __HAL_DMA_GET_COUNTER(huart->hdmarx);
+#else
+        receivedBytes = uio->iobuflen - huart->RxXferCount;
+#endif
+    }
+    *rxBytes = receivedBytes;
+    return uio;
+}
+
+// UART IRQ handler, used exclusively for IDLE processing
+void MY_UART_IRQHandler(UART_HandleTypeDef *huart)
+{
+    if (__HAL_UART_GET_IT_SOURCE(huart, UART_IT_IDLE) != RESET && __HAL_UART_GET_FLAG(huart, UART_FLAG_IDLE) != RESET) {
+
+        // Clear the idle flag.  For some reason it takes several tries to clear
+        __HAL_UART_CLEAR_IDLEFLAG(huart);
+
+        // Get the receive port and received bytes
+        uint16_t receivedBytes;
+        UARTIO *uio = rxPort(huart, &receivedBytes);
+        if (uio == NULL) {
+            return;
+        }
+
+        // Only process things that won't naturally go to a RxCpltCallback
+        if (receivedBytes != 0 && receivedBytes != uio->iobuflen) {
+            HAL_UART_RxCpltCallback(huart);
+        }
+
+    }
+}
+
 // Start a receive
 void MX_UART_RxStart(UART_HandleTypeDef *huart)
 {
+
+    // Importantly, abort any existing transfer else the existing receive remains in progress
+    // when an idle interrupt occurs
+    HAL_UART_AbortReceive(huart);
+
+    // Start the new receive
     if (huart == &hlpuart1 && rxioLPUART1.buf != NULL) {
-        rxioLPUART1.rxlen = UART_RXLEN;
-        if (HAL_UART_Receive_IT(huart, rxioLPUART1.iobuf, rxioLPUART1.rxlen) == HAL_OK) {
+        if (HAL_UART_Receive_IT(huart, rxioLPUART1.iobuf, rxioLPUART1.iobuflen) == HAL_OK) {
             return;
         }
         return;
     }
     if (huart == &huart1 && rxioUSART1.buf != NULL) {
-        rxioUSART1.rxlen = UART_RXLEN;
-#ifdef USART1_USE_DMA
-        if (HAL_UART_Receive_DMA(huart, rxioUSART1.iobuf, rxioUSART1.rxlen) == HAL_OK) {
+#if USART1_USE_DMA
+        if (HAL_UART_Receive_DMA(huart, rxioUSART1.iobuf, rxioUSART1.iobuflen) == HAL_OK) {
             return;
         }
 #else
-        if (HAL_UART_Receive_IT(huart, rxioUSART1.iobuf, rxioUSART1.rxlen) == HAL_OK) {
+        if (HAL_UART_Receive_IT(huart, rxioUSART1.iobuf, rxioUSART1.iobuflen) == HAL_OK) {
             return;
         }
 #endif
         return;
     }
     if (huart == &huart2 && rxioUSART2.buf != NULL) {
-        rxioUSART2.rxlen = UART_RXLEN;
-#ifdef USART2_USE_DMA
-        if (HAL_UART_Receive_DMA(huart, rxioUSART2.iobuf, rxioUSART2.rxlen) == HAL_OK) {
+#if USART2_USE_DMA
+        if (HAL_UART_Receive_DMA(huart, rxioUSART2.iobuf, rxioUSART2.iobuflen) == HAL_OK) {
             return;
         }
 #else
-        if (HAL_UART_Receive_IT(huart, rxioUSART2.iobuf, rxioUSART2.rxlen) == HAL_OK) {
+        if (HAL_UART_Receive_IT(huart, rxioUSART2.iobuf, rxioUSART2.iobuflen) == HAL_OK) {
             return;
         }
 #endif
         return;
     }
+
     MX_Breakpoint();
 }
 
@@ -177,7 +236,8 @@ void MX_UART_RxConfigure(UART_HandleTypeDef *huart, uint8_t *rxbuf, uint16_t rxb
         rxioLPUART1.buflen = rxbuflen;
         rxioLPUART1.fill = rxioLPUART1.drain = rxioLPUART1.rxlen = 0;
         rxioLPUART1.notifyReceivedFn = cb;
-        err_t err = memAlloc(UART_RXLEN, &rxioLPUART1.iobuf);
+        rxioLPUART1.iobuflen = UART_IOBUF_LEN;
+        err_t err = memAlloc(rxioLPUART1.iobuflen, &rxioLPUART1.iobuf);
         if (err) {
             debugPanic("lpuart1 iobuf");
         }
@@ -187,7 +247,8 @@ void MX_UART_RxConfigure(UART_HandleTypeDef *huart, uint8_t *rxbuf, uint16_t rxb
         rxioUSART1.buflen = rxbuflen;
         rxioUSART1.fill = rxioUSART1.drain = rxioUSART1.rxlen =  0;
         rxioUSART1.notifyReceivedFn = cb;
-        err_t err = memAlloc(UART_RXLEN, &rxioUSART1.iobuf);
+        rxioUSART1.iobuflen = UART_IOBUF_LEN;
+        err_t err = memAlloc(rxioUSART1.iobuflen, &rxioUSART1.iobuf);
         if (err) {
             debugPanic("usart1 iobuf");
         }
@@ -197,7 +258,8 @@ void MX_UART_RxConfigure(UART_HandleTypeDef *huart, uint8_t *rxbuf, uint16_t rxb
         rxioUSART2.buflen = rxbuflen;
         rxioUSART2.fill = rxioUSART2.drain = rxioUSART2.rxlen =  0;
         rxioUSART2.notifyReceivedFn = cb;
-        err_t err = memAlloc(UART_RXLEN, &rxioUSART2.iobuf);
+        rxioUSART2.iobuflen = UART_IOBUF_LEN;
+        err_t err = memAlloc(rxioUSART2.iobuflen, &rxioUSART2.iobuf);
         if (err) {
             debugPanic("usart2 iobuf");
         }
@@ -229,48 +291,52 @@ bool uioReceivedBytes(UARTIO *uio, uint8_t *buf, uint32_t buflen)
 // Receive complete
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-    UARTIO *uio;
-    uint16_t receivedBytes = 0;
-    if (huart == &hlpuart1) {
-        receivedBytes = rxioLPUART1.rxlen - huart->RxXferCount;
-        uio = &rxioLPUART1;
+
+    // Get the receive port
+    uint16_t receivedBytes;
+    UARTIO *uio = rxPort(huart, &receivedBytes);
+    if (uio == NULL) {
+        return;
     }
-    if (huart == &huart1) {
-#ifdef USART1_USE_DMA
-        receivedBytes = rxioUSART1.rxlen - __HAL_DMA_GET_COUNTER(huart->hdmarx);
-#else
-        receivedBytes = rxioUSART1.rxlen - huart->RxXferCount;
-#endif
-        uio = &rxioUSART1;
-    }
-    if (huart == &huart2) {
-#ifdef USART2_USE_DMA
-        receivedBytes = rxioUSART2.rxlen - __HAL_DMA_GET_COUNTER(huart->hdmarx);
-#else
-        receivedBytes = rxioUSART2.rxlen - huart->RxXferCount;
-#endif
-        uio = &rxioUSART2;
-    }
+
+    // If there's an error, abort
     if (huart->ErrorCode != HAL_UART_ERROR_NONE) {
         HAL_UART_Abort(huart);
         uio->fill = uio->drain = uio->rxlen = 0;
         if (uio->notifyReceivedFn != NULL) {
             uio->notifyReceivedFn(huart, true);
         }
+        MX_UART_RxStart(huart);
+        return;
+    }
+
+    // Use the static buffer and do double-buffering if possible.  Note that
+    // this will almost always be the case, unless the interrupt priorities
+    // are changed such that one serial IRQ is higher prio than the others.
+    uint8_t *iobuf = uio->iobuf;
+    if (atomic_fetch_add(&rxtempInUse, 1) == 0) {
+        memcpy(rxtemp, iobuf, receivedBytes);
+        iobuf = rxtemp;
+        MX_UART_RxStart(huart);
+    }
+
+    // Process the received bytes
+    if (!uioReceivedBytes(uio, iobuf, receivedBytes)) {
+        if (uio->notifyReceivedFn != NULL) {
+            uio->notifyReceivedFn(huart, true);
+        }
     } else {
-        if (!uioReceivedBytes(uio, uio->iobuf, receivedBytes)) {
-            // Overrun error
-//            MX_Breakpoint();
-            if (uio->notifyReceivedFn != NULL) {
-                uio->notifyReceivedFn(huart, true);
-            }
-        } else {
-            if (uio->notifyReceivedFn != NULL) {
-                uio->notifyReceivedFn(huart, false);
-            }
+        if (uio->notifyReceivedFn != NULL) {
+            uio->notifyReceivedFn(huart, false);
         }
     }
-    MX_UART_RxStart(huart);
+
+    // Release the double-buffer or restart the receive
+    if (iobuf != rxtemp) {
+        MX_UART_RxStart(huart);
+    }
+    atomic_fetch_sub(&rxtempInUse, 1);
+
 }
 
 // See if anything is available
@@ -335,6 +401,8 @@ void MX_LPUART1_UART_ReInit(void)
         Error_Handler();
     }
 
+    __HAL_UART_ENABLE_IT(&hlpuart1, UART_IT_IDLE);
+
     MX_UART_RxStart(&hlpuart1);
 
     peripherals |= PERIPHERAL_LPUART1;
@@ -393,6 +461,7 @@ void MX_LPUART1_UART_Transmit(uint8_t *buf, uint32_t len, uint32_t timeoutMs)
 void MX_LPUART1_UART_DeInit(void)
 {
     peripherals &= ~PERIPHERAL_LPUART1;
+    __HAL_UART_DISABLE_IT(&hlpuart1, UART_IT_IDLE);
     rxioLPUART1.fill = rxioLPUART1.drain = 0;
     __HAL_RCC_USART1_FORCE_RESET();
     __HAL_RCC_USART1_RELEASE_RESET();
@@ -424,6 +493,8 @@ void MX_USART1_UART_ReInit(void)
         Error_Handler();
     }
 
+    __HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
+
     MX_UART_RxStart(&huart1);
 
     peripherals |= PERIPHERAL_USART1;
@@ -437,11 +508,14 @@ void MX_USART1_UART_DeInit(void)
     // Deinitialized
     peripherals &= ~PERIPHERAL_USART1;
 
+    // Stop idle interrupt
+    __HAL_UART_DISABLE_IT(&huart1, UART_IT_IDLE);
+
     // Deconfigure RX buffer
     rxioUSART1.fill = rxioUSART1.drain = 0;
 
     // Stop any pending DMA, if any
-#ifdef USART1_USE_DMA
+#if USART1_USE_DMA
     HAL_UART_DMAStop(&huart1);
     HAL_NVIC_DisableIRQ(USART1_RX_DMA_IRQn);
     HAL_NVIC_DisableIRQ(USART1_TX_DMA_IRQn);
@@ -482,6 +556,8 @@ void MX_USART2_UART_ReInit(void)
         Error_Handler();
     }
 
+    __HAL_UART_ENABLE_IT(&huart2, UART_IT_IDLE);
+
     MX_UART_RxStart(&huart2);
 
     peripherals |= PERIPHERAL_USART2;
@@ -495,11 +571,14 @@ void MX_USART2_UART_DeInit(void)
     // Deinitialized
     peripherals &= ~PERIPHERAL_USART2;
 
+    // Stop idle interrupt
+    __HAL_UART_DISABLE_IT(&huart2, UART_IT_IDLE);
+
     // Deconfigure RX buffer
     rxioUSART2.fill = rxioUSART2.drain = 0;
 
     // Stop any pending DMA and disable DMA intnerrupts
-#ifdef USART2_USE_DMA
+#if USART2_USE_DMA
     HAL_UART_DMAStop(&huart2);
     HAL_NVIC_DisableIRQ(USART2_RX_DMA_IRQn);
     HAL_NVIC_DisableIRQ(USART2_TX_DMA_IRQn);
@@ -566,7 +645,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
         }
 
         // USART1 clock enable
-#ifdef USART1_USE_DMA
+#if USART1_USE_DMA
         MX_DMA_Init();
 #endif
         __HAL_RCC_USART1_CLK_ENABLE();
@@ -582,7 +661,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
         HAL_GPIO_Init(USART1_RX_GPIO_Port, &GPIO_InitStruct);
 
         // USART1_RX Init
-#ifdef USART1_USE_DMA
+#if USART1_USE_DMA
         hdma_usart1_rx.Instance = USART1_RX_DMA_Channel;
         hdma_usart1_rx.Init.Request = DMA_REQUEST_2;
         hdma_usart1_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
@@ -599,7 +678,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 #endif
 
         // USART1_TX Init
-#ifdef USART1_USE_DMA
+#if USART1_USE_DMA
         hdma_usart1_tx.Instance = USART1_TX_DMA_Channel;
         hdma_usart1_tx.Init.Request = DMA_REQUEST_2;
         hdma_usart1_tx.Init.Direction = DMA_MEMORY_TO_PERIPH;
@@ -618,7 +697,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
         // USART1 interrupt Init
         HAL_NVIC_SetPriority(USART1_IRQn, INTERRUPT_PRIO_SERIAL, 0);
         HAL_NVIC_EnableIRQ(USART1_IRQn);
-#ifdef USART1_USE_DMA
+#if USART1_USE_DMA
         HAL_NVIC_SetPriority(USART1_RX_DMA_IRQn, INTERRUPT_PRIO_SERIAL, 0);
         HAL_NVIC_EnableIRQ(USART1_RX_DMA_IRQn);
         HAL_NVIC_SetPriority(USART1_TX_DMA_IRQn, INTERRUPT_PRIO_SERIAL, 0);
@@ -637,7 +716,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
         }
 
         // USART2 clock enable
-#ifdef USART2_USE_DMA
+#if USART2_USE_DMA
         MX_DMA_Init();
 #endif
         __HAL_RCC_USART2_CLK_ENABLE();
@@ -666,7 +745,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
         }
 
         // USART2_RX DMA Init
-#ifdef USART2_USE_DMA
+#if USART2_USE_DMA
         hdma_usart2_rx.Instance = USART2_RX_DMA_Channel;
         hdma_usart2_rx.Init.Request = DMA_REQUEST_2;
         hdma_usart2_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
@@ -683,7 +762,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 #endif
 
         // USART2_TX DMA Init
-#ifdef USART2_USE_DMA
+#if USART2_USE_DMA
         hdma_usart2_tx.Instance = USART2_TX_DMA_Channel;
         hdma_usart2_tx.Init.Request = DMA_REQUEST_2;
         hdma_usart2_tx.Init.Direction = DMA_MEMORY_TO_PERIPH;
@@ -702,7 +781,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
         // USART2 interrupt Init
         HAL_NVIC_SetPriority(USART2_IRQn, INTERRUPT_PRIO_SERIAL, 0);
         HAL_NVIC_EnableIRQ(USART2_IRQn);
-#ifdef USART2_USE_DMA
+#if USART2_USE_DMA
         HAL_NVIC_SetPriority(USART2_RX_DMA_IRQn, INTERRUPT_PRIO_SERIAL, 0);
         HAL_NVIC_EnableIRQ(USART2_RX_DMA_IRQn);
         HAL_NVIC_SetPriority(USART2_TX_DMA_IRQn, INTERRUPT_PRIO_SERIAL, 0);
@@ -746,14 +825,14 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
         HAL_GPIO_DeInit(USART1_RX_GPIO_Port, USART1_RX_Pin);
 
         // USART1 DMA DeInit
-#ifdef USART1_USE_DMA
+#if USART1_USE_DMA
         HAL_DMA_DeInit(uartHandle->hdmarx);
         HAL_DMA_DeInit(uartHandle->hdmatx);
 #endif
 
         // USART1 interrupt Deinit
         HAL_NVIC_DisableIRQ(USART1_IRQn);
-#ifdef USART1_USE_DMA
+#if USART1_USE_DMA
         HAL_NVIC_DisableIRQ(USART1_RX_DMA_IRQn);
         HAL_NVIC_DisableIRQ(USART1_TX_DMA_IRQn);
 #endif
@@ -776,14 +855,14 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
         }
 
         // USART2 DMA DeInit
-#ifdef USART2_USE_DMA
+#if USART2_USE_DMA
         HAL_DMA_DeInit(uartHandle->hdmarx);
         HAL_DMA_DeInit(uartHandle->hdmatx);
 #endif
 
         // USART2 interrupt Deinit
         HAL_NVIC_DisableIRQ(USART2_IRQn);
-#ifdef USART2_USE_DMA
+#if USART2_USE_DMA
         HAL_NVIC_DisableIRQ(USART2_RX_DMA_IRQn);
         HAL_NVIC_DisableIRQ(USART2_TX_DMA_IRQn);
 #endif
