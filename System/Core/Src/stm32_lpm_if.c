@@ -91,7 +91,7 @@ void PWR_EnterStopMode(void)
     // Disable DMA
     MX_DMA_DeInit();
 
-    // Suspend sysTick : work around for degugger problem in dual core (tickets 71085,  72038, 71087 )
+    // Suspend sysTick
     HAL_SuspendTick();
 
     // Prepare 'awake' peripherals so they wake-up from STOP

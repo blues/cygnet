@@ -187,9 +187,11 @@ void MY_UART_IRQHandler(UART_HandleTypeDef *huart)
 void MX_UART_RxStart(UART_HandleTypeDef *huart)
 {
 
-    // Importantly, abort any existing transfer else the existing receive remains in progress
-    // when an idle interrupt occurs
-    HAL_UART_AbortReceive(huart);
+    // Importantly, abort any existing transfer so the receive doesn't return BUSY, such as
+    // is the case when restarting receive after an IDLE interrupt.
+    if (huart->RxState != HAL_UART_STATE_READY) {
+        HAL_UART_AbortReceive(huart);
+    }
 
     // Start the new receive
     if (huart == &hlpuart1 && rxioLPUART1.buf != NULL) {
