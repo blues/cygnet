@@ -17,10 +17,10 @@
 
 #define	MODEM_RI_Pin                    D12_Pin
 #define	MODEM_RI_GPIO_Port              D12_GPIO_Port
-#define MODEM_RI_EXTI_IRQn              D12_IRQn
+#define MODEM_RI_EXTI_IRQn              D12_IRQn        // LINE15
 
-#define	MODEM_PSM_EINT_NOD_Pin          D13_Pin
-#define	MODEM_PSM_EINT_NOD_GPIO_Port    D13_GPIO_Port
+#define	MODEM_PSM_EINT_NOD_Pin          D11_Pin
+#define	MODEM_PSM_EINT_NOD_GPIO_Port    D11_GPIO_Port
 
 #define	MAIN_POWER_Pin					D5_Pin
 #define	MAIN_POWER_GPIO_Port			D5_GPIO_Port
