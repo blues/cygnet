@@ -125,6 +125,9 @@ void PWR_ExitStopMode(void)
     HAL_GPIO_WritePin(LED_BUSY_GPIO_Port, LED_BUSY_Pin, GPIO_PIN_SET);
 #endif
 
+    // Reset the clocks
+    SystemClock_Config();
+
     // Resume peripherals that were awake
     MX_LPUART1_UART_Resume();
 

@@ -29,6 +29,7 @@ size_t strlcat(char *dst, const char *src, size_t siz);
 
 // main.c
 int main(void);
+void SystemClock_Config(void);
 extern uint32_t peripherals;
 void MX_ActivePeripherals(char *buf, uint32_t buflen);
 uint32_t MX_ImageSize(void);

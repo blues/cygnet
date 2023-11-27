@@ -42,7 +42,6 @@ extern void *_highest_used_rom;
 #endif
 
 // Forwards
-void SystemClock_Config(void);
 void MX_FREERTOS_Init(void);
 
 // System entry point
