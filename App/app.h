@@ -153,6 +153,7 @@ void ledBusy(bool enable);
 #define rdtNone             0
 #define rdtRestart          1
 #define rdtBootloader       2
+extern bool reqActive;
 void reqTask(void *params);
 void reqButtonPressedISR(void);
 

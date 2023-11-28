@@ -45,7 +45,7 @@ void appHeartbeatISR(uint32_t heartbeatSecs)
 // Return true if sleep is allowed
 bool appSleepAllowed(void)
 {
-    if (modemPoweredOn || gpsPoweredOn) {
+    if (modemPoweredOn || gpsPoweredOn || reqActive) {
         return false;
     }
     return true;

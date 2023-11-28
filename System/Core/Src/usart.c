@@ -417,7 +417,7 @@ void MX_LPUART1_UART_Suspend(void)
 
     // Set wakeUp event on start bit
     UART_WakeUpTypeDef WakeUpSelection;
-    WakeUpSelection.WakeUpEvent = UART_WAKEUP_ON_STARTBIT;
+    WakeUpSelection.WakeUpEvent = LL_LPUART_WAKEUP_ON_RXNE;
     HAL_UARTEx_StopModeWakeUpSourceConfig(&hlpuart1, WakeUpSelection);
 
     // Enable interrupt
