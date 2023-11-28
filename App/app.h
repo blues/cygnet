@@ -109,6 +109,7 @@ bool modemWorkExists(modemWorker worker);
 #define POWER_INIT      0x00000001
 #define POWER_DATA      0x00000002
 #define POWER_GPS       0x00000004
+#define POWER_MODEM_DFU 0x00000008
 extern uint32_t powerNeeds;
 extern bool gpsPoweredOn;
 extern bool modemPoweredOn;
@@ -126,6 +127,7 @@ err_t workEnableGps(J *junused, uint8_t *unused, uint32_t unusedLen);
 err_t workDisableGps(J *junused, uint8_t *unused, uint32_t unusedLen);
 
 // serial.c
+extern bool serialActive;
 void serialInit(uint32_t serialTaskID);
 void serialPoll(void);
 bool serialLock(UART_HandleTypeDef *huart, uint8_t **retData, uint32_t *retDataLen, bool *retDiagAllowed);
@@ -153,7 +155,6 @@ void ledBusy(bool enable);
 #define rdtNone             0
 #define rdtRestart          1
 #define rdtBootloader       2
-extern bool reqActive;
 void reqTask(void *params);
 void reqButtonPressedISR(void);
 

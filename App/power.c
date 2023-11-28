@@ -20,21 +20,21 @@ err_t powerOn(uint32_t reason)
     // Add a reason
     powerNeeds |= reason;
 
-	// Set the power pins appropriately
-	bool turnGpsOn = ((powerNeeds & POWER_GPS) != 0);
-	bool turnModemOn = ((powerNeeds & (POWER_DATA|POWER_INIT)) != 0);
-	bool turnMainOn = turnGpsOn || turnModemOn;
-	if (turnMainOn && !mainPoweredOn) {
-		if (!turnModemOn && !modemPoweredOn) {
-		    HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);
-		}
-	    HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_SET);
-		mainPoweredOn = true;
-	}
-	if (turnGpsOn && !gpsPoweredOn) {
-		gpsPoweredOn = true;
+    // Set the power pins appropriately
+    bool turnGpsOn = ((powerNeeds & POWER_GPS) != 0);
+    bool turnModemOn = ((powerNeeds & (POWER_DATA|POWER_INIT|POWER_MODEM_DFU)) != 0);
+    bool turnMainOn = turnGpsOn || turnModemOn;
+    if (turnMainOn && !mainPoweredOn) {
+        if (!turnModemOn && !modemPoweredOn) {
+            HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);
+        }
+        HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_SET);
+        mainPoweredOn = true;
+    }
+    if (turnGpsOn && !gpsPoweredOn) {
+        gpsPoweredOn = true;
         debugf("gps: powered on\n");
-	}
+    }
 
     // If the modem doesn't need to be powered on, our job is done
     if (!turnModemOn) {
@@ -84,6 +84,11 @@ err_t powerOn(uint32_t reason)
     modemIsReady = false;
     modemPoweredOn = true;
     debugf("modem: powered on\n");
+
+    // If we're doing a modem DFU, we're done.
+    if ((powerNeeds & POWER_MODEM_DFU) != 0) {
+        return errNone;
+    }
 
     // Wait until RDY, flushing everything else that comes in
     bool ready = false;
@@ -160,59 +165,59 @@ void powerOff(uint32_t reason)
     // Remove reasons.  If we still need to stay on, exit
     powerNeeds &= ~reason;
 
-	// Set the power pins appropriately
-	bool turnGpsOff = ((powerNeeds & POWER_GPS) == 0);
-	bool turnModemOff = ((powerNeeds & (POWER_DATA|POWER_INIT)) == 0);
+    // Set the power pins appropriately
+    bool turnGpsOff = ((powerNeeds & POWER_GPS) == 0);
+    bool turnModemOff = ((powerNeeds & (POWER_DATA|POWER_INIT)) == 0);
 
     // Exit if already powered off
     if (turnModemOff && modemPoweredOn) {
 
-		// Disconnect from the network
-		err_t err = modemSend(NULL, "AT+CFUN=0");
-		if (err) {
-			timerMsSleep(2500);
-		}
-		int maxSecs = 20;
-		int64_t unregExpiresMs = timerMs() + ((int64_t)maxSecs * ms1Sec);
-		while (timerMs() < unregExpiresMs) {
-			if (modemUrc("+CEREG: 0", false) || modemUrc("+CEREG: 1,0", false) || modemUrc("+CEREG: 0,0", false)) {
-				break;
-			}
-			modemSend(NULL, "AT+CEREG?");
-			timerMsSleep(1000);
-			modemProcessSerialIncoming();
-		}
+        // Disconnect from the network
+        err_t err = modemSend(NULL, "AT+CFUN=0");
+        if (err) {
+            timerMsSleep(2500);
+        }
+        int maxSecs = 20;
+        int64_t unregExpiresMs = timerMs() + ((int64_t)maxSecs * ms1Sec);
+        while (timerMs() < unregExpiresMs) {
+            if (modemUrc("+CEREG: 0", false) || modemUrc("+CEREG: 1,0", false) || modemUrc("+CEREG: 0,0", false)) {
+                break;
+            }
+            modemSend(NULL, "AT+CEREG?");
+            timerMsSleep(1000);
+            modemProcessSerialIncoming();
+        }
 
-		// Do a soft power-down of the modem, giving it a bit to flush
+        // Do a soft power-down of the modem, giving it a bit to flush
 #ifndef MODEM_ALWAYS_ON
-		modemSend(NULL, "AT+QPOWD=0");
-		timerMsSleep(3000);
+        modemSend(NULL, "AT+QPOWD=0");
+        timerMsSleep(3000);
 #endif
 
-		// Uninit the USART
+        // Uninit the USART
 #ifndef MODEM_ALWAYS_ON
-		MX_USART2_UART_DeInit();
+        MX_USART2_UART_DeInit();
 #endif
 
-		// Physically turn off the power
+        // Physically turn off the power
 #ifndef MODEM_ALWAYS_ON
 
-		// Make sure we leave RESET# and PWRKEY# high
-		HAL_GPIO_WritePin(MODEM_RESET_NOD_GPIO_Port, MODEM_RESET_NOD_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(MODEM_PWRKEY_NOD_GPIO_Port, MODEM_PWRKEY_NOD_Pin, GPIO_PIN_SET);
+        // Make sure we leave RESET# and PWRKEY# high
+        HAL_GPIO_WritePin(MODEM_RESET_NOD_GPIO_Port, MODEM_RESET_NOD_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(MODEM_PWRKEY_NOD_GPIO_Port, MODEM_PWRKEY_NOD_Pin, GPIO_PIN_SET);
 
-		// Power-off the modem
-		HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);
+        // Power-off the modem
+        HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);
 
 #endif // MODEM_ALWAYS_ON
 
-		// We're powered off.
-		modemPoweredOn = false;
-		modemIsReady = false;
-		modemSetConnected(false);
-		debugf("modem: powered off\n");
+        // We're powered off.
+        modemPoweredOn = false;
+        modemIsReady = false;
+        modemSetConnected(false);
+        debugf("modem: powered off\n");
 
-	}
+    }
 
     // If GPS needs to be powered down, power it down
     if (turnGpsOff && gpsPoweredOn) {
@@ -220,10 +225,10 @@ void powerOff(uint32_t reason)
         debugf("gps: powered off\n");
     }
 
-	// If neither the modem or GPS needs power, turn off MAIN
-	if (!gpsPoweredOn && !modemPoweredOn && mainPoweredOn) {
-	    HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_RESET);
-		mainPoweredOn = false;
-	}
+    // If neither the modem or GPS needs power, turn off MAIN
+    if (!gpsPoweredOn && !modemPoweredOn && mainPoweredOn) {
+        HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_RESET);
+        mainPoweredOn = false;
+    }
 
 }

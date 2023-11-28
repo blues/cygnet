@@ -10,7 +10,7 @@ typedef struct {
     const char *sku;
 } sku_t;
 const sku_t skus[] = {
-        {.sku = "NTN-SKY1" },
+    {.sku = "NTN-SKY1" },
 };
 
 // Self-test, writing the test certificate upon completion using the supplied template
@@ -106,7 +106,7 @@ err_t postSelfTest(bool performHardwareTest, J *tc)
     // If error, bail
     if (err) {
         return err;
-    }        
+    }
 
     // Swap the cached version
     if (testCert != NULL) {
@@ -122,7 +122,7 @@ err_t postSelfTest(bool performHardwareTest, J *tc)
 // Retrieve the test certificate
 J *postGetTestCert()
 {
-    
+
     // See if there's a null terminator in the test cert page.  Note that
     // there is a bug in the IAR library such that a memchr that includes the very
     // last byte of RAM will fault:

@@ -33,6 +33,9 @@ STATIC int64_t lastTimeDidWorkMs = 0L;
 // Task ID
 STATIC uint32_t serialTaskID = TASKID_UNKNOWN;
 
+// Whether or not the serial polling is active
+bool serialActive = true;
+
 // Reset the USB appropriate
 STATIC bool resetUSB = false;
 
@@ -99,6 +102,9 @@ void serialPoll(void)
         }
     }
 
+    // Note that we are busy servicing serial
+    serialActive = true;
+
     // Poll ports so long as there's something to do
     bool didWork = false;
     while (true) {
@@ -116,15 +122,17 @@ void serialPoll(void)
     }
 
     // If nothing was done, truly go idle
-    uint32_t pollMs = ms1Hour;
+    uint32_t pollMs;
     if (didWork) {
         pollMs = 1;
         lastTimeDidWorkMs = timerMs();
-    }
-
-    // If modem is on, accelerate
-    if (modemPoweredOn && pollMs > ms1Sec) {
+    } else if (modemPoweredOn) {
         pollMs = ms1Sec;
+    } else if (!timerMsElapsed(lastTimeDidWorkMs, 3000)) {
+        pollMs = 100;
+    } else {
+        pollMs = ms1Hour;
+        serialActive = false;
     }
 
     // Wait until there's something to do
@@ -136,7 +144,16 @@ void serialPoll(void)
 void serialReceivedNotification(UART_HandleTypeDef *huart, bool error)
 {
     if (serialTaskID != TASKID_UNKNOWN) {
+
+        // Because notifications are received (on LPUART1) before the character
+        // has been fully received, and because the receive is not actually
+        // yet completed, make sure we mark this as "work done" so that the
+        // serialPoll loop doesn't just go back to sleep on the first iteration.
+        lastTimeDidWorkMs = timerMs();
+
+        // Wake the serial task
         taskGiveFromISR(serialTaskID);
+
     }
 }
 

@@ -635,6 +635,11 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
         HAL_NVIC_SetPriority(LPUART1_IRQn, INTERRUPT_PRIO_SERIAL, 0);
         HAL_NVIC_EnableIRQ(LPUART1_IRQn);
 
+        // Enable LPUART clock in sleep mode
+        // Default state of RCC->APB1SMENR2 ia all enabled see RM0453 7.4.26,
+        // but we include this call as a reminder that it is needed.
+        __HAL_RCC_LPUART1_CLK_SLEEP_ENABLE();
+
     }
 
     if (uartHandle->Instance==USART1) {

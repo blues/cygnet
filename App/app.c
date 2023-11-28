@@ -45,7 +45,7 @@ void appHeartbeatISR(uint32_t heartbeatSecs)
 // Return true if sleep is allowed
 bool appSleepAllowed(void)
 {
-    if (modemPoweredOn || gpsPoweredOn || reqActive) {
+    if (modemPoweredOn || gpsPoweredOn || serialActive) {
         return false;
     }
     return true;
@@ -125,6 +125,14 @@ void appInitGPIO(void)
     GPIO_InitStruct.Pin = MAIN_POWER_Pin;
     HAL_GPIO_Init(MAIN_POWER_GPIO_Port, &GPIO_InitStruct);
     HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_RESET);
+
+    // Inputs with no interrupts
+    memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Pin = EN_MODEM_DFU_Pin;
+    HAL_GPIO_Init(EN_MODEM_DFU_GPIO_Port, &GPIO_InitStruct);
 
     // Initialize inputs as floats for until we are ready to use them
     memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));

@@ -82,6 +82,22 @@ err_t modemInit(void)
         return err;
     }
 
+    // See if we are supposed to be DFU'ing the modem, and enter a dedicated mode if so
+    if (HAL_GPIO_ReadPin(EN_MODEM_DFU_GPIO_Port, EN_MODEM_DFU_Pin) != GPIO_PIN_RESET) {
+
+        // Power-on the modem for DFU purposes
+        powerOn(POWER_MODEM_DFU);
+
+        // Flash indefinitely during DFU
+        while (true) {
+            ledBusy(true);
+            timerMsSleep(750);
+            ledBusy(false);
+            timerMsSleep(750);
+        }
+
+    }
+
     return errNone;
 }
 
@@ -610,7 +626,7 @@ bool modemInfoNeeded(void)
     }
     strLcpy(configModemId, JGetString(tcert, tcFieldDeviceUID));
     strLcpy(configModemVersion, JGetString(tcert, tcFieldModem));
-    
+
     // Return whether or not they're still needed
     return (configModemId[0] == '\0' || configModemVersion[0] == '\0');
 

@@ -108,11 +108,13 @@ void SystemClock_Config(void)
     // in the RCC_OscInitTypeDef structure.
     RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSE;
     RCC_OscInitStruct.LSEState = RCC_LSE_ON;
-    RCC_OscInitStruct.OscillatorType |= RCC_OSCILLATORTYPE_MSI;
+    RCC_OscInitStruct.OscillatorType |= RCC_OSCILLATORTYPE_MSI|RCC_OSCILLATORTYPE_HSI;
     RCC_OscInitStruct.MSIState = RCC_MSI_ON;
     RCC_OscInitStruct.MSICalibrationValue = RCC_MSICALIBRATION_DEFAULT;
     RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_11;
     RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+    RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
         Error_Handler();
     }

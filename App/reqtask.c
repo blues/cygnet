@@ -8,7 +8,6 @@ STATIC bool processButtonPress = false;
 
 // Perform work after sending reply
 uint32_t reqDeferredWork = rdtNone;
-bool reqActive = true;
 
 // Forwards
 bool processReq(UART_HandleTypeDef *huart);
@@ -17,39 +16,19 @@ bool processButton(void);
 // Request task
 void reqTask(void *params)
 {
-    int64_t lastDidSomethingMs = timerMs();
 
     // Init task
     taskRegister(TASKID_REQ, TASKNAME_REQ, TASKLETTER_REQ, TASKSTACK_REQ);
 
-    // Loop, extracting requests from the serial port and processing them
+    // Loop, extracting requests from the serial ports and processing them
     while (true) {
 
-        // Note that we are busy servicing a request
-        reqActive = true;
-
-        // Process requests
         bool didSomething = false;
         didSomething |= processReq(&hlpuart1);
         didSomething |= processReq(&huart1);
         didSomething |= processButton();
-        if (didSomething) {
-            lastDidSomethingMs = timerMs();
-        } else {
-            int64_t sleepMs;
-
-            // Keep us from going into and out of STOP2 mode on a crazy high frequency
-            // basis, just to prevent thrashing.
-            if ((uint32_t) (timerMs() - lastDidSomethingMs) > 3000) {
-                sleepMs = ms1Day;
-                reqActive = false;
-            } else {
-                sleepMs = 100;
-            }
-
-            // Wait for something to appear on one of the request ports
-            taskTake(TASKID_REQ, sleepMs);
-
+        if (!didSomething) {
+            taskTake(TASKID_REQ, ms1Hour);
         }
     }
 
