@@ -22,6 +22,9 @@
 #define	MODEM_PSM_EINT_NOD_Pin          D11_Pin
 #define	MODEM_PSM_EINT_NOD_GPIO_Port    D11_GPIO_Port
 
+#define	EN_MODEM_DFU_Pin				A4_Pin
+#define	EN_MODEM_DFU_GPIO_Port			A4_GPIO_Port
+
 #define	MAIN_POWER_Pin					D5_Pin
 #define	MAIN_POWER_GPIO_Port			D5_GPIO_Port
 
