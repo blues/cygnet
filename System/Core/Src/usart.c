@@ -133,7 +133,6 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 // Get rx port
 UARTIO *rxPort(UART_HandleTypeDef *huart, uint16_t *rxBytes)
 {
-
     UARTIO *uio = NULL;
     uint16_t receivedBytes = 0;
     if (huart == &hlpuart1) {
@@ -161,11 +160,11 @@ UARTIO *rxPort(UART_HandleTypeDef *huart, uint16_t *rxBytes)
 }
 
 // UART IRQ handler, used exclusively for IDLE processing
-void MY_UART_IRQHandler(UART_HandleTypeDef *huart)
+void MX_UART_IDLE_IRQHandler(UART_HandleTypeDef *huart)
 {
     if (__HAL_UART_GET_IT_SOURCE(huart, UART_IT_IDLE) != RESET && __HAL_UART_GET_FLAG(huart, UART_FLAG_IDLE) != RESET) {
 
-        // Clear the idle flag.  For some reason it takes several tries to clear
+        // Clear the idle flag.
         __HAL_UART_CLEAR_IDLEFLAG(huart);
 
         // Get the receive port and received bytes
@@ -225,7 +224,6 @@ void MX_UART_RxStart(UART_HandleTypeDef *huart)
         return;
     }
 
-    MX_Breakpoint();
 }
 
 // Register a completion callback and allocate receive buffer

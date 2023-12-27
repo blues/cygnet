@@ -140,6 +140,7 @@ void serialSendMessageToNotecard(J *msg);
 J *serialCreateMessage(const char *msgType, char *status, J *body, uint8_t *payload, uint32_t payloadLen);
 void serialSendLineToModem(char *text);
 void serialSendLineToNotecard(char *msg);
+void serialResetUSB(void);
 
 // maintask.c
 void mainTask(void *params);

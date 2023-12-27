@@ -10,7 +10,7 @@
 
 #define BOARD_NUCLEO		0       // Proto using NUCLEO-L433RC-P
 #define BOARD_V1            1       // First spin
-#define CURRENT_BOARD       BOARD_NUCLEO
+#define CURRENT_BOARD       BOARD_V1
 
 // Pin Definitions for stm32l433cct6t
 // 1 VBAT				13 PA3/IN8			25 PB12				37 PA14
