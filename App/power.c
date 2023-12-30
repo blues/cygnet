@@ -68,10 +68,10 @@ err_t powerOn(uint32_t reason)
     // Wait for the modem to stabilize and then drive PWRKEY low for at least 500ms
     timerMsSleep(750);
     HAL_GPIO_WritePin(MODEM_PWRKEY_NOD_GPIO_Port, MODEM_PWRKEY_NOD_Pin, GPIO_PIN_RESET);
-    timerMsSleep(750);
+    timerMsSleep(1500);
     HAL_GPIO_WritePin(MODEM_PWRKEY_NOD_GPIO_Port, MODEM_PWRKEY_NOD_Pin, GPIO_PIN_SET);
 
-#endif // MODEM_ALWAYS_ON
+#endif // !MODEM_ALWAYS_ON
 
     // If the modem is always on, do a reset to simulate power-on
 #ifdef MODEM_ALWAYS_ON
@@ -89,6 +89,11 @@ err_t powerOn(uint32_t reason)
     if ((powerNeeds & POWER_MODEM_DFU) != 0) {
         return errNone;
     }
+
+    // Send the most critical startup command to the modem, which is
+    // to disable the 10-second timer.  These are sent even before
+    // waiting for RDY just as a defensive mechanism for slowdowns.
+    serialSendLineToModem("AT+QSCLK=0");
 
     // Wait until RDY, flushing everything else that comes in
     bool ready = false;
@@ -127,6 +132,9 @@ err_t powerOn(uint32_t reason)
         powerOff(reason);
         return err;
     }
+
+    // Enable LED
+    modemSend(NULL, "AT+QLEDMODE=1");
 
     // Get IMSI if necessary
     if (configModemId[0] == '\0') {

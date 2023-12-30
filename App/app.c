@@ -102,13 +102,6 @@ void appInitGPIO(void)
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
 
-    GPIO_InitStruct.Pin = MODEM_RESET_NOD_Pin;
-    HAL_GPIO_Init(MODEM_RESET_NOD_GPIO_Port, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = MODEM_PWRKEY_NOD_Pin;
-    HAL_GPIO_Init(MODEM_PWRKEY_NOD_GPIO_Port, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = MODEM_PSM_EINT_NOD_Pin;
-    HAL_GPIO_Init(MODEM_PSM_EINT_NOD_GPIO_Port, &GPIO_InitStruct);
-
     // Initialize outputs
     memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -119,9 +112,22 @@ void appInitGPIO(void)
     HAL_GPIO_Init(LED_BUSY_GPIO_Port, &GPIO_InitStruct);
     HAL_GPIO_WritePin(LED_BUSY_GPIO_Port, LED_BUSY_Pin, GPIO_PIN_RESET);
 
+    GPIO_InitStruct.Pin = MODEM_RESET_NOD_Pin;
+    HAL_GPIO_Init(MODEM_RESET_NOD_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(MODEM_RESET_NOD_GPIO_Port, MODEM_RESET_NOD_Pin, GPIO_PIN_SET);
+
+    GPIO_InitStruct.Pin = MODEM_PWRKEY_NOD_Pin;
+    HAL_GPIO_Init(MODEM_PWRKEY_NOD_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(MODEM_PWRKEY_NOD_GPIO_Port, MODEM_PWRKEY_NOD_Pin, GPIO_PIN_SET);
+
+    GPIO_InitStruct.Pin = MODEM_PSM_EINT_NOD_Pin;
+    HAL_GPIO_Init(MODEM_PSM_EINT_NOD_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(MODEM_PSM_EINT_NOD_GPIO_Port, MODEM_PSM_EINT_NOD_Pin, GPIO_PIN_SET);
+
     GPIO_InitStruct.Pin = MODEM_POWER_NOD_Pin;
     HAL_GPIO_Init(MODEM_POWER_NOD_GPIO_Port, &GPIO_InitStruct);
     HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);
+
     GPIO_InitStruct.Pin = MAIN_POWER_Pin;
     HAL_GPIO_Init(MAIN_POWER_GPIO_Port, &GPIO_InitStruct);
     HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_RESET);
@@ -131,6 +137,7 @@ void appInitGPIO(void)
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
     GPIO_InitStruct.Pull = GPIO_PULLDOWN;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+
     GPIO_InitStruct.Pin = EN_MODEM_DFU_Pin;
     HAL_GPIO_Init(EN_MODEM_DFU_GPIO_Port, &GPIO_InitStruct);
 
