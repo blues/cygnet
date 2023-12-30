@@ -72,12 +72,16 @@ int main(void)
 
     // Initialize all configured peripherals
     MX_GPIO_Init();
+    ozzie();
     MX_DMA_Init();
+    ozzie();
     MX_DBG_Init();
+    ozzie();
 
     // Init scheduler
     osKernelInitialize();  // Call init function for freertos objects (in freertos.c)
-
+    ozzie();
+    
     // Initialize the FreeRTOS app
     appInit();
 
@@ -200,4 +204,20 @@ void MX_GetUniqueId(uint8_t *id)
     id[2] = (ID_2_val) >> 16;
     id[1] = (ID_2_val) >> 8;
     id[0] = (ID_2_val);
+}
+
+// Allows us to set a breakpoint (copied from core_cm4.h)
+void MY_NVIC_SystemReset(void)
+{
+  __DSB();                                                          /* Ensure all outstanding memory accesses included
+                                                                       buffered write are completed before reset */
+  SCB->AIRCR  = (uint32_t)((0x5FAUL << SCB_AIRCR_VECTKEY_Pos)    |
+                           (SCB->AIRCR & SCB_AIRCR_PRIGROUP_Msk) |
+                            SCB_AIRCR_SYSRESETREQ_Msk    );         /* Keep priority group unchanged */
+  __DSB();                                                          /* Ensure completion of memory access */
+
+  for(;;)                                                           /* wait until reset */
+  {
+    __NOP();
+  }
 }

@@ -11,6 +11,7 @@
 // Main task
 void mainTask(void *params)
 {
+    ozzie();
 
     // Init task
     taskRegister(TASKID_MAIN, TASKNAME_MAIN, TASKLETTER_MAIN, TASKSTACK_MAIN);
@@ -24,6 +25,7 @@ void mainTask(void *params)
     if (osDebugging()) {
         UTIL_LPM_SetStopMode((1 << CFG_LPM_APPLI_Id), UTIL_LPM_DISABLE);
     }
+    ozzie();
 
     // Set config defaults
     configSetDefaults();
@@ -31,11 +33,14 @@ void mainTask(void *params)
     // Remember the timer value when we booted
     timerSetBootTime();
 
+    ozzie();
     // Initialize serial, thus enabling debug output
     serialInit(TASKID_MAIN);
 
     // Initialize the modem package
+    ozzie();
     modemInit();
+    ozzie();
 
     // Enable debug info at startup, by policy
     MX_DBG_Enable(true);
@@ -71,6 +76,7 @@ void mainTask(void *params)
 
     // Poll, moving serial data from interrupt buffers to app buffers
     for (;;) {
+        timerMsSleep(1000);
         serialPoll();
     }
 

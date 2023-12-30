@@ -11,15 +11,22 @@ uint32_t monitor(void)
     uint32_t returnInMs = 0xffff;
 
     // If we don't have our modem info yet, try to fetch it
+    ozzie();
+    ozzie();
+    ozzie();
     if (modemInfoNeeded()) {
+        ozzie();
         err_t err = powerOn(POWER_INIT);
+        ozzie();
         if (!err) {
             powerOff(POWER_INIT);
         }
+        ozzie();
     }
 
     // If we haven't yet received a hello, poll on a periodic basis and send the
     // notecard a 'hello' message introducing ourselves.
+        ozzie();
     if (!configReceivedHello) {
         if (timerMs() >= nextHelloDueMs) {
             nextHelloDueMs = timerMs() + (SEND_HELLO_SECS * ms1Sec);

@@ -11,6 +11,18 @@ bool mainPoweredOn = false;
 uint32_t powerNeeds = 0;
 bool modemIsReady = false;
 
+void ozzie()
+{
+    HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_RESET);}
+
 // Turn on modem power
 err_t powerOn(uint32_t reason)
 {
@@ -20,14 +32,14 @@ err_t powerOn(uint32_t reason)
     // Add a reason
     powerNeeds |= reason;
 
+    ozzie();
+
     // Set the power pins appropriately
     bool turnGpsOn = ((powerNeeds & POWER_GPS) != 0);
     bool turnModemOn = ((powerNeeds & (POWER_DATA|POWER_INIT|POWER_MODEM_DFU)) != 0);
     bool turnMainOn = turnGpsOn || turnModemOn;
     if (turnMainOn && !mainPoweredOn) {
-        if (!turnModemOn && !modemPoweredOn) {
-            HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);
-        }
+        HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);
         HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_SET);
         mainPoweredOn = true;
     }
@@ -68,7 +80,7 @@ err_t powerOn(uint32_t reason)
     // Wait for the modem to stabilize and then drive PWRKEY low for at least 500ms
     timerMsSleep(750);
     HAL_GPIO_WritePin(MODEM_PWRKEY_NOD_GPIO_Port, MODEM_PWRKEY_NOD_Pin, GPIO_PIN_RESET);
-    timerMsSleep(750);
+    timerMsSleep(2000);
     HAL_GPIO_WritePin(MODEM_PWRKEY_NOD_GPIO_Port, MODEM_PWRKEY_NOD_Pin, GPIO_PIN_SET);
 
 #endif // MODEM_ALWAYS_ON
@@ -89,6 +101,14 @@ err_t powerOn(uint32_t reason)
     if ((powerNeeds & POWER_MODEM_DFU) != 0) {
         return errNone;
     }
+
+// OZZIE MODIFICATION
+    // Send the most critical startup command to the modem, which is
+    // to disable the 10-second timer.  These are sent even before
+    // waiting for RDY in case we need 
+    serialSendLineToModem("AT+QSCLK=0");
+    serialSendLineToModem("AT+QSCLK=0");
+// OZZIE MODIFICATION
 
     // Wait until RDY, flushing everything else that comes in
     bool ready = false;

@@ -1,3 +1,4 @@
+extern void ozzie();
 
 #include "main.h"
 #include "mutex.h"
@@ -11,25 +12,25 @@
 #define TASKID_MAIN                 0           // Serial uart poller
 #define TASKNAME_MAIN               "uart"
 #define TASKLETTER_MAIN             'U'
-#define TASKSTACK_MAIN              2000
+#define TASKSTACK_MAIN              3000
 #define TASKPRI_MAIN                ( configMAX_PRIORITIES - 1 )        // highest
 
 #define TASKID_REQ                  1           // Request handler
 #define TASKNAME_REQ                "request"
 #define TASKLETTER_REQ              'R'
-#define TASKSTACK_REQ               2500
+#define TASKSTACK_REQ               3500
 #define TASKPRI_REQ                 ( configMAX_PRIORITIES - 2 )        // Normal
 
 #define TASKID_MON                  2           // Monitor/poller
 #define TASKNAME_MON                "monitor"
 #define TASKLETTER_MON              'M'
-#define TASKSTACK_MON               2500
+#define TASKSTACK_MON               3500
 #define TASKPRI_MON                 ( configMAX_PRIORITIES - 2 )        // Normal
 
 #define TASKID_MODEM                3           // Modem
 #define TASKNAME_MODEM              "modem"
 #define TASKLETTER_MODEM            'Q'
-#define TASKSTACK_MODEM             2500
+#define TASKSTACK_MODEM             3500
 #define TASKPRI_MODEM               ( configMAX_PRIORITIES - 2 )        // Normal
 
 #define TASKID_NUM_TASKS            4           // Total

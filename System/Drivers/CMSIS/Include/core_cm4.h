@@ -1611,7 +1611,12 @@ typedef struct
   #define NVIC_GetActive              __NVIC_GetActive
   #define NVIC_SetPriority            __NVIC_SetPriority
   #define NVIC_GetPriority            __NVIC_GetPriority
+#if 0
   #define NVIC_SystemReset            __NVIC_SystemReset
+#else
+  extern void MY_NVIC_SystemReset(void);
+  #define NVIC_SystemReset            MY_NVIC_SystemReset
+#endif
 #endif /* CMSIS_NVIC_VIRTUAL */
 
 #ifdef CMSIS_VECTAB_VIRTUAL
