@@ -145,7 +145,7 @@ void MX_ActivePeripherals(char *buf, uint32_t buflen)
         strlcat(buf, "RNG ", buflen);
     }
     if ((peripherals & PERIPHERAL_USB) != 0) {
-        strlcat(buf, "RNG ", buflen);
+        strlcat(buf, "USB ", buflen);
     }
     if ((peripherals & PERIPHERAL_ADC1) != 0) {
         strlcat(buf, "ADC1 ", buflen);
