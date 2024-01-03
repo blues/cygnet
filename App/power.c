@@ -57,6 +57,10 @@ err_t powerOn(uint32_t reason)
     // Physically turn on the power
 #ifndef MODEM_ALWAYS_ON
 
+    // Make sure we select the SIM as appropriate
+    bool externalSimInserted = (HAL_GPIO_ReadPin(SIM_NPRESENT_GPIO_Port, SIM_NPRESENT_Pin) == GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(SEL_SIM_GPIO_Port, SEL_SIM_Pin, externalSimInserted ? GPIO_PIN_RESET : GPIO_PIN_SET);
+
     // Make sure RESET# and PWRKEY# are both high before we power-on
     HAL_GPIO_WritePin(MODEM_RESET_NOD_GPIO_Port, MODEM_RESET_NOD_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(MODEM_PWRKEY_NOD_GPIO_Port, MODEM_PWRKEY_NOD_Pin, GPIO_PIN_SET);
@@ -216,6 +220,9 @@ void powerOff(uint32_t reason)
 
         // Power-off the modem
         HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);
+
+        // Make sure we leave SEL_SIM low, to discharge lingering power in the modem through the pull-up
+        HAL_GPIO_WritePin(SEL_SIM_GPIO_Port, SEL_SIM_Pin, GPIO_PIN_RESET);
 
 #endif // MODEM_ALWAYS_ON
 

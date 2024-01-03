@@ -132,6 +132,24 @@ void appInitGPIO(void)
     HAL_GPIO_Init(MAIN_POWER_GPIO_Port, &GPIO_InitStruct);
     HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_RESET);
 
+    // Input with pullup
+    memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+
+    GPIO_InitStruct.Pin = SIM_NPRESENT_Pin;
+    HAL_GPIO_Init(SIM_NPRESENT_GPIO_Port, &GPIO_InitStruct);
+
+    // Output OD
+    memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+
+    GPIO_InitStruct.Pin = SEL_SIM_Pin;
+    HAL_GPIO_Init(SEL_SIM_GPIO_Port, &GPIO_InitStruct);
+
     // Inputs with no interrupts
     memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;

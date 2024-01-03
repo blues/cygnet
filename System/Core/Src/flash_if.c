@@ -133,6 +133,12 @@ static FLASH_IF_StatusTypedef FLASH_IF_INT_Write(void *pDestination, const void 
                         break;
                     }
 
+                    // unlock again because FLASH_IF_INT_ERASE locked it
+                    if (HAL_FLASH_Unlock() != HAL_OK) {
+                        ret_status = FLASH_IF_ERASE_ERROR;
+                        break;
+                    }
+
                     // copy the whole flash sector including fragment from RAM to Flash
                     current_dest = page_address;
                     current_source = (uint32_t)pAllocatedBuffer;

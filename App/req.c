@@ -151,7 +151,9 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
             J *body = JGetObjectItem(req, "body");
             if (body != NULL) {
                 err = postSelfTest(JGetBool(req, "verify"), body);
-                break;
+                if (err) {
+                    break;
+                }
             }
             J *tcert = postGetTestCert();
             if (tcert == NULL) {
