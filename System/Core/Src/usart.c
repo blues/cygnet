@@ -7,6 +7,7 @@
 #include "stm32l4xx_hal_usart_ex.h"
 #include "main.h"
 #include "usart.h"
+#include "usb_device.h"
 #include "global.h"
 #include "dma.h"
 #include <stdatomic.h>
@@ -44,6 +45,7 @@ typedef struct {
 UARTIO rxioLPUART1 = {0};
 UARTIO rxioUSART1 = {0};
 UARTIO rxioUSART2 = {0};
+UARTIO rxioUSB = {0};
 
 // Number of bytes for UART receives, and a temporary RXBUF for double-buffering
 #define UART_IOBUF_LEN 512
@@ -52,29 +54,17 @@ uint8_t rxtemp[UART_IOBUF_LEN];
 
 // Forwards
 bool uioReceivedBytes(UARTIO *uio, uint8_t *buf, uint32_t buflen);
-
-// Callbacks
-void (*TxCpltCallback_LPUART1)(void *) = NULL;
-void (*TxCpltCallback_USART1)(void *) = NULL;
-void (*TxCpltCallback_USART2)(void *) = NULL;
-
-// Register a completion callback
-void MX_UART_TxCpltCallback(UART_HandleTypeDef *huart, void (*cb)(void *))
-{
-    if (huart == &hlpuart1) {
-        TxCpltCallback_LPUART1 = cb;
-    }
-    if (huart == &huart1) {
-        TxCpltCallback_USART1 = cb;
-    }
-    if (huart == &huart2) {
-        TxCpltCallback_USART2 = cb;
-    }
-}
+void receiveComplete(UART_HandleTypeDef *huart, UARTIO *uio, uint8_t *buf, uint32_t buflen);
 
 // Transmit to a port synchronously
 void MX_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t len, uint32_t timeoutMs)
 {
+
+    // Deal with USB as a special case
+    if (huart == NULL) {
+        CDC_Transmit_FS(buf, len);
+        return;
+    }
 
     // Transmit
     bool waitWhileUartBusy = false;
@@ -113,15 +103,6 @@ void MX_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t len, uin
 // Transmit complete callback for serial ports
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
-    if (huart == &hlpuart1 && TxCpltCallback_LPUART1 != NULL) {
-        TxCpltCallback_LPUART1(huart);
-    }
-    if (huart == &huart1 && TxCpltCallback_USART1 != NULL) {
-        TxCpltCallback_USART1(huart);
-    }
-    if (huart == &huart2 && TxCpltCallback_USART2 != NULL) {
-        TxCpltCallback_USART2(huart);
-    }
 }
 
 // We must restart the receive if there is a receive or transmit error
@@ -135,6 +116,10 @@ UARTIO *rxPort(UART_HandleTypeDef *huart, uint16_t *rxBytes)
 {
     UARTIO *uio = NULL;
     uint16_t receivedBytes = 0;
+    if (huart == NULL) {
+        uio = &rxioUSB;
+        receivedBytes = 0;
+    }
     if (huart == &hlpuart1) {
         uio = &rxioLPUART1;
         receivedBytes = uio->iobuflen - huart->RxXferCount;
@@ -186,6 +171,11 @@ void MX_UART_IDLE_IRQHandler(UART_HandleTypeDef *huart)
 void MX_UART_RxStart(UART_HandleTypeDef *huart)
 {
 
+    // Exit if this is USB
+    if (huart == NULL) {
+        return;
+    }
+
     // Importantly, abort any existing transfer so the receive doesn't return BUSY, such as
     // is the case when restarting receive after an IDLE interrupt.
     if (huart->RxState != HAL_UART_STATE_READY) {
@@ -231,6 +221,14 @@ void MX_UART_RxConfigure(UART_HandleTypeDef *huart, uint8_t *rxbuf, uint16_t rxb
 {
 
     // Initialize receive buffers
+    if (huart == NULL) {
+        rxioUSB.buf = rxbuf;
+        rxioUSB.buflen = rxbuflen;
+        rxioUSB.fill = rxioUSB.drain = rxioUSB.rxlen = 0;
+        rxioUSB.notifyReceivedFn = cb;
+        rxioUSB.iobuflen = 0;
+        rxioUSB.iobuf = NULL;
+    }
     if (huart == &hlpuart1) {
         rxioLPUART1.buf = rxbuf;
         rxioLPUART1.buflen = rxbuflen;
@@ -288,6 +286,12 @@ bool uioReceivedBytes(UARTIO *uio, uint8_t *buf, uint32_t buflen)
     return true;
 }
 
+// Receive complete for USB serial device
+void MX_USB_RxCplt(uint8_t* buf, uint32_t buflen)
+{
+    receiveComplete(NULL, &rxioUSB, buf, buflen);
+}
+
 // Receive complete
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -299,8 +303,17 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         return;
     }
 
+    // Process completed data
+    receiveComplete(huart, uio, uio->iobuf, receivedBytes);
+
+}
+
+// Receive complete
+void receiveComplete(UART_HandleTypeDef *huart, UARTIO *uio, uint8_t *buf, uint32_t buflen)
+{
+
     // If there's an error, abort
-    if (huart->ErrorCode != HAL_UART_ERROR_NONE) {
+    if (huart != NULL && huart->ErrorCode != HAL_UART_ERROR_NONE) {
         HAL_UART_Abort(huart);
         uio->fill = uio->drain = uio->rxlen = 0;
         if (uio->notifyReceivedFn != NULL) {
@@ -313,15 +326,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     // Use the static buffer and do double-buffering if possible.  Note that
     // this will almost always be the case, unless the interrupt priorities
     // are changed such that one serial IRQ is higher prio than the others.
-    uint8_t *iobuf = uio->iobuf;
+    uint8_t *iobuf = buf;
     if (atomic_fetch_add(&rxtempInUse, 1) == 0) {
-        memcpy(rxtemp, iobuf, receivedBytes);
+        memcpy(rxtemp, iobuf, buflen);
         iobuf = rxtemp;
         MX_UART_RxStart(huart);
     }
 
     // Process the received bytes
-    if (!uioReceivedBytes(uio, iobuf, receivedBytes)) {
+    if (!uioReceivedBytes(uio, iobuf, buflen)) {
         if (uio->notifyReceivedFn != NULL) {
             uio->notifyReceivedFn(huart, true);
         }
@@ -340,9 +353,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 }
 
 // See if anything is available
-bool HAL_UART_RxAvailable(UART_HandleTypeDef *huart)
+bool MX_UART_RxAvailable(UART_HandleTypeDef *huart)
 {
     UARTIO *uio;
+    if (huart == NULL) {
+        uio = &rxioUSB;
+    }
     if (huart == &hlpuart1) {
         uio = &rxioLPUART1;
     }
@@ -357,9 +373,12 @@ bool HAL_UART_RxAvailable(UART_HandleTypeDef *huart)
 
 // Get a byte from the receive buffer
 // Note: only call this if RxAvailable returns true
-uint8_t HAL_UART_RxGet(UART_HandleTypeDef *huart)
+uint8_t MX_UART_RxGet(UART_HandleTypeDef *huart)
 {
     UARTIO *uio;
+    if (huart == NULL) {
+        uio = &rxioUSB;
+    }
     if (huart == &hlpuart1) {
         uio = &rxioLPUART1;
     }

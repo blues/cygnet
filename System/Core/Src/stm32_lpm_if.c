@@ -6,6 +6,7 @@
 #include "rng.h"
 #include "dma.h"
 #include "gpio.h"
+#include "usb_device.h"
 
 // Stop/Resume data
 bool wasStopped = false;
@@ -87,6 +88,9 @@ void PWR_EnterStopMode(void)
     if (peripherals & PERIPHERAL_RNG) {
         MX_RNG_DeInit();
     }
+    if (peripherals & PERIPHERAL_USB) {
+        MX_USB_DEVICE_DeInit();
+    }
 
     // Disable DMA
     MX_DMA_DeInit();
@@ -143,6 +147,9 @@ void PWR_ExitStopMode(void)
     }
     if ((peripheralsToResume & PERIPHERAL_USART2) != 0) {
         MX_USART2_UART_ReInit();
+    }
+    if (peripheralsToResume & PERIPHERAL_USB) {
+        MX_USB_DEVICE_Init();
     }
 
 }

@@ -8,7 +8,6 @@
 #include "lptim.h"
 #include "rng.h"
 #include "rtc.h"
-#include "usb.h"
 #include "wwdg.h"
 #include "gpio.h"
 #include "can.h"

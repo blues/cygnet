@@ -14,8 +14,7 @@
 bool dbgEnabled = false;
 
 // Debug state
-static UART_HandleTypeDef *dbgOutputPort = NULL;
-static void (*dbgOutputFn)(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen) = NULL;
+static void (*dbgOutputFn)(uint8_t *buf, uint32_t buflen) = NULL;
 
 // For panic breakpoint
 void MX_Breakpoint()
@@ -57,7 +56,7 @@ void MX_DBG(const char *message, size_t length)
 
     // Output on the appropriate port
     if (dbgOutputFn != NULL) {
-        dbgOutputFn(dbgOutputPort, (uint8_t *)message, length);
+        dbgOutputFn((uint8_t *)message, length);
     }
 
     // On IAR only, output to debug console without the 7KB overhead of
@@ -74,9 +73,8 @@ void MX_DBG(const char *message, size_t length)
 }
 
 // Set debug output function
-void MX_DBG_SetOutput(UART_HandleTypeDef *huart, void (*fn)(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen))
+void MX_DBG_SetOutput(void (*fn)(uint8_t *buf, uint32_t buflen))
 {
-    dbgOutputPort = huart;
     dbgOutputFn = fn;
 }
 

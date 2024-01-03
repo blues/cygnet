@@ -30,7 +30,7 @@ void appISR(uint16_t GPIO_Pin)
     // USB Detect processing, noting that the signal is ACTIVE HIGH
 #ifdef USB_DETECT_Pin
     if ((GPIO_Pin & USB_DETECT_Pin) != 0) {
-        serialResetUSB();
+        // Wake up the serial task, which will init USB
         taskGiveAllFromISR();
     }
 #endif

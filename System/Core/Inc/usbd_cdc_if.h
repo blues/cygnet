@@ -4,10 +4,9 @@
 
 #pragma once
 
-#include "main.h"
+#include "usbd_cdc.h"
 
-extern PCD_HandleTypeDef hpcd_USB_FS;
+#define APP_RX_DATA_SIZE  1024
+#define APP_TX_DATA_SIZE  1024
 
-void MX_USB_PCD_Init(void);
-void MX_USB_PCD_DeInit(void);
-
+extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;

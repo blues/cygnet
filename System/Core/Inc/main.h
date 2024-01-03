@@ -65,7 +65,7 @@ bool MX_InISR(void);
 void MX_JumpToBootloader(void);
 bool MX_DBG_Active(void);
 void MX_DBG_Init(void);
-void MX_DBG_SetOutput(UART_HandleTypeDef *huart, void (*fn)(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen));
+void MX_DBG_SetOutput(void (*fn)(uint8_t *buf, uint32_t buflen));
 void MX_DBG(const char *message, size_t length);
 bool MX_DBG_Enable(bool on);
 

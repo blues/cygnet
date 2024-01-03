@@ -7,6 +7,9 @@
 #define PRODUCT_MINOR_VERSION       1
 #define PRODUCT_PATCH_VERSION       1
 
+#define PRODUCT_USB_VID             12452   // 0x30A4 Inca Roads LLC
+#define PRODUCT_USB_PID             4       // Inca Roads LLC ID is 4 for the Starnote
+
 #define STARNOTE_CID_TYPE           CID_NONE
 #define STARNOTE_ID_SCHEME          "skylo:"
 #define STARNOTE_DEFAULT_MTU        256

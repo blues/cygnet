@@ -15,6 +15,8 @@ typedef enum {
     CMD_AT,
     CMD_TEST,
     CMD_BOOTLOADER_DIRECT,
+    CMD_TRACE,
+    CMD_T,
     CMD_UNRECOGNIZED
 } allCommands;
 
@@ -24,6 +26,8 @@ typedef struct {
 } cmd_def;
 
 STATIC const cmd_def cmdText[] = {
+    {"trace", CMD_TRACE},
+    {"t", CMD_T},
     {"restart", CMD_RESTART},
     {"mem", CMD_MEM},
     {"connect", CMD_CONNECT},
@@ -166,6 +170,21 @@ err_t diagProcess(char *diagCommand)
         break;
     }
 
+    case CMD_T:
+        debugWasEnabled = true;
+        debugf("trace is on\n");
+        break;
+
+    case CMD_TRACE:
+        if (streql(argv[1], "on")) {
+            debugWasEnabled = true;
+        }
+        if (streql(argv[1], "off")) {
+            debugWasEnabled = false;
+        }
+        debugf("trace is %s\n", debugWasEnabled ? "on" : "off");
+        break;
+
     case CMD_RESTART:
         MX_Restart();
         break;
@@ -194,11 +213,6 @@ err_t diagProcess(char *diagCommand)
     }
 
     case CMD_UNRECOGNIZED: {
-        static bool initialGpsGarbageIgnored = false;
-        if (!initialGpsGarbageIgnored) {
-            initialGpsGarbageIgnored = true;
-            break;
-        }
         debugf("'%s' ??\n", diagCommand);
         break;
     }

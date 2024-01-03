@@ -76,14 +76,12 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
     }
 
     // Don't allow debug output that could interfere with JSON requests
-    bool debugWasEnabled = MX_DBG_Enable(false);
     if (JGetBool(req, "verbose")) {
-        MX_DBG_Enable(debugWasEnabled);
+        MX_DBG_Enable(true);
     }
 
     // Debug
     if (!debugPort) {
-        MX_DBG_Enable(debugWasEnabled);
         debugMessage(">> ");
         debugMessage((char *)reqJSON);
         debugMessage("\n");
@@ -173,11 +171,6 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
         // Unrecognized request
         err = errF("unrecognized request: %s", reqtype);
         break;
-    }
-
-    // Restore debug output
-    if (!debugPort) {
-        MX_DBG_Enable(debugWasEnabled);
     }
 
     // If we haven't already deleted the request, delete it

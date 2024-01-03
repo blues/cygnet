@@ -2,6 +2,7 @@
 #include "app.h"
 #include "serial.h"
 #include "usart.h"
+#include "usb_device.h"
 
 // This set of methods has two jobs:
 // 1. rapidly transfer data from interrupt buffers into userspace buffers without loss
@@ -16,6 +17,7 @@ typedef struct {
     mutex txLock;
     int taskId;
 } serialDesc;
+STATIC serialDesc usbDesc = {0};
 STATIC serialDesc usart1Desc = {0};
 STATIC serialDesc usart2Desc = {0};
 STATIC serialDesc lpuart1Desc = {0};
@@ -24,6 +26,7 @@ STATIC serialDesc lpuart1Desc = {0};
 STATIC uint8_t lpuart1InterruptBuffer[600];
 STATIC uint8_t usart1InterruptBuffer[600];
 STATIC uint8_t usart2InterruptBuffer[600];
+STATIC uint8_t usbInterruptBuffer[600];
 STATIC uint8_t isrDebugOutput[120];             // some messages will get truncated but who cares
 STATIC uint32_t isrDebugOutputLen = 0;
 
@@ -36,18 +39,10 @@ STATIC uint32_t serialTaskID = TASKID_UNKNOWN;
 // Whether or not the serial polling is active
 bool serialActive = true;
 
-// Reset the USB appropriate
-STATIC bool resetUSB = false;
-
 // Forwards
 void serialReceivedNotification(UART_HandleTypeDef *huart, bool error);
 bool pollPort(UART_HandleTypeDef *huart);
-
-// Notify that the USB port needs to be reset
-void serialResetUSB()
-{
-    resetUSB = true;
-}
+void debugOutput(uint8_t *buf, uint32_t buflen);
 
 // Serial poller init
 void serialInit(uint32_t taskID)
@@ -63,8 +58,11 @@ void serialInit(uint32_t taskID)
     mutexInit(&usart1Desc.txLock, MTX_SERIAL_TX);
     mutexInit(&usart2Desc.rxLock, MTX_SERIAL_RX);
     mutexInit(&usart2Desc.txLock, MTX_SERIAL_TX);
+    mutexInit(&usbDesc.rxLock, MTX_SERIAL_RX);
+    mutexInit(&usbDesc.txLock, MTX_SERIAL_TX);
 
     // Set the tasks of the handlers
+    usbDesc.taskId = TASKID_REQ;
     lpuart1Desc.taskId = TASKID_REQ;
     usart1Desc.taskId = TASKID_REQ;
     usart2Desc.taskId = TASKID_MODEM;
@@ -73,16 +71,21 @@ void serialInit(uint32_t taskID)
     MX_UART_RxConfigure(&hlpuart1, lpuart1InterruptBuffer, sizeof(lpuart1InterruptBuffer), serialReceivedNotification);
     MX_LPUART1_UART_Init(false, 9600);
 
-    // USART1 (debug port)
+    // USART1 (GPS or debug port depending upon AUX_EN)
     MX_UART_RxConfigure(&huart1, usart1InterruptBuffer, sizeof(usart1InterruptBuffer), serialReceivedNotification);
     MX_USART1_UART_Init(9600);
-    MX_DBG_SetOutput(&huart1, serialOutput);
 
     // USART2 (modem port)
     MX_UART_RxConfigure(&huart2, usart2InterruptBuffer, sizeof(usart2InterruptBuffer), serialReceivedNotification);
 #ifdef MODEM_ALWAYS_ON
     MX_USART2_UART_Init(false, 115200);
 #endif
+
+    // USB (debug port)
+    MX_UART_RxConfigure(NULL, usbInterruptBuffer, sizeof(usbInterruptBuffer), serialReceivedNotification);
+
+    // Set debug function
+    MX_DBG_SetOutput(debugOutput);
 
 }
 
@@ -91,15 +94,10 @@ void serialPoll(void)
 {
 
     // Rest the USB if it needs to be reset
-    if (resetUSB) {
-        resetUSB = false;
-        if ((peripherals & PERIPHERAL_USART1) != 0) {
-            if (osUsbDetected()) {
-                MX_USART1_UART_ReInit();
-            } else {
-                MX_USART1_UART_DeInit();
-            }
-        }
+    if (osUsbDetected() && (peripherals & PERIPHERAL_USB) == 0) {
+        MX_USB_DEVICE_Init();
+    } else if (!osUsbDetected() && (peripherals & PERIPHERAL_USB) != 0) {
+        MX_USB_DEVICE_DeInit();
     }
 
     // Note that we are busy servicing serial
@@ -112,8 +110,10 @@ void serialPoll(void)
         didSomething |= pollPort(&hlpuart1);
         didSomething |= pollPort(&huart1);
         didSomething |= pollPort(&huart2);
+        didSomething |= pollPort(NULL);
         if (isrDebugOutputLen > 0) {
-            serialOutput(&huart1, NULL, 0);
+            debugOutput(isrDebugOutput, isrDebugOutputLen);
+            isrDebugOutputLen = 0;
         }
         didWork |= didSomething;
         if (!didSomething) {
@@ -166,6 +166,8 @@ serialDesc *portDesc(UART_HandleTypeDef *huart)
         return &usart2Desc;
     } else if (huart == &hlpuart1) {
         return &lpuart1Desc;
+    } else if (huart == NULL) {
+        return &usbDesc;
     }
     return NULL;
 }
@@ -186,7 +188,7 @@ bool pollPort(UART_HandleTypeDef *huart)
     }
 
     // Exit immediately if nothing available
-    if (!HAL_UART_RxAvailable(huart)) {
+    if (!MX_UART_RxAvailable(huart)) {
         return false;
     }
 
@@ -204,7 +206,7 @@ bool pollPort(UART_HandleTypeDef *huart)
     }
 
     // Get the databyte
-    uint8_t databyte = HAL_UART_RxGet(huart);
+    uint8_t databyte = MX_UART_RxGet(huart);
 
     // Alloc if new
     if (desc->bytes == NULL) {
@@ -284,7 +286,7 @@ bool serialLock(UART_HandleTypeDef *huart, uint8_t **retData, uint32_t *retDataL
     }
     *retData = (uint8_t *) arrayAddress(desc->bytes);
     *retDataLen = arrayLength(desc->bytes);
-    *retDiagAllowed = (huart == &huart1);
+    *retDiagAllowed = serialIsDebugPort(huart);
     return true;
 
 }
@@ -318,11 +320,20 @@ void serialOutputString(UART_HandleTypeDef *huart, char *buf)
     serialOutput(huart, (uint8_t *)buf, strlen(buf));
 }
 
-// Output to debug uart
-void serialOutput(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen)
+// See if this is one of the debug ports
+bool serialIsDebugPort(UART_HandleTypeDef *huart)
+{
+    if (huart == NULL || huart == &huart1) {
+        return true;
+    }
+    return false;
+}
+
+// Debug output
+void debugOutput(uint8_t *buf, uint32_t buflen)
 {
 
-    // Buffer the output if we're in an ISR (which ST's middleware does)
+    // Buffer the output as debug output if we're in an ISR (which ST's middleware does)
     if (MX_InISR()) {
         uint32_t left = sizeof(isrDebugOutput)-isrDebugOutputLen;
         if (buflen > left) {
@@ -334,20 +345,30 @@ void serialOutput(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen)
         return;
     }
 
+    // Always output to USART1 (Note: if/when we have AUX_EN supported, do it conditionally)
+    serialOutput(&huart1, buf, buflen);
+
+    // Output to USB if it's detected
+    if (osUsbDetected()) {
+        serialOutput(NULL, buf, buflen);
+    }
+
+}
+
+// Output to the specified port
+void serialOutput(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen)
+{
+
     // Output
     serialDesc *desc = portDesc(huart);
     if (desc == NULL) {
         return;
     }
-    mutexLock(&desc->txLock);
-    if (isrDebugOutputLen > 0) {
-        MX_UART_Transmit(huart, isrDebugOutput, isrDebugOutputLen, 500);
-        isrDebugOutputLen = 0;
-    }
     if (buflen > 0) {
+        mutexLock(&desc->txLock);
         MX_UART_Transmit(huart, buf, buflen, 500);
+        mutexUnlock(&desc->txLock);
     }
-    mutexUnlock(&desc->txLock);
 }
 
 // Output to the specified port with the Request Terminator (\r\n)
@@ -357,17 +378,15 @@ void serialOutputLn(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen)
     // Change terminator based upon target
     uint8_t *terminator;
     uint32_t terminatorLen;
-    if (huart == &hlpuart1) {
+    if (huart == &hlpuart1) {           // Notecard likes \n
         terminator = "\n";
         terminatorLen = 1;
-    } else if (huart == &huart1) {
-        terminator = "\r\n";
-        terminatorLen = 2;
-    } else if (huart == &huart2) {
+    } else if (huart == &huart2) {      // Quectel likes \r
         terminator = "\r";
         terminatorLen = 1;
-    } else {
-        return;
+    } else {                            // Debug consoles are flexible
+        terminator = "\r\n";
+        terminatorLen = 2;
     }
 
     serialDesc *desc = portDesc(huart);
@@ -405,7 +424,7 @@ void serialOutputObject(UART_HandleTypeDef *huart, J *msg)
     ledBusy(true);
     char *json = JPrintUnformattedOmitEmpty(msg);
     JDelete(msg);
-    if (huart != &huart1) {
+    if (!serialIsDebugPort(huart)) {
         debugMessage("<< ");
         debugMessage(json);
         debugMessage("\n");

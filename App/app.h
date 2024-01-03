@@ -130,6 +130,7 @@ err_t workDisableGps(J *junused, uint8_t *unused, uint32_t unusedLen);
 extern bool serialActive;
 void serialInit(uint32_t serialTaskID);
 void serialPoll(void);
+bool serialIsDebugPort(UART_HandleTypeDef *huart);
 bool serialLock(UART_HandleTypeDef *huart, uint8_t **retData, uint32_t *retDataLen, bool *retDiagAllowed);
 void serialUnlock(UART_HandleTypeDef *huart, bool reset);
 void serialOutputString(UART_HandleTypeDef *huart, char *buf);

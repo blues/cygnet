@@ -349,6 +349,8 @@
                     <state>$PROJ_DIR$/../Middlewares/Third_Party/FreeRTOS/Source/include</state>
                     <state>$PROJ_DIR$/../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2</state>
                     <state>$PROJ_DIR$/../Middlewares/Third_Party/FreeRTOS/Source/portable/IAR/ARM_CM4F</state>
+                    <state>$PROJ_DIR$/../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc</state>
+                    <state>$PROJ_DIR$/../Middlewares/ST/STM32_USB_Device_Library/Core/Inc</state>
                     <state>$PROJ_DIR$/../Drivers/CMSIS/Device/ST/STM32L4xx/Include</state>
                     <state>$PROJ_DIR$/../Drivers/CMSIS/Include</state>
                     <state>$PROJ_DIR$/../Utilities/lpm/tiny_lpm</state>
@@ -1194,7 +1196,16 @@
             <name>$PROJ_DIR$\..\Core\Src\usart.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\usb.c</name>
+            <name>$PROJ_DIR$\..\Core\Src\usb_device.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Core\Src\usbd_cdc_if.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Core\Src\usbd_conf.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Core\Src\usbd_desc.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\Core\Src\wwdg.c</name>
@@ -1425,6 +1436,21 @@
             </file>
             <file>
                 <name>$PROJ_DIR$\..\Middlewares\Third_Party\FreeRTOS\Source\timers.c</name>
+            </file>
+        </group>
+        <group>
+            <name>USB</name>
+            <file>
+                <name>$PROJ_DIR$\..\Middlewares\ST\STM32_USB_Device_Library\Class\CDC\Src\usbd_cdc.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middlewares\ST\STM32_USB_Device_Library\Core\Src\usbd_core.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middlewares\ST\STM32_USB_Device_Library\Core\Src\usbd_ctlreq.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Middlewares\ST\STM32_USB_Device_Library\Core\Src\usbd_ioreq.c</name>
             </file>
         </group>
     </group>

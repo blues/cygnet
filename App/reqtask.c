@@ -26,6 +26,7 @@ void reqTask(void *params)
         bool didSomething = false;
         didSomething |= processReq(&hlpuart1);
         didSomething |= processReq(&huart1);
+        didSomething |= processReq(NULL);
         didSomething |= processButton();
         if (!didSomething) {
             taskTake(TASKID_REQ, ms1Hour);
@@ -59,7 +60,9 @@ bool processReq(UART_HandleTypeDef *huart)
 
     // Process the request
     J *rsp;
-    err_t err = reqProcess(huart == &huart1, reqJSON, reqJSONLen, diagAllowed, &rsp);
+    bool debugWasEnabled = MX_DBG_Enable(false);
+    err_t err = reqProcess(serialIsDebugPort(huart), reqJSON, reqJSONLen, diagAllowed, &rsp);
+    MX_DBG_Enable(debugWasEnabled);
     serialUnlock(huart, true);
     if (err) {
         char *reqstr = "\"req\":\"";

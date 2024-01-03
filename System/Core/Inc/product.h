@@ -16,6 +16,14 @@
 #error "In your IDE please define PRODUCT_PROGRAMMATIC_NAME as something like "powermon"
 #endif
 
+// USB
+#ifndef PRODUCT_USB_VID
+#define PRODUCT_USB_VID             12452   // 0x30A4 Inca Roads LLC
+#endif
+#ifndef PRODUCT_USB_PID
+#define PRODUCT_USB_PID             3       // Inca Roads LLC ID is 3 for the Cygnet
+#endif
+
 // Version numbers:
 //  MAJOR changes means huge features and that there may be incompatibilities
 //  MINOR changes means that there may be new features but there are guaranteed to be no regressions
@@ -51,7 +59,3 @@
 // We must stringify above
 #define STRINGIFY(x) STRINGIFY_(x)
 #define STRINGIFY_(x) #x
-
-// USB
-#define USBD_MANUFACTURER_STRING        PRODUCT_MANUFACTURER
-#define USBD_PRODUCT_STRING_FS          PRODUCT_DISPLAY_NAME
