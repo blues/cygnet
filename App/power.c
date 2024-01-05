@@ -139,6 +139,7 @@ err_t powerOn(uint32_t reason)
 
     // Enable LED
     modemSend(NULL, "AT+QLEDMODE=1");
+        modemSend(NULL, "AT");//OZZIE
 
     // Get IMSI if necessary
     if (configModemId[0] == '\0') {

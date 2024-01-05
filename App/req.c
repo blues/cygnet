@@ -75,16 +75,18 @@ err_t reqProcess(bool debugPort, uint8_t *reqJSON, uint32_t reqJSONLen, bool dia
         JAddNumberToObject(rsp, FieldID, reqid);
     }
 
-    // Don't allow debug output that could interfere with JSON requests
-    if (JGetBool(req, "verbose")) {
-        MX_DBG_Enable(true);
-    }
-
     // Debug
     if (!debugPort) {
+        bool debugWasEnabled = MX_DBG_Enable(true);
         debugMessage(">> ");
         debugMessage((char *)reqJSON);
         debugMessage("\n");
+        MX_DBG_Enable(debugWasEnabled);
+    }
+
+    // Don't allow debug output that could interfere with JSON requests
+    if (JGetBool(req, "verbose")) {
+        MX_DBG_Enable(true);
     }
 
     // All requests are capable of accepting updates to location and time

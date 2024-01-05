@@ -7,12 +7,104 @@
 // When we went to sleep
 STATIC int64_t sleepBeganMs = 0;
 
+// For evaluating performance of RTC as a stop interval measurement mechanism
+#ifdef DEBUG_STEPTICK
+uint32_t elapsedHistory[10] = {0};
+#endif
+
 // Initialize the app
 void appInit()
 {
 
     // Create the main task
     xTaskCreate(mainTask, TASKNAME_MAIN, STACKWORDS(TASKSTACK_MAIN), NULL, TASKPRI_MAIN, NULL);
+
+}
+
+// Initialize the app's GPIOs
+void appInitGPIO(void)
+{
+    GPIO_InitTypeDef GPIO_InitStruct;
+
+    // Initialize floats
+    memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
+    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+
+    // Initialize outputs
+    memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+
+    GPIO_InitStruct.Pin = LED_BUSY_Pin;
+    HAL_GPIO_Init(LED_BUSY_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(LED_BUSY_GPIO_Port, LED_BUSY_Pin, GPIO_PIN_RESET);
+
+    GPIO_InitStruct.Pin = MAIN_POWER_Pin;
+    HAL_GPIO_Init(MAIN_POWER_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_RESET);
+
+    // Input with pullup
+    memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+
+    GPIO_InitStruct.Pin = SIM_NPRESENT_Pin;
+    HAL_GPIO_Init(SIM_NPRESENT_GPIO_Port, &GPIO_InitStruct);
+
+    // Output OD
+    memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+
+    GPIO_InitStruct.Pin = MODEM_RESET_NOD_Pin;
+    HAL_GPIO_Init(MODEM_RESET_NOD_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(MODEM_RESET_NOD_GPIO_Port, MODEM_RESET_NOD_Pin, GPIO_PIN_SET);
+
+    GPIO_InitStruct.Pin = MODEM_PWRKEY_NOD_Pin;
+    HAL_GPIO_Init(MODEM_PWRKEY_NOD_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(MODEM_PWRKEY_NOD_GPIO_Port, MODEM_PWRKEY_NOD_Pin, GPIO_PIN_SET);
+
+    GPIO_InitStruct.Pin = MODEM_PSM_EINT_NOD_Pin;
+    HAL_GPIO_Init(MODEM_PSM_EINT_NOD_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(MODEM_PSM_EINT_NOD_GPIO_Port, MODEM_PSM_EINT_NOD_Pin, GPIO_PIN_SET);
+
+    GPIO_InitStruct.Pin = MODEM_POWER_NOD_Pin;
+    HAL_GPIO_Init(MODEM_POWER_NOD_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);
+
+    GPIO_InitStruct.Pin = SEL_SIM_Pin;
+    HAL_GPIO_Init(SEL_SIM_GPIO_Port, &GPIO_InitStruct);
+
+    // Inputs with no interrupts
+    memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+
+    GPIO_InitStruct.Pin = EN_MODEM_DFU_Pin;
+    HAL_GPIO_Init(EN_MODEM_DFU_GPIO_Port, &GPIO_InitStruct);
+
+    // Initialize inputs as floats for until we are ready to use them
+    memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
+#if 0
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Pin = MODEM_RI_Pin;
+    HAL_GPIO_Init(MODEM_RI_GPIO_Port, &GPIO_InitStruct);
+    HAL_NVIC_SetPriority(MODEM_RI_IRQn, INTERRUPT_PRIO_EXTI, 0);
+    HAL_NVIC_EnableIRQ(MODEM_RI_IRQn);
+#else
+    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pin = MODEM_RI_Pin;
+    HAL_GPIO_Init(MODEM_RI_GPIO_Port, &GPIO_InitStruct);
+#endif
+
 
 }
 
@@ -102,7 +194,10 @@ void appPostSleepProcessing(uint32_t ulExpectedIdleTime)
     // the timer faster than it's actually supposed to go.
     if (sleepBeganMs != 0) {
         int64_t elapsedMs = MX_RTC_GetMs() - sleepBeganMs;
-        elapsedMs = 4000; // OZZIE
+#ifdef DEBUG_STEPTICK
+        memmove(&elapsedHistory[1], elapsedHistory, sizeof(elapsedHistory)-sizeof(elapsedHistory[0]));
+        elapsedHistory[0] = (uint32_t) elapsedMs;
+#endif
         if (elapsedMs > 1) {
             vTaskStepTick(pdMS_TO_TICKS(elapsedMs-1));
             MX_StepTickMs(elapsedMs);
@@ -111,89 +206,12 @@ void appPostSleepProcessing(uint32_t ulExpectedIdleTime)
 
 }
 
-// Initialize the app's GPIOs
-void appInitGPIO(void)
+// Trace history
+void appTraceStepTick(void)
 {
-    GPIO_InitTypeDef GPIO_InitStruct;
-
-    // Initialize floats
-    memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
-    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-
-    // Initialize outputs
-    memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-
-    GPIO_InitStruct.Pin = LED_BUSY_Pin;
-    HAL_GPIO_Init(LED_BUSY_GPIO_Port, &GPIO_InitStruct);
-    HAL_GPIO_WritePin(LED_BUSY_GPIO_Port, LED_BUSY_Pin, GPIO_PIN_RESET);
-
-    GPIO_InitStruct.Pin = MAIN_POWER_Pin;
-    HAL_GPIO_Init(MAIN_POWER_GPIO_Port, &GPIO_InitStruct);
-    HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_RESET);
-
-    // Input with pullup
-    memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-
-    GPIO_InitStruct.Pin = SIM_NPRESENT_Pin;
-    HAL_GPIO_Init(SIM_NPRESENT_GPIO_Port, &GPIO_InitStruct);
-
-    // Output OD
-    memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-
-    GPIO_InitStruct.Pin = MODEM_RESET_NOD_Pin;
-    HAL_GPIO_Init(MODEM_RESET_NOD_GPIO_Port, &GPIO_InitStruct);
-    HAL_GPIO_WritePin(MODEM_RESET_NOD_GPIO_Port, MODEM_RESET_NOD_Pin, GPIO_PIN_SET);
-
-    GPIO_InitStruct.Pin = MODEM_PWRKEY_NOD_Pin;
-    HAL_GPIO_Init(MODEM_PWRKEY_NOD_GPIO_Port, &GPIO_InitStruct);
-    HAL_GPIO_WritePin(MODEM_PWRKEY_NOD_GPIO_Port, MODEM_PWRKEY_NOD_Pin, GPIO_PIN_SET);
-
-    GPIO_InitStruct.Pin = MODEM_PSM_EINT_NOD_Pin;
-    HAL_GPIO_Init(MODEM_PSM_EINT_NOD_GPIO_Port, &GPIO_InitStruct);
-    HAL_GPIO_WritePin(MODEM_PSM_EINT_NOD_GPIO_Port, MODEM_PSM_EINT_NOD_Pin, GPIO_PIN_SET);
-
-    GPIO_InitStruct.Pin = MODEM_POWER_NOD_Pin;
-    HAL_GPIO_Init(MODEM_POWER_NOD_GPIO_Port, &GPIO_InitStruct);
-    HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);
-
-    GPIO_InitStruct.Pin = SEL_SIM_Pin;
-    HAL_GPIO_Init(SEL_SIM_GPIO_Port, &GPIO_InitStruct);
-
-    // Inputs with no interrupts
-    memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-
-    GPIO_InitStruct.Pin = EN_MODEM_DFU_Pin;
-    HAL_GPIO_Init(EN_MODEM_DFU_GPIO_Port, &GPIO_InitStruct);
-
-    // Initialize inputs as floats for until we are ready to use them
-    memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
-#if 0
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Pin = MODEM_RI_Pin;
-    HAL_GPIO_Init(MODEM_RI_GPIO_Port, &GPIO_InitStruct);
-    HAL_NVIC_SetPriority(MODEM_RI_IRQn, INTERRUPT_PRIO_EXTI, 0);
-    HAL_NVIC_EnableIRQ(MODEM_RI_IRQn);
-#else
-    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Pin = MODEM_RI_Pin;
-    HAL_GPIO_Init(MODEM_RI_GPIO_Port, &GPIO_InitStruct);
+#ifdef DEBUG_STEPTICK
+    for (int i=0; i<sizeof(elapsedHistory)/sizeof(elapsedHistory[0]); i++) {
+        debugf("steptick %d ms\n", elapsedHistory[i]);
+    }
 #endif
-
-
 }

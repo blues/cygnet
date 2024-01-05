@@ -59,6 +59,7 @@ bool appSleepAllowed(void);
 void appInitGPIO(void);
 void appPreSleepProcessing(uint32_t ulExpectedIdleTime);
 void appPostSleepProcessing(uint32_t ulExpectedIdleTime);
+void appTraceStepTick();
 
 // debug_if.c
 void MX_Breakpoint(void);

@@ -59,6 +59,30 @@ void mainTask(void *params)
     // Signal that we've started, but do it here so we don't block request processing
     ledRestartSignal();
 
+    // Hang here if a DFU is in progress
+    if (HAL_GPIO_ReadPin(EN_MODEM_DFU_GPIO_Port, EN_MODEM_DFU_Pin) == GPIO_PIN_SET) {
+        HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(SEL_SIM_GPIO_Port, SEL_SIM_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(MODEM_RESET_NOD_GPIO_Port, MODEM_RESET_NOD_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(MODEM_PWRKEY_NOD_GPIO_Port, MODEM_PWRKEY_NOD_Pin, GPIO_PIN_SET);
+        timerMsSleep(100);
+        HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_RESET);
+        timerMsSleep(750);
+        HAL_GPIO_WritePin(MODEM_PWRKEY_NOD_GPIO_Port, MODEM_PWRKEY_NOD_Pin, GPIO_PIN_RESET);
+        timerMsSleep(1500);
+        HAL_GPIO_WritePin(MODEM_PWRKEY_NOD_GPIO_Port, MODEM_PWRKEY_NOD_Pin, GPIO_PIN_SET);
+        for (int i=1;;i++) {
+            if (HAL_GPIO_ReadPin(EN_MODEM_DFU_GPIO_Port, EN_MODEM_DFU_Pin) != GPIO_PIN_SET) {
+                break;
+            }
+            debugf("%04d **** MODEM FIRMWARE UPDATE-IN-PROGRESS SWITCH IS 'ON' ***\n", i);
+            timerMsSleep(1000);
+            ledBusy((i & 1) != 0);
+        }
+        debugPanic("firmware updated");
+    }
+
+
     // Create the serial request processing task
     xTaskCreate(reqTask, TASKNAME_REQ, STACKWORDS(TASKSTACK_REQ), NULL, TASKPRI_REQ, NULL);
 

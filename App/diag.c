@@ -160,13 +160,13 @@ err_t diagProcess(char *diagCommand)
     case CMD_POWER: {
         if (strEQL(argv[1], "on")) {
             powerOn(POWER_DATA);
-        }
-        if (strEQL(argv[1], "off")) {
+        } else if (strEQL(argv[1], "off")) {
             powerOff(POWER_DATA);
+        } else {
+            char buf[100];
+            MX_ActivePeripherals(buf, sizeof(buf));
+            debugf("POWER: %s\n", buf);
         }
-        char buf[100];
-        MX_ActivePeripherals(buf, sizeof(buf));
-        debugf("POWER: %s\n", buf);
         break;
     }
 
