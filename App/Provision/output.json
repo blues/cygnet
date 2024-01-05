@@ -1,0 +1,52 @@
+{
+  "imsiList": [
+    {
+      "deviceIdentifier": "skylo:901980020001862",
+      "iccid": "",
+      "imei": "",
+      "imsi": "901980020001862",
+      "niddApnList": [
+        "blues.prod",
+        "blues.staging",
+        "blues.dev"
+      ]
+    },
+    {
+      "deviceIdentifier": "skylo:901980020001865",
+      "iccid": "",
+      "imei": "",
+      "imsi": "901980020001865",
+      "niddApnList": [
+        "blues.prod",
+        "blues.staging",
+        "blues.dev"
+      ]
+    },
+    {
+      "deviceIdentifier": "skylo:901980020001870",
+      "iccid": "",
+      "imei": "",
+      "imsi": "901980020001870",
+      "niddApnList": [
+        "blues.prod",
+        "blues.staging",
+        "blues.dev"
+      ]
+    },
+    {
+      "deviceIdentifier": "skylo:901980020001874",
+      "iccid": "",
+      "imei": "",
+      "imsi": "901980020001874",
+      "niddApnList": [
+        "blues.prod",
+        "blues.staging",
+        "blues.dev"
+      ]
+    }
+  ],
+  "regionCodes": [
+    "GLOBAL"
+  ],
+  "serviceType": "IOT"
+}

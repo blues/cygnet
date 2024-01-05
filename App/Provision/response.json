@@ -1,0 +1,8 @@
+HTTP/2 202 
+content-type: application/json
+date: Fri, 05 Jan 2024 20:32:26 GMT
+x-request-id: 0777fe1d-e607-419f-a974-310f13c9de6b
+via: 1.1 google
+alt-svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+
+{"requestNumber":45261,"resultStatus":{"statusCode":"SC_1000","description":"Request is accepted and in progress"}}
