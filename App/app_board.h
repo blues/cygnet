@@ -22,8 +22,20 @@
 #define	MODEM_PSM_EINT_NOD_Pin          D11_Pin
 #define	MODEM_PSM_EINT_NOD_GPIO_Port    D11_GPIO_Port
 
+#define AUX_EN_Pin                      A0_Pin
+#define AUX_EN_GPIO_Port                A0_GPIO_Port
+
+#define GPS_VBACKUP_Pin                 A1_Pin
+#define GPS_VBACKUP_GPIO_Port           A1_GPIO_Port
+
 #define	EN_MODEM_DFU_Pin				A4_Pin
 #define	EN_MODEM_DFU_GPIO_Port			A4_GPIO_Port
+
+#define MODEM_USB_MODE_NOD_Pin          CK_Pin
+#define MODEM_USB_MODE_NOD_GPIO_Port    CK_GPIO_Port
+
+#define MODEM_USB_3V3_Pin               MI_Pin
+#define MODEM_USB_3V3_GPIO_Port         MI_GPIO_Port
 
 #define	MAIN_POWER_Pin					D5_Pin
 #define	MAIN_POWER_GPIO_Port			D5_GPIO_Port

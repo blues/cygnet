@@ -10,6 +10,7 @@
 
 #define BOARD_NUCLEO		0       // Proto using NUCLEO-L433RC-P
 #define BOARD_V1            1       // First spin
+#define BOARD_V2            2       // Has AUX_EN, GPS_VBACKUP, USB_MODE, USB_3V3, L76
 #define CURRENT_BOARD       BOARD_V1
 
 // Pin Definitions for stm32l433cct6t
