@@ -45,7 +45,16 @@ void appHeartbeatISR(uint32_t heartbeatSecs)
 // Return true if sleep is allowed
 bool appSleepAllowed(void)
 {
-    if (modemPoweredOn || gpsPoweredOn || serialActive) {
+    if (modemPoweredOn) {
+        return false;
+    }
+    if (gpsPoweredOn) {
+        return false;
+    }
+    if (serialActive) {
+        return false;
+    }
+    if (osUsbDetected()) {
         return false;
     }
     return true;
@@ -64,8 +73,16 @@ void appPreSleepProcessing(uint32_t ulExpectedIdleTime)
     // Remember when we went to sleep
     sleepBeganMs = MX_RTC_GetMs();
 
-    // Enter to sleep Mode using the HAL function HAL_PWR_EnterSLEEPMode with WFI instruction
+    // Enter to sleep Mode using the HAL function HAL_PWR_EnterSLEEPMode with WFI instruction.
+    // Note that this MAY or MAY NOT enter stop mode depending upon factors that you
+    // can see in PWR_EnterStopMode() in stm32_lpm_if.c which is called inside this method.
     UTIL_PowerDriver.EnterStopMode();
+
+    // Note that if we get here we know that we did NOT enter stop mode, and we must
+    // set this to 0 so that on post-sleep processing we don't step the tick
+    if (!PWR_WasStopped()) {
+        sleepBeganMs = 0;
+    }
 
 }
 
@@ -76,19 +93,21 @@ void appPostSleepProcessing(uint32_t ulExpectedIdleTime)
 
     (void) ulExpectedIdleTime;
 
+    // Exit stop mode
+    UTIL_PowerDriver.ExitStopMode();
+
     // Tell FreeRTOS how long we were asleep.  Note that we don't
     // ever steptick by 1ms because that's what we see when there is
     // no actual sleep performed, which has the net effect of clocking
     // the timer faster than it's actually supposed to go.
-    int64_t elapsedMs = MX_RTC_GetMs() - sleepBeganMs;
-    if (sleepBeganMs != 0 && elapsedMs > 1) {
-        sleepBeganMs = 0;
-        vTaskStepTick(pdMS_TO_TICKS(elapsedMs-1));
-        MX_StepTickMs(elapsedMs);
+    if (sleepBeganMs != 0) {
+        int64_t elapsedMs = MX_RTC_GetMs() - sleepBeganMs;
+        elapsedMs = 4000; // OZZIE
+        if (elapsedMs > 1) {
+            vTaskStepTick(pdMS_TO_TICKS(elapsedMs-1));
+            MX_StepTickMs(elapsedMs);
+        }
     }
-
-    // Exit stop mode
-    UTIL_PowerDriver.ExitStopMode();
 
 }
 
@@ -112,22 +131,6 @@ void appInitGPIO(void)
     HAL_GPIO_Init(LED_BUSY_GPIO_Port, &GPIO_InitStruct);
     HAL_GPIO_WritePin(LED_BUSY_GPIO_Port, LED_BUSY_Pin, GPIO_PIN_RESET);
 
-    GPIO_InitStruct.Pin = MODEM_RESET_NOD_Pin;
-    HAL_GPIO_Init(MODEM_RESET_NOD_GPIO_Port, &GPIO_InitStruct);
-    HAL_GPIO_WritePin(MODEM_RESET_NOD_GPIO_Port, MODEM_RESET_NOD_Pin, GPIO_PIN_SET);
-
-    GPIO_InitStruct.Pin = MODEM_PWRKEY_NOD_Pin;
-    HAL_GPIO_Init(MODEM_PWRKEY_NOD_GPIO_Port, &GPIO_InitStruct);
-    HAL_GPIO_WritePin(MODEM_PWRKEY_NOD_GPIO_Port, MODEM_PWRKEY_NOD_Pin, GPIO_PIN_SET);
-
-    GPIO_InitStruct.Pin = MODEM_PSM_EINT_NOD_Pin;
-    HAL_GPIO_Init(MODEM_PSM_EINT_NOD_GPIO_Port, &GPIO_InitStruct);
-    HAL_GPIO_WritePin(MODEM_PSM_EINT_NOD_GPIO_Port, MODEM_PSM_EINT_NOD_Pin, GPIO_PIN_SET);
-
-    GPIO_InitStruct.Pin = MODEM_POWER_NOD_Pin;
-    HAL_GPIO_Init(MODEM_POWER_NOD_GPIO_Port, &GPIO_InitStruct);
-    HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);
-
     GPIO_InitStruct.Pin = MAIN_POWER_Pin;
     HAL_GPIO_Init(MAIN_POWER_GPIO_Port, &GPIO_InitStruct);
     HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_RESET);
@@ -146,6 +149,22 @@ void appInitGPIO(void)
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+
+    GPIO_InitStruct.Pin = MODEM_RESET_NOD_Pin;
+    HAL_GPIO_Init(MODEM_RESET_NOD_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(MODEM_RESET_NOD_GPIO_Port, MODEM_RESET_NOD_Pin, GPIO_PIN_SET);
+
+    GPIO_InitStruct.Pin = MODEM_PWRKEY_NOD_Pin;
+    HAL_GPIO_Init(MODEM_PWRKEY_NOD_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(MODEM_PWRKEY_NOD_GPIO_Port, MODEM_PWRKEY_NOD_Pin, GPIO_PIN_SET);
+
+    GPIO_InitStruct.Pin = MODEM_PSM_EINT_NOD_Pin;
+    HAL_GPIO_Init(MODEM_PSM_EINT_NOD_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(MODEM_PSM_EINT_NOD_GPIO_Port, MODEM_PSM_EINT_NOD_Pin, GPIO_PIN_SET);
+
+    GPIO_InitStruct.Pin = MODEM_POWER_NOD_Pin;
+    HAL_GPIO_Init(MODEM_POWER_NOD_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);
 
     GPIO_InitStruct.Pin = SEL_SIM_Pin;
     HAL_GPIO_Init(SEL_SIM_GPIO_Port, &GPIO_InitStruct);

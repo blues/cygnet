@@ -78,6 +78,7 @@ extern char configChannel[cstrsz];
 extern uint16_t configMtu;
 void configSetDefaults(void);
 void configSet(J *body);
+void configDeleteTestCert(void);
 
 // From Notecard CID definitions in notehub-defs.h
 #define CID_NONE                    0

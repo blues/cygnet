@@ -28,3 +28,6 @@ void PWR_EnterSleepMode(void);
 // Exits Low Power Sleep Mode
 void PWR_ExitSleepMode(void);
 
+// We need to know this even if the ST UTIL interface does not provide it
+bool PWR_WasStopped(void);
+

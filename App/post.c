@@ -38,6 +38,13 @@ err_t postSelfTest(bool performHardwareTest, J *tc)
         return errF("unrecognized sku: %s", sku);
     }
 
+    // Overwrite the test cert so that it is re-generated
+    configDeleteTestCert();
+    if (testCert != NULL) {
+        memFree(testCert);
+        testCert = NULL;
+    }
+
     // Wait for modem info to be loaded by the monitor task
     int64_t expireMs = timerMs() + (60 * ms1Sec);
     while (modemInfoNeeded()) {
@@ -91,8 +98,11 @@ err_t postSelfTest(bool performHardwareTest, J *tc)
         return errF("test cert too large");
     }
 
-    // Write it
-    if (FLASH_IF_OK != FLASH_IF_Write(TESTCERT_FLASH_ADDRESS, json, jsonLen+1)) {
+    // Write it, noting that FLASH_IF_Write requires 64-bit alignment
+    uint32_t lengthToWrite = jsonLen+1;
+    lengthToWrite = ((lengthToWrite+7) & ~7);
+    err = errNone;
+    if (FLASH_IF_OK != FLASH_IF_Write(TESTCERT_FLASH_ADDRESS, json, lengthToWrite)) {
         err = errF("flash write error");
     }
 
@@ -103,15 +113,14 @@ err_t postSelfTest(bool performHardwareTest, J *tc)
     FLASH_IF_DeInit();
     memFree(iobuf);
 
-    // If error, bail
+    // If error, hang
     if (err) {
-        return err;
+        debugf("*** FAILURE: %s ***\n", errString(err));
+        ledBusy(true);
+        while (true) ;
     }
 
     // Swap the cached version
-    if (testCert != NULL) {
-        memFree(testCert);
-    }
     testCert = postGetTestCert();
 
     // Done
@@ -132,6 +141,9 @@ J *postGetTestCert()
     //   A precise data access error has occurred (CFSR.PRECISERR, BFAR)
     //   At data address 0x8040000.
     // And so we test the last byte manually.
+    if (((char *)TESTCERT_FLASH_ADDRESS)[0] != '{') {
+        return NULL;
+    }
     char *pnull = memchr(TESTCERT_FLASH_ADDRESS, 0, TESTCERT_FLASH_LEN-1);
     if (pnull == NULL) {
         if (((uint8_t *)TESTCERT_FLASH_ADDRESS)[TESTCERT_FLASH_LEN-1] != '\0') {

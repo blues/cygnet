@@ -81,6 +81,9 @@ int main(void)
     appInit();
 
     // Start scheduler
+#ifdef DEBUG_BUSY
+    HAL_GPIO_WritePin(LED_BUSY_GPIO_Port, LED_BUSY_Pin, GPIO_PIN_SET);
+#endif
     osKernelStart();
 
     // Must never return here

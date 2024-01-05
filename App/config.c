@@ -1,5 +1,6 @@
 
 #include "app.h"
+#include "flash_if.h"
 
 bool configReceivedHello = false;
 char configModemVersion[cstrsz] = {0};
@@ -11,6 +12,24 @@ char configApn[cstrsz] = {0};
 char configBand[cstrsz] = {0};
 char configChannel[cstrsz] = {0};
 uint16_t configMtu = 0;
+
+// Reset the test cert so this is a "fresh" module
+void configDeleteTestCert(void)
+{
+    configModemId[0] = '\0';
+    configModemVersion[0] = '\0';
+    uint8_t *iobuf;
+    if (memAlloc(FLASH_PAGE_SIZE, &iobuf) == errNone) {
+        FLASH_IF_Init(iobuf);
+        uint8_t *p;
+        if (memAlloc(sizeof(uint64_t), &p) == errNone) {
+            FLASH_IF_Write(TESTCERT_FLASH_ADDRESS, p, sizeof(uint64_t));
+            memFree(p);
+        }
+        memFree(iobuf);
+    }
+    taskGive(TASKID_MON);
+}
 
 // Set config vars
 void configSetDefaults(void)

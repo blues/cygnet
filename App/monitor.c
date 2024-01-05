@@ -2,7 +2,7 @@
 #include "app.h"
 
 // Have we yet received a 'hello' from the service?
-#define SEND_HELLO_SECS         5
+#define SEND_HELLO_SECS         10
 STATIC int64_t nextHelloDueMs = 0;
 
 // Monitor poller - return 0 if wait forever, else ms of the latest to come back

@@ -40,6 +40,9 @@
 #define SEL_SIM_Pin                     GPIO_SDA_Pin
 #define SEL_SIM_GPIO_Port               GPIO_SDA_GPIO_Port
 
+#undef USER_BTN_Pin
+#undef USER_BTN_GPIO_Port
+
 // We keep the test cert in the high page of flash
 #define TESTCERT_FLASH_ADDRESS          ((void *)((FLASH_BASE+FLASH_SIZE)-FLASH_PAGE_SIZE))
 #define TESTCERT_FLASH_LEN              FLASH_PAGE_SIZE

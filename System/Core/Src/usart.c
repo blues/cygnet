@@ -432,6 +432,11 @@ void MX_LPUART1_UART_ReInit(void)
 void MX_LPUART1_UART_Suspend(void)
 {
 
+    // Exit if not enabled
+    if ((peripherals & PERIPHERAL_LPUART1) == 0) {
+        return;
+    }
+
     // Set wakeUp event on start bit
     UART_WakeUpTypeDef WakeUpSelection;
     WakeUpSelection.WakeUpEvent = LL_LPUART_WAKEUP_ON_RXNE;
@@ -456,11 +461,24 @@ void MX_LPUART1_UART_Suspend(void)
 // LPUART1 resume function
 void MX_LPUART1_UART_Resume(void)
 {
+
+    // Exit if not enabled
+    if ((peripherals & PERIPHERAL_LPUART1) == 0) {
+        return;
+    }
+
+    // No operation
+
 }
 
 // Transmit to LPUART1
 void MX_LPUART1_UART_Transmit(uint8_t *buf, uint32_t len, uint32_t timeoutMs)
 {
+
+    // Exit if not enabled
+    if ((peripherals & PERIPHERAL_LPUART1) == 0) {
+        return;
+    }
 
     // Transmit
     HAL_UART_Transmit_IT(&hlpuart1, buf, len);

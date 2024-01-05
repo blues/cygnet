@@ -37,7 +37,7 @@ STATIC int64_t lastTimeDidWorkMs = 0L;
 STATIC uint32_t serialTaskID = TASKID_UNKNOWN;
 
 // Whether or not the serial polling is active
-bool serialActive = true;
+bool serialActive = false;
 
 // Forwards
 void serialReceivedNotification(UART_HandleTypeDef *huart, bool error);

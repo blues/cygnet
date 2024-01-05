@@ -88,15 +88,14 @@ void PWR_EnterStopMode(void)
     if (peripherals & PERIPHERAL_RNG) {
         MX_RNG_DeInit();
     }
-    if (peripherals & PERIPHERAL_USB) {
-        MX_USB_DEVICE_DeInit();
-    }
 
     // Disable DMA
     MX_DMA_DeInit();
 
     // Suspend sysTick
     HAL_SuspendTick();
+    SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;     // Suspend FreeRTOS's SysTick
+    SCB->ICSR |= SCB_ICSR_PENDSTCLR_Msk;            // clear possible pending systick interrupt
 
     // Prepare 'awake' peripherals so they wake-up from STOP
     MX_LPUART1_UART_Suspend();
@@ -105,7 +104,7 @@ void PWR_EnterStopMode(void)
     MX_GPIO_Stop();
 
     // Trace
-#ifdef DEBUG_BUSY_STOP
+#ifdef DEBUG_BUSY
     HAL_GPIO_WritePin(LED_BUSY_GPIO_Port, LED_BUSY_Pin, GPIO_PIN_RESET);
 #endif
 
@@ -113,6 +112,12 @@ void PWR_EnterStopMode(void)
     wasStopped = true;
     HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
 
+}
+
+// Resume
+bool PWR_WasStopped(void)
+{
+    return wasStopped;
 }
 
 // Resume
@@ -124,13 +129,19 @@ void PWR_ExitStopMode(void)
         return;
     }
 
-    // Trace
-#ifdef DEBUG_BUSY_STOP
-    HAL_GPIO_WritePin(LED_BUSY_GPIO_Port, LED_BUSY_Pin, GPIO_PIN_SET);
-#endif
-
     // Reset the clocks
     SystemClock_Config();
+
+    // Resume HAL tick
+    HAL_ResumeTick();
+
+    // Restore systick
+    SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;      // Resume SysTick, our FreeRTOS tick
+
+    // Trace
+#ifdef DEBUG_BUSY
+    HAL_GPIO_WritePin(LED_BUSY_GPIO_Port, LED_BUSY_Pin, GPIO_PIN_SET);
+#endif
 
     // Resume peripherals that were awake
     MX_LPUART1_UART_Resume();
@@ -138,18 +149,12 @@ void PWR_ExitStopMode(void)
     // Resume DMA
     MX_DMA_Init();
 
-    // Resume sysTick : work around for debugger problem in dual core
-    HAL_ResumeTick();
-
     // Resume peripherals that weren't retained but which are active
     if ((peripheralsToResume & PERIPHERAL_USART1) != 0) {
         MX_USART1_UART_ReInit();
     }
     if ((peripheralsToResume & PERIPHERAL_USART2) != 0) {
         MX_USART2_UART_ReInit();
-    }
-    if (peripheralsToResume & PERIPHERAL_USB) {
-        MX_USB_DEVICE_Init();
     }
 
 }

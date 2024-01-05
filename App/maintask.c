@@ -1,5 +1,4 @@
 
-
 #include "app.h"
 #include "task.h"
 #include "queue.h"
@@ -15,15 +14,15 @@ void mainTask(void *params)
     // Init task
     taskRegister(TASKID_MAIN, TASKNAME_MAIN, TASKLETTER_MAIN, TASKSTACK_MAIN);
 
-    // Init timer manager
-    UTIL_TIMER_Init();
-
     // Init low power manager
     UTIL_LPM_Init();
     UTIL_LPM_SetOffMode((1 << CFG_LPM_APPLI_Id), UTIL_LPM_DISABLE);
     if (osDebugging()) {
         UTIL_LPM_SetStopMode((1 << CFG_LPM_APPLI_Id), UTIL_LPM_DISABLE);
     }
+
+    // Init timer manager
+    UTIL_TIMER_Init();
 
     // Set config defaults
     configSetDefaults();

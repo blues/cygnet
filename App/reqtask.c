@@ -117,9 +117,9 @@ bool processButton()
     // Give positive indication that we're still alive
     int iterations = 2;
     for (int i=0; i<iterations; i++) {
-        HAL_GPIO_WritePin(LED_BUSY_GPIO_Port, LED_BUSY_Pin, GPIO_PIN_SET);
+        ledBusy(true);
         timerMsSleep(100);
-        HAL_GPIO_WritePin(LED_BUSY_GPIO_Port, LED_BUSY_Pin, GPIO_PIN_RESET);
+        ledBusy(false);
         if (i != iterations-1) {
             timerMsSleep(100);
         }
