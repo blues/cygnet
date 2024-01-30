@@ -71,7 +71,7 @@ void mainTask(void *params)
         HAL_GPIO_WritePin(MODEM_PWRKEY_NOD_GPIO_Port, MODEM_PWRKEY_NOD_Pin, GPIO_PIN_RESET);
         timerMsSleep(1500);
         HAL_GPIO_WritePin(MODEM_PWRKEY_NOD_GPIO_Port, MODEM_PWRKEY_NOD_Pin, GPIO_PIN_SET);
-        for (int i=1;;i++) {
+        for (int i=1;; i++) {
             if (HAL_GPIO_ReadPin(EN_MODEM_DFU_GPIO_Port, EN_MODEM_DFU_Pin) != GPIO_PIN_SET) {
                 break;
             }

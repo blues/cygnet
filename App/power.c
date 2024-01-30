@@ -25,9 +25,27 @@ err_t powerOn(uint32_t reason)
     bool turnModemOn = ((powerNeeds & (POWER_DATA|POWER_INIT|POWER_MODEM_DFU)) != 0);
     bool turnMainOn = turnGpsOn || turnModemOn;
     if (turnMainOn && !mainPoweredOn) {
-        if (!turnModemOn && !modemPoweredOn) {
-            HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);
+
+        // Power off the modem so that it doesn't participate in the current in-rusn
+        HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);
+
+        // Attempt to pulse the power in a slow but increasing way to lessen the 2A "jolt"
+        // that occurs when we simply power it on.  This uses PWM with a fixed pulse width
+        // and slowly increasing proportion of "on" vs "off".  The results are that
+        // the peak decreases from about 2A to about 1A.
+        int pulseWidth = 80;
+        for (int onWidth=1; onWidth<=pulseWidth; onWidth+=1) {
+            for (int repeat=0; repeat<4; repeat++) {
+                for (int i=0; i<onWidth; i++) {
+                    HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_SET);
+                }
+                for (int i=0; i<2*(pulseWidth-onWidth); i++) {
+                    HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_RESET);
+                }
+            }
         }
+
+        // Power on the main bus
         HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_SET);
         mainPoweredOn = true;
     }
@@ -67,6 +85,21 @@ err_t powerOn(uint32_t reason)
 
     // Power-on the modem
     timerMsSleep(100);
+    // Attempt to pulse the power in a slow but increasing way to lessen the 2A "jolt"
+    // that occurs when we simply power it on.  This uses PWM with a fixed pulse width
+    // and slowly increasing proportion of "on" vs "off".  The results are that
+    // the peak decreases from about 2A to about 1A.
+    int pulseWidth = 80;
+    for (int onWidth=1; onWidth<=pulseWidth; onWidth+=1) {
+        for (int repeat=0; repeat<4; repeat++) {
+            for (int i=0; i<onWidth; i++) {
+                HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_RESET);
+            }
+            for (int i=0; i<2*(pulseWidth-onWidth); i++) {
+                HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);
+            }
+        }
+    }
     HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_RESET);
 
     // Wait for the modem to stabilize and then drive PWRKEY low for at least 500ms
@@ -139,7 +172,7 @@ err_t powerOn(uint32_t reason)
 
     // Enable LED
     modemSend(NULL, "AT+QLEDMODE=1");
-        modemSend(NULL, "AT");//OZZIE
+    modemSend(NULL, "AT");//OZZIE
 
     // Get IMSI if necessary
     if (configModemId[0] == '\0') {
