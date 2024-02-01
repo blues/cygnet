@@ -32,22 +32,26 @@ err_t powerOn(uint32_t reason)
         // Attempt to pulse the power in a slow but increasing way to lessen the 2A "jolt"
         // that occurs when we simply power it on.  This uses PWM with a fixed pulse width
         // and slowly increasing proportion of "on" vs "off".  The results are that
-        // the peak decreases from about 2A to about 1A.
-        int pulseWidth = 80;
-        for (int onWidth=1; onWidth<=pulseWidth; onWidth+=1) {
-            for (int repeat=0; repeat<4; repeat++) {
-                for (int i=0; i<onWidth; i++) {
-                    HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_SET);
-                }
-                for (int i=0; i<2*(pulseWidth-onWidth); i++) {
-                    HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_RESET);
-                }
+        // the peak decreases from about 2A to about 1A.  NOTE that these numbers
+        // are very touchy and must be tested at 2.5v and 5v.
+        int cycles = 200;
+        for (int c = 0; c < cycles; c++) {
+            int width = 750;
+            int ontime = 68;
+            // Start at 2x ontime and ramp down to 1x, giving it more current
+            // at the front-end and sloping downward.
+            int pctComplete = c/cycles;
+            ontime += (int) ((float) ontime * 1.2 * (1-pctComplete));
+            for (int x = 0; x < ontime; x++) {
+                HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_SET);
+            }
+            for (int x = 0; x < (width - ontime); x++) {
+                HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_RESET);
             }
         }
-
-        // Power on the main bus
         HAL_GPIO_WritePin(MAIN_POWER_GPIO_Port, MAIN_POWER_Pin, GPIO_PIN_SET);
         mainPoweredOn = true;
+
     }
     if (turnGpsOn && !gpsPoweredOn) {
         gpsPoweredOn = true;
@@ -85,19 +89,25 @@ err_t powerOn(uint32_t reason)
 
     // Power-on the modem
     timerMsSleep(100);
+
     // Attempt to pulse the power in a slow but increasing way to lessen the 2A "jolt"
     // that occurs when we simply power it on.  This uses PWM with a fixed pulse width
     // and slowly increasing proportion of "on" vs "off".  The results are that
-    // the peak decreases from about 2A to about 1A.
-    int pulseWidth = 80;
-    for (int onWidth=1; onWidth<=pulseWidth; onWidth+=1) {
-        for (int repeat=0; repeat<4; repeat++) {
-            for (int i=0; i<onWidth; i++) {
-                HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_RESET);
-            }
-            for (int i=0; i<2*(pulseWidth-onWidth); i++) {
-                HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);
-            }
+    // the peak decreases from about 2A to about 1A.  NOTE that these numbers
+    // are very touchy and must be tested at 2.5v and 5v.
+    int cycles = 200;
+    for (int c = 0; c < cycles; c++) {
+        int width = 750;
+        int ontime = 68;
+        // Start at 2x ontime and ramp down to 1x, giving it more current
+        // at the front-end and sloping downward.
+        int pctComplete = c/cycles;
+        ontime += (int) ((float) ontime * 1.2 * (1-pctComplete));
+        for (int x = 0; x < ontime; x++) {
+            HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_RESET);
+        }
+        for (int x = 0; x < (width - ontime); x++) {
+            HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_SET);
         }
     }
     HAL_GPIO_WritePin(MODEM_POWER_NOD_GPIO_Port, MODEM_POWER_NOD_Pin, GPIO_PIN_RESET);
