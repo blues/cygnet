@@ -1,5 +1,5 @@
-set -x
 
+set +x
 jq -n --slurpfile input input.json '{
   "imsiList": [ $input[] | {
     "deviceIdentifier": .device,
@@ -10,4 +10,8 @@ jq -n --slurpfile input input.json '{
     }],
     "regionCodes": ["GLOBAL"],
     "serviceType": "IOT"
-}' > output.json
+}' > output.json 2>/dev/null
+
+set -x
+cat output.json
+
