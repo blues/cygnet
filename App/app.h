@@ -58,6 +58,12 @@
 #define tcFieldFirmwareMinor            "ver_minor"
 #define tcFieldFirmwarePatch            "ver_patch"
 #define tcFieldFirmwareBuilt            "built"
+#define tcFieldMtu                      "mtu"
+#define tcFieldPolicy                   "policy"
+#define tcFieldApn                      "apn"
+#define tcFieldBand                     "band"
+#define tcFieldChannel                  "channel"
+#define tcFieldCid                      "cid"
 
 // post.c
 err_t postSelfTest(bool performHardwareTest, J *tc);

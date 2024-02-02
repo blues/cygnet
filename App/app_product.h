@@ -20,14 +20,3 @@
 #define STARNOTE_DEFAULT_BAND       "0"             // "23" is best for Manchester
 #define STARNOTE_DEFAULT_CHANNEL    "0"             // "7697,2" is best for manchester
 
-#define STARNOTE_MTU_FIELD          "mtu"
-#define STARNOTE_POLICY_FIELD       "policy"
-#define STARNOTE_SKU_FIELD          "sku"
-#define STARNOTE_OC_FIELD           "oc"
-#define STARNOTE_APN_FIELD          "apn"
-#define STARNOTE_BAND_FIELD         "band"
-#define STARNOTE_CHANNEL_FIELD      "channel"
-#define STARNOTE_CID_FIELD          "cid"
-#define STARNOTE_ID_FIELD           "id"
-#define STARNOTE_MODEM_FIELD        "modem"
-#define STARNOTE_CERT_FIELD			"cert"

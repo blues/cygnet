@@ -67,6 +67,13 @@ err_t postSelfTest(bool performHardwareTest, J *tc)
     JAddStringToObject(tc, tcFieldDeviceUID, configModemId);
     JAddStringToObject(tc, tcFieldModem, configModemVersion);
 
+    JAddIntToObject(tc, tcFieldCid, STARNOTE_CID_TYPE);
+    JAddStringToObject(tc, tcFieldPolicy, STARNOTE_DEFAULT_POLICY);
+    JAddIntToObject(tc, tcFieldMtu, STARNOTE_DEFAULT_MTU);
+    JAddStringToObject(tc, tcFieldApn, STARNOTE_DEFAULT_APN);
+    JAddStringToObject(tc, tcFieldBand, STARNOTE_DEFAULT_BAND);
+    JAddStringToObject(tc, tcFieldChannel, STARNOTE_DEFAULT_CHANNEL);
+
     JDeleteItemFromObject(tc, tcFieldFirmwareOrg);
     JAddStringToObject(tc, tcFieldFirmwareOrg, PRODUCT_MANUFACTURER);
     JDeleteItemFromObject(tc, tcFieldFirmwareProduct);
