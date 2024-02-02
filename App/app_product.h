@@ -30,3 +30,4 @@
 #define STARNOTE_CID_FIELD          "cid"
 #define STARNOTE_ID_FIELD           "id"
 #define STARNOTE_MODEM_FIELD        "modem"
+#define STARNOTE_CERT_FIELD			"cert"

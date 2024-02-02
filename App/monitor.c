@@ -25,10 +25,7 @@ uint32_t monitor(void)
             nextHelloDueMs = timerMs() + (SEND_HELLO_SECS * ms1Sec);
             returnInMs = GMIN(returnInMs, (uint32_t) (nextHelloDueMs - timerMs()));
             if (configModemId[0] != '\0' && configModemVersion[0] != '\0') {
-                J *body = JParse(osBuildConfig());
-                if (body == NULL) {
-                    body = JCreateObject();
-                }
+                J *body = JCreateObject();
                 JAddStringToObject(body, STARNOTE_ID_FIELD, configModemId);
                 JAddIntToObject(body, STARNOTE_CID_FIELD, STARNOTE_CID_TYPE);
                 JAddStringToObject(body, STARNOTE_MODEM_FIELD, configModemVersion);
@@ -39,6 +36,10 @@ uint32_t monitor(void)
                 JAddStringToObject(body, STARNOTE_APN_FIELD, configApn);
                 JAddStringToObject(body, STARNOTE_BAND_FIELD, configBand);
                 JAddStringToObject(body, STARNOTE_CHANNEL_FIELD, configChannel);
+                J *cert = JDuplicate(postGetTestCert(), true);
+                if (cert != NULL) {
+	                JAddItemToObject(body, STARNOTE_CERT_FIELD, cert);
+                }
                 serialSendMessageToNotecard(serialCreateMessage(ReqHello, NULL, body, NULL, 0));
             }
         }
