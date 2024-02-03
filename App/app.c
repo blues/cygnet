@@ -134,24 +134,6 @@ void appHeartbeatISR(uint32_t heartbeatSecs)
 {
 }
 
-// Return true if sleep is allowed
-bool appSleepAllowed(void)
-{
-    if (modemPoweredOn) {
-        return false;
-    }
-    if (gpsPoweredOn) {
-        return false;
-    }
-    if (serialActive) {
-        return false;
-    }
-    if (osUsbDetected()) {
-        return false;
-    }
-    return true;
-}
-
 // See FreeRTOSConfig.h where this is registered via configPRE_SLEEP_PROCESSING()
 // Called by the kernel before it places the MCU into a sleep mode because
 void appPreSleepProcessing(uint32_t ulExpectedIdleTime)
@@ -214,4 +196,22 @@ void appTraceStepTick(void)
         debugf("steptick %d ms\n", elapsedHistory[i]);
     }
 #endif
+}
+
+// Return true if sleep is allowed
+bool appSleepAllowed(void)
+{
+    if (modemPoweredOn) {
+        return false;
+    }
+    if (gpsPoweredOn) {
+        return false;
+    }
+    if (serialActive) {
+        return false;
+    }
+    if (osUsbDetected()) {
+        return false;
+    }
+    return true;
 }

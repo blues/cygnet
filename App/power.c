@@ -181,8 +181,9 @@ err_t powerOn(uint32_t reason)
     }
 
     // Enable LED
+#if 0 // 2024-02-03 LED doesn't work yet
     modemSend(NULL, "AT+QLEDMODE=1");
-    modemSend(NULL, "AT");//OZZIE
+#endif
 
     // Get IMSI if necessary
     if (configModemId[0] == '\0') {

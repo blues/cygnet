@@ -467,7 +467,10 @@ void MX_LPUART1_UART_Resume(void)
         return;
     }
 
-    // No operation
+    // Notify of activity, so that we stay awake
+    if (rxioLPUART1.notifyReceivedFn != NULL) {
+        rxioLPUART1.notifyReceivedFn(&hlpuart1, true);
+    }
 
 }
 
