@@ -1,2 +1,1 @@
-
-{"req":"card.test","body":{"sku":"NTN-SKY1"}}
+{"req":"card.test","body":{"sku":"NTN-SKY1","apn":"blues.prod"}}
