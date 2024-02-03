@@ -1,6 +1,8 @@
+// Copyright 2024 Blues Inc.  All rights reserved.
+// Use of this source code is governed by licenses granted by the
+// copyright holder including that found in the LICENSE file.
 
 #include "app.h"
-#include "serial.h"
 #include "usart.h"
 #include "usb_device.h"
 
@@ -65,21 +67,18 @@ void serialInit(uint32_t taskID)
     usbDesc.taskId = TASKID_REQ;
     lpuart1Desc.taskId = TASKID_REQ;
     usart1Desc.taskId = TASKID_REQ;
-    usart2Desc.taskId = TASKID_MODEM;
+    usart2Desc.taskId = TASKID_REQ;
 
-    // LPUART1 (notecard request port)
+    // LPUART1
     MX_UART_RxConfigure(&hlpuart1, lpuart1InterruptBuffer, sizeof(lpuart1InterruptBuffer), serialReceivedNotification);
     MX_LPUART1_UART_Init(false, 9600);
 
-    // USART1 (GPS or debug port depending upon AUX_EN)
+    // USART1
     MX_UART_RxConfigure(&huart1, usart1InterruptBuffer, sizeof(usart1InterruptBuffer), serialReceivedNotification);
     MX_USART1_UART_Init(9600);
 
-    // USART2 (modem port)
+    // USART2
     MX_UART_RxConfigure(&huart2, usart2InterruptBuffer, sizeof(usart2InterruptBuffer), serialReceivedNotification);
-#ifdef MODEM_ALWAYS_ON
-    MX_USART2_UART_Init(false, 115200);
-#endif
 
     // USB (debug port)
     MX_UART_RxConfigure(NULL, usbInterruptBuffer, sizeof(usbInterruptBuffer), serialReceivedNotification);
@@ -126,8 +125,6 @@ void serialPoll(void)
     if (didWork) {
         pollMs = 1;
         lastTimeDidWorkMs = timerMs();
-    } else if (modemPoweredOn) {
-        pollMs = ms1Sec;
     } else if (!timerMsElapsed(lastTimeDidWorkMs, 3000)) {
         pollMs = 100;
     } else {
@@ -138,6 +135,12 @@ void serialPoll(void)
     // Wait until there's something to do
     taskTake(serialTaskID, pollMs);
 
+}
+
+// Whether or not serial is active
+bool serialIsActive(void)
+{
+    return serialActive;
 }
 
 // Notification
@@ -376,18 +379,8 @@ void serialOutputLn(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen)
 {
 
     // Change terminator based upon target
-    uint8_t *terminator;
-    uint32_t terminatorLen;
-    if (huart == &hlpuart1) {           // Notecard likes \n
-        terminator = "\n";
-        terminatorLen = 1;
-    } else if (huart == &huart2) {      // Quectel likes \r
-        terminator = "\r";
-        terminatorLen = 1;
-    } else {                            // Debug consoles are flexible
-        terminator = "\r\n";
-        terminatorLen = 2;
-    }
+    uint8_t *terminator = (uint8_t *) "\r\n";;
+    uint32_t terminatorLen = 2;
 
     serialDesc *desc = portDesc(huart);
     if (desc == NULL) {
@@ -413,62 +406,4 @@ void serialOutputLn(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen)
         }
     }
     mutexUnlock(&desc->txLock);
-}
-
-// Output an object to the specified port, and free it, also outputting to the debug console if appropriate
-void serialOutputObject(UART_HandleTypeDef *huart, J *msg)
-{
-    if (msg == NULL) {
-        return;
-    }
-    ledBusy(true);
-    char *json = JPrintUnformattedOmitEmpty(msg);
-    JDelete(msg);
-    if (!serialIsDebugPort(huart)) {
-        debugMessage("<< ");
-        debugMessage(json);
-        debugMessage("\n");
-    }
-    serialOutputLn(huart, (uint8_t *)json, strlen(json));
-    memFree(json);
-    ledBusy(false);
-}
-
-// Output an object to the specified port, and free it, also outputting to the debug console if appropriate
-void serialSendMessageToNotecard(J *msg)
-{
-    serialOutputObject(&hlpuart1, msg);
-}
-
-// Output a text line to the notecard
-void serialSendLineToNotecard(char *msg)
-{
-    serialOutputLn(&hlpuart1, (uint8_t *)msg, strlen(msg));
-}
-
-// Create an outgoing message object intended to be sent to the notecard
-J *serialCreateMessage(const char *msgType, char *status, J *body, uint8_t *payload, uint32_t payloadLen)
-{
-    J *msg = JCreateObject();
-    JAddStringToObject(msg, FieldCmd, msgType);
-    if (timeIsValid()) {
-        JAddIntToObject(msg, FieldTime, timeSecs());
-    }
-    if (status != NULL && status[0] != '\0') {
-        JAddStringToObject(msg, FieldStatus, status);
-    }
-    if (body != NULL) {
-        JAddItemToObject(msg, FieldBody, body);
-    }
-    if (payload != NULL && payloadLen != 0) {
-        JAddBinaryToObject(msg, FieldPayload, payload, payloadLen);
-    }
-    return msg;
-}
-
-// Output a line to the modem
-void serialSendLineToModem(char *text)
-{
-    debugR("modem: >> %s\n", text);
-    serialOutputLn(&huart2, (uint8_t *)text, strlen(text));
 }

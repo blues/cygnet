@@ -16,7 +16,7 @@
 #error "In your IDE please define PRODUCT_PROGRAMMATIC_NAME as something like "powermon"
 #endif
 
-// USB
+// USB overrides in case you'd like to assign your own
 #ifndef PRODUCT_USB_VID
 #define PRODUCT_USB_VID             12452   // 0x30A4 Inca Roads LLC
 #endif

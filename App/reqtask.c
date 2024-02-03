@@ -1,6 +1,8 @@
+// Copyright 2024 Blues Inc.  All rights reserved.
+// Use of this source code is governed by licenses granted by the
+// copyright holder including that found in the LICENSE file.
 
 #include "app.h"
-#include "serial.h"
 #include "usart.h"
 
 // A button was pressed
@@ -56,29 +58,20 @@ bool processReq(UART_HandleTypeDef *huart)
     }
 
     // Busy LED
-    ledBusy(true);
+    ledEnable(true);
 
-    // Process the request
-    J *rsp;
+    // Process the request (which is conveniently null-terminated by the serial subsystem)
     bool debugWasEnabled = MX_DBG_Enable(false);
-    err_t err = reqProcess(serialIsDebugPort(huart), reqJSON, reqJSONLen, diagAllowed, &rsp);
+    err_t err = reqProcess(serialIsDebugPort(huart), reqJSON, diagAllowed);
     MX_DBG_Enable(debugWasEnabled);
     serialUnlock(huart, true);
     if (err) {
-        char *reqstr = "\"req\":\"";
-        if (memmem(reqJSON, reqJSONLen, reqstr, strlen(reqstr)) != NULL) {
-            uint8_t *rspJSON = NULL;
-            uint32_t rspJSONLen = 0;
-            errBody(err, &rspJSON, &rspJSONLen);
-            serialOutputLn(huart, rspJSON, rspJSONLen);
-            memFree(rspJSON);
-        }
-    } else {
-        serialOutputObject(huart, rsp);
+        char *errstr = errString(err);
+        serialOutputLn(huart, (uint8_t *) errstr, strlen(errstr));
     }
 
     // Busy LED
-    ledBusy(false);
+    ledEnable(false);
 
     // Perform deferred work
     if (reqDeferredWork != rdtNone) {
@@ -117,9 +110,9 @@ bool processButton()
     // Give positive indication that we're still alive
     int iterations = 2;
     for (int i=0; i<iterations; i++) {
-        ledBusy(true);
+        ledEnable(true);
         timerMsSleep(100);
-        ledBusy(false);
+        ledEnable(false);
         if (i != iterations-1) {
             timerMsSleep(100);
         }

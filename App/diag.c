@@ -1,3 +1,6 @@
+// Copyright 2024 Blues Inc.  All rights reserved.
+// Use of this source code is governed by licenses granted by the
+// copyright holder including that found in the LICENSE file.
 
 #include "app.h"
 #include "usart.h"
@@ -10,10 +13,6 @@ typedef enum {
     CMD_RESTART,
     CMD_POWER,
     CMD_MEM,
-    CMD_CONNECT,
-    CMD_DISCONNECT,
-    CMD_AT,
-    CMD_TEST,
     CMD_BOOTLOADER_DIRECT,
     CMD_TRACE,
     CMD_T,
@@ -26,17 +25,12 @@ typedef struct {
 } cmd_def;
 
 STATIC const cmd_def cmdText[] = {
-    {"trace", CMD_TRACE},
     {"t", CMD_T},
+    {"trace", CMD_TRACE},
     {"restart", CMD_RESTART},
     {"mem", CMD_MEM},
-    {"connect", CMD_CONNECT},
-    {"disconnect", CMD_DISCONNECT},
-    {"at", CMD_AT},
-    {"test", CMD_TEST},
     {"power", CMD_POWER},
     {"bootloader", CMD_BOOTLOADER_DIRECT},
-    {"zxc", CMD_BOOTLOADER_DIRECT},
     {NULL, 0},
 };
 
@@ -57,42 +51,26 @@ err_t diagProcess(char *diagCommand)
     uint32_t diagCommandLen = strlen(diagCommand);
     int cmd = getCommand(diagCommand, diagCommandLen);
 
-    // If it looks like GNSS, do special processing
-    if (diagCommand[0] == '$') {
-        if (gpsReceivedLine(diagCommand)) {
-            if ((powerNeeds & POWER_GPS) != 0) {
-                serialSendLineToNotecard(diagCommand);
-            }
-        }
-        return errNone;
-    }
-
     // If it looks like an AT command, do special processing.  Else, copy
     // to a local buffer, cleaning and null-terminated for string processing
     char argbuf[maxCMD];
-    if (memeql(diagCommand, "at", 2) || memeql(diagCommand, "AT", 2)) {
-        strLcpy(argbuf, "at ");
-        strLcat(argbuf, diagCommand);
-        cmd = CMD_AT;
-    } else {
-        int j = 0;
-        for (int i=0; i<diagCommandLen; i++) {
-            if (j >= sizeof(argbuf)-1) {
-                break;
-            }
-            bool goodChar = false;
-            if (isAsciiAlphaNumeric(diagCommand[i])) {
-                goodChar = true;
-            }
-            if (ispunct(diagCommand[i]) || diagCommand[i] == ' ') {
-                goodChar = true;
-            }
-            if (goodChar) {
-                argbuf[j++] = diagCommand[i];
-            }
+    int j = 0;
+    for (int i=0; i<diagCommandLen; i++) {
+        if (j >= sizeof(argbuf)-1) {
+            break;
         }
-        argbuf[j] = '\0';
+        bool goodChar = false;
+        if (isAsciiAlphaNumeric(diagCommand[i])) {
+            goodChar = true;
+        }
+        if (ispunct(diagCommand[i]) || diagCommand[i] == ' ') {
+            goodChar = true;
+        }
+        if (goodChar) {
+            argbuf[j++] = diagCommand[i];
+        }
     }
+    argbuf[j] = '\0';
 
     // Retain the argbuf before we write nulls into it
     char cmdline[maxCMD];
@@ -158,15 +136,9 @@ err_t diagProcess(char *diagCommand)
     }
 
     case CMD_POWER: {
-        if (strEQL(argv[1], "on")) {
-            powerOn(POWER_DATA);
-        } else if (strEQL(argv[1], "off")) {
-            powerOff(POWER_DATA);
-        } else {
-            char buf[100];
-            MX_ActivePeripherals(buf, sizeof(buf));
-            debugf("POWER: %s\n", buf);
-        }
+        char buf[100];
+        MX_ActivePeripherals(buf, sizeof(buf));
+        debugf("POWER: %s\n", buf);
         break;
     }
 
@@ -189,28 +161,6 @@ err_t diagProcess(char *diagCommand)
         MX_Restart();
         break;
 
-    case CMD_CONNECT: {
-        err = modemEnqueueWork(NULL, workModemConnect, NULL, NULL);
-        break;
-    }
-
-    case CMD_DISCONNECT: {
-        err = modemEnqueueWork(NULL, workModemDisconnect, NULL, NULL);
-        break;
-    }
-
-    case CMD_AT: {
-        if (argv[1][0] == '\0') {
-            modemUrcShow();
-        } else {
-            err = modemEnqueueWork(NULL, workModemSend, JCreateString(&cmdline[3]), NULL);
-        }
-        break;
-    }
-
-    case CMD_TEST: {
-        break;
-    }
 
     case CMD_UNRECOGNIZED: {
         debugf("'%s' ??\n", diagCommand);

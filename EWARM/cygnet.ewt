@@ -1429,34 +1429,13 @@
             <name>$PROJ_DIR$\..\App\button.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\App\config.c</name>
-        </file>
-        <file>
             <name>$PROJ_DIR$\..\App\diag.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\App\gps.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\App\led.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\App\maintask.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\App\modem.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\App\monitor.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\App\montask.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\App\post.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\App\power.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\App\req.c</name>
@@ -1466,9 +1445,6 @@
         </file>
         <file>
             <name>$PROJ_DIR$\..\App\serial.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\App\work.c</name>
         </file>
     </group>
     <group>
@@ -1724,21 +1700,6 @@
         </file>
         <file>
             <name>$PROJ_DIR$\..\System\Global\tss.c</name>
-        </file>
-    </group>
-    <group>
-        <name>JSON</name>
-        <file>
-            <name>$PROJ_DIR$\..\App\json\note-c\n_b64.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\App\json\note-c\n_cjson.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\App\json\note-c\n_cjson_helpers.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\App\json\n_lib.c</name>
         </file>
     </group>
     <group>
