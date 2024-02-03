@@ -1,8 +1,0 @@
-HTTP/2 202 
-content-type: application/json
-date: Fri, 02 Feb 2024 09:15:03 GMT
-x-request-id: ba2495ba-6776-475f-a84f-45a62180d5c6
-via: 1.1 google
-alt-svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
-
-{"requestNumber":46799,"resultStatus":{"statusCode":"SC_1000","description":"Request is accepted and in progress"}}

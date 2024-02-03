@@ -1423,130 +1423,130 @@
     <group>
         <name>App</name>
         <file>
-            <name>$PROJ_DIR$\..\..\App\app.c</name>
+            <name>$PROJ_DIR$\..\App\app.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\button.c</name>
+            <name>$PROJ_DIR$\..\App\button.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\config.c</name>
+            <name>$PROJ_DIR$\..\App\config.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\diag.c</name>
+            <name>$PROJ_DIR$\..\App\diag.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\gps.c</name>
+            <name>$PROJ_DIR$\..\App\gps.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\led.c</name>
+            <name>$PROJ_DIR$\..\App\led.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\maintask.c</name>
+            <name>$PROJ_DIR$\..\App\maintask.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\modem.c</name>
+            <name>$PROJ_DIR$\..\App\modem.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\monitor.c</name>
+            <name>$PROJ_DIR$\..\App\monitor.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\montask.c</name>
+            <name>$PROJ_DIR$\..\App\montask.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\post.c</name>
+            <name>$PROJ_DIR$\..\App\post.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\power.c</name>
+            <name>$PROJ_DIR$\..\App\power.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\req.c</name>
+            <name>$PROJ_DIR$\..\App\req.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\reqtask.c</name>
+            <name>$PROJ_DIR$\..\App\reqtask.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\serial.c</name>
+            <name>$PROJ_DIR$\..\App\serial.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\work.c</name>
+            <name>$PROJ_DIR$\..\App\work.c</name>
         </file>
     </group>
     <group>
         <name>Core</name>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\adc.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\adc.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Weak\app_weak.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Weak\app_weak.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\can.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\can.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\debug_if.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\debug_if.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\dma.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\dma.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\flash_if.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\flash_if.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\gpio.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\gpio.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\heap_4.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\heap_4.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\i2c.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\i2c.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\lptim.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\lptim.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\main.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\main.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\rng.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\rng.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\rtc.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\rtc.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\spi.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\spi.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\stm32_lpm_if.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\stm32_lpm_if.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\stm32l4xx_hal_msp.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\stm32l4xx_hal_msp.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\stm32l4xx_hal_timebase_tim.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\stm32l4xx_hal_timebase_tim.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\stm32l4xx_it.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\stm32l4xx_it.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\timer_if.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\timer_if.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\usart.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\usart.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\usb_device.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\usb_device.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\usbd_cdc_if.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\usbd_cdc_if.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\usbd_conf.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\usbd_conf.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\usbd_desc.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\usbd_desc.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Core\Src\wwdg.c</name>
+            <name>$PROJ_DIR$\..\System\Core\Src\wwdg.c</name>
         </file>
     </group>
     <group>
@@ -1554,100 +1554,100 @@
         <group>
             <name>CMSIS</name>
             <file>
-                <name>$PROJ_DIR$\..\Core\Src\system_stm32l4xx.c</name>
+                <name>$PROJ_DIR$\..\System\Core\Src\system_stm32l4xx.c</name>
             </file>
         </group>
         <group>
             <name>STM32L4xx_HAL_Driver</name>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_adc.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_adc.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_adc_ex.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_adc_ex.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_can.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_can.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_cortex.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_cortex.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_dma.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_dma.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_dma_ex.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_dma_ex.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_exti.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_exti.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_flash.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_flash.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_flash_ex.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_flash_ex.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_flash_ramfunc.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_flash_ramfunc.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_gpio.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_gpio.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_i2c.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_i2c.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_lptim.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_lptim.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_pcd.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_pcd.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_pcd_ex.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_pcd_ex.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_pwr.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_pwr.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_pwr_ex.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_pwr_ex.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_rcc.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_rcc.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_rcc_ex.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_rcc_ex.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_rng.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_rng.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_rtc.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_rtc.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_rtc_ex.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_rtc_ex.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_spi.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_spi.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_tim.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_tim.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_tim_ex.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_tim_ex.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_uart.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_uart.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_uart_ex.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_uart_ex.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_wwdg.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_hal_wwdg.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_ll_usb.c</name>
+                <name>$PROJ_DIR$\..\System\Drivers\STM32L4xx_HAL_Driver\Src\stm32l4xx_ll_usb.c</name>
             </file>
         </group>
     </group>
@@ -1663,82 +1663,82 @@
     <group>
         <name>Global</name>
         <file>
-            <name>$PROJ_DIR$\..\Global\amd5.c</name>
+            <name>$PROJ_DIR$\..\System\Global\amd5.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\array.c</name>
+            <name>$PROJ_DIR$\..\System\Global\array.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\base64.c</name>
+            <name>$PROJ_DIR$\..\System\Global\base64.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\crc16.c</name>
+            <name>$PROJ_DIR$\..\System\Global\crc16.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\crc32.c</name>
+            <name>$PROJ_DIR$\..\System\Global\crc32.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\debug.c</name>
+            <name>$PROJ_DIR$\..\System\Global\debug.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\float16.c</name>
+            <name>$PROJ_DIR$\..\System\Global\float16.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\gerr.c</name>
+            <name>$PROJ_DIR$\..\System\Global\gerr.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\gmem.c</name>
+            <name>$PROJ_DIR$\..\System\Global\gmem.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\loc.c</name>
+            <name>$PROJ_DIR$\..\System\Global\loc.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\md5hash.c</name>
+            <name>$PROJ_DIR$\..\System\Global\md5hash.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\memmem.c</name>
+            <name>$PROJ_DIR$\..\System\Global\memmem.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\mutex.c</name>
+            <name>$PROJ_DIR$\..\System\Global\mutex.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\os.c</name>
+            <name>$PROJ_DIR$\..\System\Global\os.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\rand.c</name>
+            <name>$PROJ_DIR$\..\System\Global\rand.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\rrandom.c</name>
+            <name>$PROJ_DIR$\..\System\Global\rrandom.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\strl.c</name>
+            <name>$PROJ_DIR$\..\System\Global\strl.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\task.c</name>
+            <name>$PROJ_DIR$\..\System\Global\task.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\timegm.c</name>
+            <name>$PROJ_DIR$\..\System\Global\timegm.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\timer.c</name>
+            <name>$PROJ_DIR$\..\System\Global\timer.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Global\tss.c</name>
+            <name>$PROJ_DIR$\..\System\Global\tss.c</name>
         </file>
     </group>
     <group>
         <name>JSON</name>
         <file>
-            <name>$PROJ_DIR$\..\..\App\json\note-c\n_b64.c</name>
+            <name>$PROJ_DIR$\..\App\json\note-c\n_b64.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\json\note-c\n_cjson.c</name>
+            <name>$PROJ_DIR$\..\App\json\note-c\n_cjson.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\json\note-c\n_cjson_helpers.c</name>
+            <name>$PROJ_DIR$\..\App\json\note-c\n_cjson_helpers.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\App\json\n_lib.c</name>
+            <name>$PROJ_DIR$\..\App\json\n_lib.c</name>
         </file>
     </group>
     <group>
@@ -1746,62 +1746,62 @@
         <group>
             <name>FreeRTOS</name>
             <file>
-                <name>$PROJ_DIR$\..\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS_V2\cmsis_os2.c</name>
+                <name>$PROJ_DIR$\..\System\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS_V2\cmsis_os2.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Middlewares\Third_Party\FreeRTOS\Source\croutine.c</name>
+                <name>$PROJ_DIR$\..\System\Middlewares\Third_Party\FreeRTOS\Source\croutine.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Middlewares\Third_Party\FreeRTOS\Source\event_groups.c</name>
+                <name>$PROJ_DIR$\..\System\Middlewares\Third_Party\FreeRTOS\Source\event_groups.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Middlewares\Third_Party\FreeRTOS\Source\list.c</name>
+                <name>$PROJ_DIR$\..\System\Middlewares\Third_Party\FreeRTOS\Source\list.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Middlewares\Third_Party\FreeRTOS\Source\portable\IAR\ARM_CM4F\port.c</name>
+                <name>$PROJ_DIR$\..\System\Middlewares\Third_Party\FreeRTOS\Source\portable\IAR\ARM_CM4F\port.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Middlewares\Third_Party\FreeRTOS\Source\portable\IAR\ARM_CM4F\portasm.s</name>
+                <name>$PROJ_DIR$\..\System\Middlewares\Third_Party\FreeRTOS\Source\portable\IAR\ARM_CM4F\portasm.s</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Middlewares\Third_Party\FreeRTOS\Source\queue.c</name>
+                <name>$PROJ_DIR$\..\System\Middlewares\Third_Party\FreeRTOS\Source\queue.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Middlewares\Third_Party\FreeRTOS\Source\stream_buffer.c</name>
+                <name>$PROJ_DIR$\..\System\Middlewares\Third_Party\FreeRTOS\Source\stream_buffer.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Middlewares\Third_Party\FreeRTOS\Source\tasks.c</name>
+                <name>$PROJ_DIR$\..\System\Middlewares\Third_Party\FreeRTOS\Source\tasks.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Middlewares\Third_Party\FreeRTOS\Source\timers.c</name>
+                <name>$PROJ_DIR$\..\System\Middlewares\Third_Party\FreeRTOS\Source\timers.c</name>
             </file>
         </group>
         <group>
             <name>USB</name>
             <file>
-                <name>$PROJ_DIR$\..\Middlewares\ST\STM32_USB_Device_Library\Class\CDC\Src\usbd_cdc.c</name>
+                <name>$PROJ_DIR$\..\System\Middlewares\ST\STM32_USB_Device_Library\Class\CDC\Src\usbd_cdc.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Middlewares\ST\STM32_USB_Device_Library\Core\Src\usbd_core.c</name>
+                <name>$PROJ_DIR$\..\System\Middlewares\ST\STM32_USB_Device_Library\Core\Src\usbd_core.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Middlewares\ST\STM32_USB_Device_Library\Core\Src\usbd_ctlreq.c</name>
+                <name>$PROJ_DIR$\..\System\Middlewares\ST\STM32_USB_Device_Library\Core\Src\usbd_ctlreq.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Middlewares\ST\STM32_USB_Device_Library\Core\Src\usbd_ioreq.c</name>
+                <name>$PROJ_DIR$\..\System\Middlewares\ST\STM32_USB_Device_Library\Core\Src\usbd_ioreq.c</name>
             </file>
         </group>
     </group>
     <group>
         <name>Utilities</name>
         <file>
-            <name>$PROJ_DIR$\..\Utilities\lpm\tiny_lpm\stm32_lpm.c</name>
+            <name>$PROJ_DIR$\..\System\Utilities\lpm\tiny_lpm\stm32_lpm.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Utilities\misc\stm32_mem.c</name>
+            <name>$PROJ_DIR$\..\System\Utilities\misc\stm32_mem.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Utilities\timer\stm32_timer.c</name>
+            <name>$PROJ_DIR$\..\System\Utilities\timer\stm32_timer.c</name>
         </file>
     </group>
 </project>

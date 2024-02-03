@@ -12,7 +12,7 @@
 
 "--device=STM32L433CC" 
 
-"--drv_communication_log=C:\Users\rozzie\dev\cygnet\System\EWARM\cspycomm.log" 
+"--drv_communication_log=C:\Users\rozzie\dev\cygnet\EWARM\cspycomm.log" 
 
 "--drv_communication=USB1" 
 
