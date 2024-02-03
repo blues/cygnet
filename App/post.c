@@ -38,6 +38,11 @@ err_t postSelfTest(bool performHardwareTest, J *tc)
         return errF("unrecognized sku: %s", sku);
     }
 
+    // APN is required
+    if (JGetString(tc, tcFieldApn)[0] == '\0') {
+        return errF("APN is required");
+    }
+
     // Overwrite the test cert so that it is re-generated
     configDeleteTestCert();
     if (testCert != NULL) {
@@ -67,12 +72,21 @@ err_t postSelfTest(bool performHardwareTest, J *tc)
     JAddStringToObject(tc, tcFieldDeviceUID, configModemId);
     JAddStringToObject(tc, tcFieldModem, configModemVersion);
 
-    JAddIntToObject(tc, tcFieldCid, STARNOTE_CID_TYPE);
-    JAddStringToObject(tc, tcFieldPolicy, STARNOTE_DEFAULT_POLICY);
-    JAddIntToObject(tc, tcFieldMtu, STARNOTE_DEFAULT_MTU);
-    JAddStringToObject(tc, tcFieldApn, STARNOTE_DEFAULT_APN);
-    JAddStringToObject(tc, tcFieldBand, STARNOTE_DEFAULT_BAND);
-    JAddStringToObject(tc, tcFieldChannel, STARNOTE_DEFAULT_CHANNEL);
+    if (!JIsPresent(tc, tcFieldCid)) {
+        JAddIntToObject(tc, tcFieldCid, STARNOTE_CID_TYPE);
+    }
+    if (!JIsPresent(tc, tcFieldPolicy)) {
+        JAddStringToObject(tc, tcFieldPolicy, STARNOTE_DEFAULT_POLICY);
+    }
+    if (!JIsPresent(tc, tcFieldMtu)) {
+        JAddIntToObject(tc, tcFieldMtu, STARNOTE_DEFAULT_MTU);
+    }
+    if (!JIsPresent(tc, tcFieldBand)) {
+        JAddStringToObject(tc, tcFieldBand, STARNOTE_DEFAULT_BAND);
+    }
+    if (!JIsPresent(tc, tcFieldChannel)) {
+        JAddStringToObject(tc, tcFieldChannel, STARNOTE_DEFAULT_CHANNEL);
+    }
 
     JDeleteItemFromObject(tc, tcFieldFirmwareOrg);
     JAddStringToObject(tc, tcFieldFirmwareOrg, PRODUCT_MANUFACTURER);

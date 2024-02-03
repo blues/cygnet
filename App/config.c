@@ -31,8 +31,10 @@ void configDeleteTestCert(void)
 }
 
 // Set config vars
-void configSetDefaults(void)
+void configGetDefaultsFromTestCert(void)
 {
+
+    // Set true defaults as though there were no test cert
     strLcpy(configModemVersion, "");
     strLcpy(configModemId, "");
     strLcpy(configPolicy, STARNOTE_DEFAULT_POLICY);
@@ -41,6 +43,39 @@ void configSetDefaults(void)
     strLcpy(configBand, STARNOTE_DEFAULT_BAND);
     strLcpy(configChannel, STARNOTE_DEFAULT_CHANNEL);
     configMtu = STARNOTE_DEFAULT_MTU;
+
+    // Get the test cert
+    J *tcert = postGetCachedTestCert();
+    if (tcert == NULL) {
+        return;
+    }
+
+    // Extract defaults from it
+    if (JIsPresent(tcert, tcFieldDeviceUID)) {
+        strLcpy(configModemId, JGetString(tcert, tcFieldDeviceUID));
+    }
+    if (JIsPresent(tcert, tcFieldModem)) {
+        strLcpy(configModemVersion, JGetString(tcert, tcFieldModem));
+    }
+    if (JIsPresent(tcert, tcFieldPolicy)) {
+        strLcpy(configPolicy, JGetString(tcert, tcFieldPolicy));
+    }
+    if (JIsPresent(tcert, tcFieldOrderingCode)) {
+        strLcpy(configOc, JGetString(tcert, tcFieldOrderingCode));
+    }
+    if (JIsPresent(tcert, tcFieldApn)) {
+        strLcpy(configApn, JGetString(tcert, tcFieldApn));
+    }
+    if (JIsPresent(tcert, tcFieldBand)) {
+        strLcpy(configBand, JGetString(tcert, tcFieldBand));
+    }
+    if (JIsPresent(tcert, tcFieldChannel)) {
+        strLcpy(configChannel, JGetString(tcert, tcFieldChannel));
+    }
+    if (JIsPresent(tcert, tcFieldMtu)) {
+        configMtu = JGetInt(tcert, tcFieldMtu);
+    }
+
 }
 
 // Set config vars

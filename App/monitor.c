@@ -25,7 +25,7 @@ uint32_t monitor(void)
             nextHelloDueMs = timerMs() + (SEND_HELLO_SECS * ms1Sec);
             returnInMs = GMIN(returnInMs, (uint32_t) (nextHelloDueMs - timerMs()));
             if (configModemId[0] != '\0' && configModemVersion[0] != '\0') {
-                J *body = JDuplicate(postGetTestCert(), true);
+                J *body = JDuplicate(postGetCachedTestCert(), true);
                 serialSendMessageToNotecard(serialCreateMessage(ReqHello, NULL, body, NULL, 0));
             }
         }

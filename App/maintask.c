@@ -24,8 +24,8 @@ void mainTask(void *params)
     // Init timer manager
     UTIL_TIMER_Init();
 
-    // Set config defaults
-    configSetDefaults();
+    // Set defaults from how we were configured
+    configGetDefaultsFromTestCert();
 
     // Remember the timer value when we booted
     timerSetBootTime();

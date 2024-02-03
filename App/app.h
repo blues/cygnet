@@ -82,7 +82,7 @@ extern char configApn[cstrsz];
 extern char configBand[cstrsz];
 extern char configChannel[cstrsz];
 extern uint16_t configMtu;
-void configSetDefaults(void);
+void configGetDefaultsFromTestCert(void);
 void configSet(J *body);
 void configDeleteTestCert(void);
 
