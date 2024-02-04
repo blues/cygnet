@@ -10,6 +10,8 @@
 
 // App supports STOP2 mode
 #define APP_SUPPORTS_STOP2_MODE     false
+#define ENABLE_USART1               true
+#define ENABLE_USART2               false
 
 // Task parameters
 #define TASKID_MAIN                 0           // Serial uart poller

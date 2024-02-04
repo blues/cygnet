@@ -20,14 +20,22 @@ typedef struct {
     int taskId;
 } serialDesc;
 STATIC serialDesc usbDesc = {0};
+#if ENABLE_USART1
 STATIC serialDesc usart1Desc = {0};
+#endif
+#if ENABLE_USART2
 STATIC serialDesc usart2Desc = {0};
+#endif
 STATIC serialDesc lpuart1Desc = {0};
 
 // Interrupt buffers
 STATIC uint8_t lpuart1InterruptBuffer[600];
+#if ENABLE_USART1
 STATIC uint8_t usart1InterruptBuffer[600];
+#endif
+#if ENABLE_USART2
 STATIC uint8_t usart2InterruptBuffer[600];
+#endif
 STATIC uint8_t usbInterruptBuffer[600];
 STATIC uint8_t isrDebugOutput[120];             // some messages will get truncated but who cares
 STATIC uint32_t isrDebugOutputLen = 0;
@@ -56,29 +64,42 @@ void serialInit(uint32_t taskID)
     // Init the mutexes
     mutexInit(&lpuart1Desc.rxLock, MTX_SERIAL_RX);
     mutexInit(&lpuart1Desc.txLock, MTX_SERIAL_TX);
-    mutexInit(&usart1Desc.rxLock, MTX_SERIAL_RX);
-    mutexInit(&usart1Desc.txLock, MTX_SERIAL_TX);
-    mutexInit(&usart2Desc.rxLock, MTX_SERIAL_RX);
-    mutexInit(&usart2Desc.txLock, MTX_SERIAL_TX);
     mutexInit(&usbDesc.rxLock, MTX_SERIAL_RX);
     mutexInit(&usbDesc.txLock, MTX_SERIAL_TX);
+#if ENABLE_USART1
+    mutexInit(&usart1Desc.rxLock, MTX_SERIAL_RX);
+    mutexInit(&usart1Desc.txLock, MTX_SERIAL_TX);
+#endif
+#if ENABLE_USART2
+    mutexInit(&usart2Desc.rxLock, MTX_SERIAL_RX);
+    mutexInit(&usart2Desc.txLock, MTX_SERIAL_TX);
+#endif
 
     // Set the tasks of the handlers
     usbDesc.taskId = TASKID_REQ;
     lpuart1Desc.taskId = TASKID_REQ;
+#if ENABLE_USART1
     usart1Desc.taskId = TASKID_REQ;
+#endif
+#if ENABLE_USART2
     usart2Desc.taskId = TASKID_REQ;
+#endif
 
     // LPUART1
     MX_UART_RxConfigure(&hlpuart1, lpuart1InterruptBuffer, sizeof(lpuart1InterruptBuffer), serialReceivedNotification);
     MX_LPUART1_UART_Init(false, 9600);
 
     // USART1
+#if ENABLE_USART1
     MX_UART_RxConfigure(&huart1, usart1InterruptBuffer, sizeof(usart1InterruptBuffer), serialReceivedNotification);
     MX_USART1_UART_Init(9600);
+#endif
 
     // USART2
+#if ENABLE_USART2
     MX_UART_RxConfigure(&huart2, usart2InterruptBuffer, sizeof(usart2InterruptBuffer), serialReceivedNotification);
+    MX_USART2_UART_Init(9600);
+#endif
 
     // USB (debug port)
     MX_UART_RxConfigure(NULL, usbInterruptBuffer, sizeof(usbInterruptBuffer), serialReceivedNotification);
@@ -163,14 +184,18 @@ void serialReceivedNotification(UART_HandleTypeDef *huart, bool error)
 // Get the descriptor for the port
 serialDesc *portDesc(UART_HandleTypeDef *huart)
 {
-    if (huart == &huart1) {
+    if (huart == NULL) {
+        return &usbDesc;
+#if ENABLE_USART1
+    } else if (huart == &huart1) {
         return &usart1Desc;
+#endif
+#if ENABLE_USART2
     } else if (huart == &huart2) {
         return &usart2Desc;
+#endif
     } else if (huart == &hlpuart1) {
         return &lpuart1Desc;
-    } else if (huart == NULL) {
-        return &usbDesc;
     }
     return NULL;
 }
@@ -347,9 +372,6 @@ void debugOutput(uint8_t *buf, uint32_t buflen)
         taskGiveFromISR(serialTaskID);
         return;
     }
-
-    // Always output to USART1 (Note: if/when we have AUX_EN supported, do it conditionally)
-    serialOutput(&huart1, buf, buflen);
 
     // Output to USB if it's detected
     if (osUsbDetected()) {
