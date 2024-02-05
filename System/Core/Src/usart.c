@@ -60,9 +60,25 @@ void receiveComplete(UART_HandleTypeDef *huart, UARTIO *uio, uint8_t *buf, uint3
 void MX_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t len, uint32_t timeoutMs)
 {
 
-    // Deal with USB as a special case
+    // Deal with USB as a special case.  Note that the ST USB library has intermittent errors
+    // when transmitting more than 64 bytes at a time.
     if (huart == NULL) {
-        CDC_Transmit_FS(buf, len);
+        uint32_t chunksize = 64;
+        while (len) {
+            uint32_t chunklen = len;
+            if (chunklen > chunksize) {
+                chunklen = chunksize;
+            }
+            for (int i=0; i<100; i++) {
+                uint8_t status = CDC_Transmit_FS(buf, chunklen);
+                if (status != USBD_BUSY) {
+                    break;
+                }
+                HAL_Delay(1);
+            }
+            buf += chunklen;
+            len -= chunklen;
+        }
         return;
     }
 
