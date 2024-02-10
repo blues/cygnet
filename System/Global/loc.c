@@ -32,7 +32,13 @@ bool locSet(double lat, double lon, uint32_t ltime)
     locationLat = lat;
     locationLon = lon;
     locationSecs = ltime;
-    locationValid = true;
+    // Although lat/lon of 0 is valid, it's not realistic and it's
+    // more frequently indicative of a "not set" condition
+    if (lat == 0 && lon == 0) {
+        locationValid = false;
+    } else {
+        locationValid = true;
+    }
     return true;
 }
 
