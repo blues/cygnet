@@ -380,6 +380,18 @@ void debugOutput(uint8_t *buf, uint32_t buflen)
 
 }
 
+// Output to a port, suspending tasks that might interrupt it if not DMA
+void uartTransmit(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen, uint32_t timeoutMs)
+{
+    if (MX_UART_IsDMA(huart)) {
+        MX_UART_Transmit(huart, buf, buflen, timeoutMs);
+    } else {
+        uint32_t prio = taskIOPriorityBegin();
+        MX_UART_Transmit(huart, buf, buflen, timeoutMs);
+        taskIOPriorityEnd(prio);
+    }
+}
+
 // Output to the specified port
 void serialOutput(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen)
 {
@@ -391,7 +403,7 @@ void serialOutput(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen)
     }
     if (buflen > 0) {
         mutexLock(&desc->txLock);
-        MX_UART_Transmit(huart, buf, buflen, 500);
+        uartTransmit(huart, buf, buflen, 500);
         mutexUnlock(&desc->txLock);
     }
 }
@@ -410,20 +422,20 @@ void serialOutputLn(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen)
     }
     mutexLock(&desc->txLock);
     if (buflen == 0) {
-        MX_UART_Transmit(huart, terminator, terminatorLen, 500);
+        uartTransmit(huart, terminator, terminatorLen, 500);
     } else {
         // We prefer to send it in a single chunk because it eliminates
         // an I2C poll iteration for the client.
         uint8_t *temp;
         err_t err = memDup(buf, buflen+terminatorLen, &temp);
         if (err) {
-            MX_UART_Transmit(huart, buf, buflen, 500);
-            MX_UART_Transmit(huart, terminator, terminatorLen, 500);
+            uartTransmit(huart, buf, buflen, 500);
+            uartTransmit(huart, terminator, terminatorLen, 500);
         } else {
             for (int i=0; i<terminatorLen; i++) {
                 temp[buflen++] = terminator[i];
             }
-            MX_UART_Transmit(huart, temp, buflen, 500);
+            uartTransmit(huart, temp, buflen, 500);
             memFree(temp);
         }
     }
