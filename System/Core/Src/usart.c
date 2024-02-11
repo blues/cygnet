@@ -691,7 +691,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
         // GPIO Configuration
         GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
         GPIO_InitStruct.Pull = GPIO_PULLUP;
-        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
         GPIO_InitStruct.Alternate = LPUART1_AF;
         if (!lpuart1UsingAlternatePins) {
             GPIO_InitStruct.Pin = LPUART1_VCP_RX_Pin;
