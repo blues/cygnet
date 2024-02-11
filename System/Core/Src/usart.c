@@ -56,6 +56,26 @@ uint8_t rxtemp[UART_IOBUF_LEN];
 bool uioReceivedBytes(UARTIO *uio, uint8_t *buf, uint32_t buflen);
 void receiveComplete(UART_HandleTypeDef *huart, UARTIO *uio, uint8_t *buf, uint32_t buflen);
 
+// See if a port is DMA
+bool MX_UART_IsDMA(UART_HandleTypeDef *huart)
+{
+    if (huart == &huart1) {
+#if USART1_USE_DMA
+        return true;
+#else
+        return false;
+#endif
+    }
+    if (huart == &huart2) {
+#if USART2_USE_DMA
+        return true;
+#else
+        return false;
+#endif
+    }
+    return false;
+}
+
 // Transmit to a port synchronously
 void MX_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t len, uint32_t timeoutMs)
 {
@@ -685,8 +705,9 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
             HAL_GPIO_Init(LPUART1_A2_TX_GPIO_Port, &GPIO_InitStruct);
         }
 
-        // LPUART1 interrupt Init
-        HAL_NVIC_SetPriority(LPUART1_IRQn, INTERRUPT_PRIO_SERIAL, 0);
+        // LPUART1 interrupt Init.  Note that we use a higher interrupt
+        // priority than DMA serial because otherwise we may lose chars
+        HAL_NVIC_SetPriority(LPUART1_IRQn, INTERRUPT_PRIO_ISERIAL, 0);
         HAL_NVIC_EnableIRQ(LPUART1_IRQn);
 
         // Enable LPUART clock in sleep mode
