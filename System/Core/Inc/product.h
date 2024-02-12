@@ -3,6 +3,7 @@
 // copyright holder including that found in the LICENSE file.
 
 // Allow overrides, but by defining them up-front rather than later
+#include "buildnum.h"
 #include "app_product.h"
 
 // Product version
@@ -45,14 +46,19 @@
 // We can search for these strings in the .bin to validate them for DFU.
 #define PRODUCT_BUILD PRODUCT_MANUFACTURER " " PRODUCT_DISPLAY_NAME " Firmware " STRINGIFY(PRODUCT_MAJOR_VERSION) "." STRINGIFY(PRODUCT_MINOR_VERSION) "." STRINGIFY(PRODUCT_PATCH_VERSION) " on " __DATE__ " at " __TIME__
 
+// Used to identify the version of the image
+#define PRODUCT_FIRMWARE_ID  PRODUCT_PROGRAMMATIC_NAME "-" STRINGIFY(PRODUCT_MAJOR_VERSION) "." STRINGIFY(PRODUCT_MINOR_VERSION) "." STRINGIFY(PRODUCT_PATCH_VERSION)
+
 #define QUOTE "\""
 #define PRODUCT_CONFIG_SIGNATURE "firmware::info:"
 #define PRODUCT_CONFIG PRODUCT_CONFIG_SIGNATURE                         \
     "{" QUOTE "org" QUOTE ":" QUOTE PRODUCT_MANUFACTURER QUOTE          \
     "," QUOTE "product" QUOTE ":" QUOTE PRODUCT_DISPLAY_NAME QUOTE      \
+    "," QUOTE "version" QUOTE ":" QUOTE PRODUCT_FIRMWARE_ID QUOTE       \
     "," QUOTE "ver_major" QUOTE ":" STRINGIFY(PRODUCT_MAJOR_VERSION)    \
     "," QUOTE "ver_minor" QUOTE ":" STRINGIFY(PRODUCT_MINOR_VERSION)    \
     "," QUOTE "ver_patch" QUOTE ":" STRINGIFY(PRODUCT_PATCH_VERSION)    \
+    "," QUOTE "ver_build" QUOTE ":" STRINGIFY(BUILDNUMBER)              \
     "," QUOTE "built" QUOTE ":" QUOTE  __DATE__ " " __TIME__ QUOTE      \
     "}"
 
