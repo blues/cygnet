@@ -153,6 +153,18 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
     return result;
 }
 
+// See if busy
+uint8_t CDC_Transmit_Completed()
+{
+    USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+    if (hcdc != NULL) {
+        if (hcdc->TxState != 0) {
+            return USBD_BUSY;
+        }
+    }
+    return USBD_OK;
+}
+
 // CDC_TransmitCplt_FS
 // Data transmitted callback
 //

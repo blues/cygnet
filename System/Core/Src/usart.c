@@ -55,6 +55,7 @@ uint8_t rxtemp[UART_IOBUF_LEN];
 // Forwards
 bool uioReceivedBytes(UARTIO *uio, uint8_t *buf, uint32_t buflen);
 void receiveComplete(UART_HandleTypeDef *huart, UARTIO *uio, uint8_t *buf, uint32_t buflen);
+bool UART_TransmitChunk(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t len, uint32_t timeoutMs);
 
 // See if a port is DMA
 bool MX_UART_IsDMA(UART_HandleTypeDef *huart)
@@ -76,63 +77,100 @@ bool MX_UART_IsDMA(UART_HandleTypeDef *huart)
     return false;
 }
 
-// Transmit to a port synchronously
+// Transmit to a port synchronously, broken up into 64 byte chunks because we have
+// seen repeatedly that hosts are not generally designed to handle large transfers.
+// We've chosen 64 bytes simply due to the fact that USB frame size is 64.
 void MX_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t len, uint32_t timeoutMs)
 {
+    uint32_t chunksize = 64;
+    while (len) {
 
-    // Deal with USB as a special case.  Note that the ST USB library has intermittent errors
-    // when transmitting more than 64 bytes at a time.
-    if (huart == NULL) {
-        uint32_t chunksize = 64;
-        while (len) {
-            uint32_t chunklen = len;
-            if (chunklen > chunksize) {
-                chunklen = chunksize;
-            }
-            for (int i=0; i<100; i++) {
-                uint8_t status = CDC_Transmit_FS(buf, chunklen);
-                if (status != USBD_BUSY) {
-                    break;
-                }
-                HAL_Delay(1);
-            }
-            buf += chunklen;
-            len -= chunklen;
+        // Break it into chunks
+        uint32_t chunklen = len;
+        if (chunklen > chunksize) {
+            chunklen = chunksize;
         }
-        return;
+
+        // Wait up to 100mS for transmission of a single chunk to succeed
+        uint32_t singleChunkTimeoutMs = 100;
+        for (int i=0;; i++) {
+            if (i >= singleChunkTimeoutMs) {
+                return;
+            }
+            if (UART_TransmitChunk(huart, buf, chunklen, timeoutMs)) {
+                break;
+            }
+            HAL_Delay(1);
+        }
+
+        // Delay a bit between chunks
+        uint32_t delayBetweenChunksMs = 10;
+        HAL_Delay(delayBetweenChunksMs);
+        buf += chunklen;
+        len -= chunklen;
+
+    }
+}
+
+
+// Transmit a 64-byte chunk to a port, returning false if busy or failure, else true if success
+bool UART_TransmitChunk(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t len, uint32_t timeoutMs)
+{
+
+    // USB is a special case but the same logic
+    if (huart == NULL) {
+        if (CDC_Transmit_Completed() == USBD_BUSY) {
+            return false;
+        }
+        bool success = (CDC_Transmit_FS(buf, len) == USBD_OK);
+        for (uint32_t i=0; success; i++) {
+            if (CDC_Transmit_Completed() != USBD_BUSY) {
+                break;
+            }
+            if (i >= timeoutMs) {
+                return false;
+            }
+            HAL_Delay(1);
+        }
+        return success;
+    }
+
+    // Exit if busy
+    if ((HAL_UART_GetState(huart) & HAL_UART_STATE_BUSY_TX) == HAL_UART_STATE_BUSY_TX) {
+        return false;
     }
 
     // Transmit
-    bool waitWhileUartBusy = false;
+    bool success = false;
     if (huart == &hlpuart1) {
-        HAL_UART_Transmit_IT(huart, buf, len);
-        waitWhileUartBusy = true;
-    }
-    if (huart == &huart1) {
+        success = (HAL_UART_Transmit_IT(huart, buf, len) == HAL_OK);
+    } else if (huart == &huart1) {
 #if USART1_USE_DMA
-        HAL_UART_Transmit_DMA(huart, buf, len);
+        success = (HAL_UART_Transmit_DMA(huart, buf, len) == HAL_OK);
 #else
-        HAL_UART_Transmit_IT(huart, buf, len);
+        success = (HAL_UART_Transmit_IT(huart, buf, len) == HAL_OK);
 #endif
-        waitWhileUartBusy = true;
-    }
-    if (huart == &huart2) {
+    } else if (huart == &huart2) {
 #if USART2_USE_DMA
-        HAL_UART_Transmit_DMA(huart, buf, len);
+        success = (HAL_UART_Transmit_DMA(huart, buf, len) == HAL_OK);
 #else
-        HAL_UART_Transmit_IT(huart, buf, len);
+        success = (HAL_UART_Transmit_IT(huart, buf, len) == HAL_OK);
 #endif
-        waitWhileUartBusy = true;
     }
 
     // Wait, so that the caller won't mess with the buffer while the HAL is using it
-    for (uint32_t i=0; waitWhileUartBusy && i<timeoutMs; i++) {
-        HAL_UART_StateTypeDef state = HAL_UART_GetState(huart);
-        if ((state & HAL_UART_STATE_BUSY_TX) != HAL_UART_STATE_BUSY_TX) {
+    for (uint32_t i=0; success; i++) {
+        if ((HAL_UART_GetState(huart) & HAL_UART_STATE_BUSY_TX) != HAL_UART_STATE_BUSY_TX) {
             break;
+        }
+        if (i >= timeoutMs) {
+            return false;
         }
         HAL_Delay(1);
     }
+
+    // Success
+    return success;
 
 }
 

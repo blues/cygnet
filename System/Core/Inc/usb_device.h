@@ -11,3 +11,4 @@
 void MX_USB_DEVICE_Init(void);
 void MX_USB_DEVICE_DeInit(void);
 uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
+uint8_t CDC_Transmit_Completed(void);
