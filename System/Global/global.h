@@ -299,6 +299,7 @@ int Base64decode(char * plain_dst, const char *coded_src, int *);
 // os.c
 uint32_t osBuildNum(void);
 char *osBuildConfig(void);
+uint32_t osBuildNum(void);
 bool osDebugging(void);
 bool osUsbDetected(void);
 bool streqlCI(const char *a, const char *b);

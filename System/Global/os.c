@@ -17,6 +17,16 @@ char *osBuildConfig()
     return configStr+signatureLen;
 }
 
+// Return build number, if defined
+uint32_t osBuildNum()
+{
+    uint32_t buildnum = 0;
+#ifdef BUILDNUMBER
+    buildnum = BUILDNUMBER;
+#endif
+    return buildnum;
+}
+
 // See if USB is currently active
 bool osUsbDetected(void)
 {
