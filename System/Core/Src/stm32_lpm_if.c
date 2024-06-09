@@ -103,11 +103,6 @@ void PWR_EnterStopMode(void)
     // As a defensive measure, make sure all the peripherals are OFF that are supposed to be off
     MX_GPIO_Stop();
 
-    // Trace
-#ifdef DEBUG_BUSY
-    HAL_GPIO_WritePin(LED_BUSY_GPIO_Port, LED_BUSY_Pin, GPIO_PIN_RESET);
-#endif
-
     // Clear Status Flag before entering STOP/STANDBY Mode
     wasStopped = true;
     HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
@@ -137,11 +132,6 @@ void PWR_ExitStopMode(void)
 
     // Restore systick
     SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;      // Resume SysTick, our FreeRTOS tick
-
-    // Trace
-#ifdef DEBUG_BUSY
-    HAL_GPIO_WritePin(LED_BUSY_GPIO_Port, LED_BUSY_Pin, GPIO_PIN_SET);
-#endif
 
     // Resume peripherals that were awake
     MX_LPUART1_UART_Resume();

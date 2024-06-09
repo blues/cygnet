@@ -10,9 +10,6 @@
 #include "stm32l4xx_hal.h"
 #include "board.h"
 
-// Use busy LED for STOP mode indication
-//#define DEBUG_BUSY
-
 // Peripherals (please update MY_ActivePeripherals()
 #define PERIPHERAL_RNG		0x00000001
 #define PERIPHERAL_USB		0x00000002

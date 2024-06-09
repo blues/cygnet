@@ -14,17 +14,13 @@ void ledRestartSignal()
         HAL_GPIO_WritePin(LED_BUILTIN_GPIO_Port, LED_BUILTIN_Pin, GPIO_PIN_RESET);
         for (volatile int j=0; j<GMAX(i,0)+4; j++) for (volatile int k=0; k<30000; k++) ;
     }
-#ifdef DEBUG_BUSY
     HAL_GPIO_WritePin(LED_BUILTIN_GPIO_Port, LED_BUILTIN_Pin, GPIO_PIN_SET);
-#endif
 }
 
 // Signal BUSY on or off
 void ledEnable(bool enable)
 {
-#ifndef DEBUG_BUSY
     HAL_GPIO_WritePin(LED_BUILTIN_GPIO_Port, LED_BUILTIN_Pin, enable ? GPIO_PIN_SET : GPIO_PIN_RESET);
-#endif
 }
 
 // Signal BUSY on or off
