@@ -3,6 +3,7 @@
 // copyright holder including that found in the LICENSE file.
 
 #include "stm32l4xx_ll_lpuart.h"
+#include "stm32l4xx_hal_uart.h"
 #include "stm32l4xx_hal_uart_ex.h"
 #include "stm32l4xx_hal_usart_ex.h"
 #include "main.h"
@@ -26,6 +27,13 @@ DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
 bool usart2UsingRS485 = false;
 uint32_t usart2BaudRate = 0;
+
+// LPUART variable speed handling
+#if defined(LPUART1_DISABLE_HIGH_BUSY_SAMPLING_RATE)
+uint32_t lpuart1PeriphClockSelection = RCC_LPUART1CLKSOURCE_LSE;
+#else
+uint32_t lpuart1PeriphClockSelection = RCC_LPUART1CLKSOURCE_HSI;
+#endif
 
 // For UART receive
 // UART receive I/O descriptor.  Note that if we ever fill the buffer
@@ -511,6 +519,15 @@ void MX_LPUART1_UART_Suspend(void)
         return;
     }
 
+        // Before going to sleep, make sure the LPUART is in low speed mode.
+#if !defined(LPUART1_DISABLE_HIGH_BUSY_SAMPLING_RATE)
+    if (lpuart1PeriphClockSelection != RCC_LPUART1CLKSOURCE_LSE) {
+        lpuart1PeriphClockSelection = RCC_LPUART1CLKSOURCE_LSE;
+        __HAL_RCC_LPUART1_CONFIG(lpuart1PeriphClockSelection);
+        hlpuart1.Instance->BRR = UART_DIV_LPUART(LSE_VALUE, hlpuart1.Init.BaudRate);
+    }
+#endif
+
     // Set wakeUp event on start bit
     UART_WakeUpTypeDef WakeUpSelection;
     WakeUpSelection.WakeUpEvent = LL_LPUART_WAKEUP_ON_RXNE;
@@ -556,6 +573,15 @@ void MX_LPUART1_UART_Transmit(uint8_t *buf, uint32_t len, uint32_t timeoutMs)
     if ((peripherals & PERIPHERAL_LPUART1) == 0) {
         return;
     }
+
+    // If we've gone into low speed mode, crank it back up
+#if !defined(LPUART1_DISABLE_HIGH_BUSY_SAMPLING_RATE)
+    if (lpuart1PeriphClockSelection != RCC_LPUART1CLKSOURCE_HSI) {
+        lpuart1PeriphClockSelection = RCC_LPUART1CLKSOURCE_HSI;
+        __HAL_RCC_LPUART1_CONFIG(lpuart1PeriphClockSelection);
+        hlpuart1.Instance->BRR = UART_DIV_LPUART(HSI_VALUE, hlpuart1.Init.BaudRate);
+    }
+#endif
 
     // Transmit
     HAL_UART_Transmit_IT(&hlpuart1, buf, len);
@@ -718,7 +744,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 
         // Initializes the peripherals clock
         PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_LPUART1;
-        PeriphClkInit.Lpuart1ClockSelection = RCC_LPUART1CLKSOURCE_LSE;
+        PeriphClkInit.Lpuart1ClockSelection = lpuart1PeriphClockSelection;
         if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
             Error_Handler();
         }
