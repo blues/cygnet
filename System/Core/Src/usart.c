@@ -378,6 +378,15 @@ void MX_USB_RxCplt(uint8_t* buf, uint32_t buflen)
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 
+    // If we've gone into low speed mode, crank it back up
+#if !defined(LPUART1_DISABLE_HIGH_BUSY_SAMPLING_RATE)
+    if (huart == &hlpuart1 && lpuart1PeriphClockSelection != RCC_LPUART1CLKSOURCE_HSI) {
+        lpuart1PeriphClockSelection = RCC_LPUART1CLKSOURCE_HSI;
+        __HAL_RCC_LPUART1_CONFIG(lpuart1PeriphClockSelection);
+        hlpuart1.Instance->BRR = UART_DIV_LPUART(HSI_VALUE, hlpuart1.Init.BaudRate);
+    }
+#endif
+
     // Get the receive port
     uint16_t receivedBytes;
     UARTIO *uio = rxPort(huart, &receivedBytes);
