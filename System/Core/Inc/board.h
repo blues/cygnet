@@ -9,9 +9,11 @@
 #include "FreeRTOSConfig.h"
 
 #define BOARD_NUCLEO		0       // Proto using NUCLEO-L433RC-P
-#define BOARD_V1            1       // First spin
-#define BOARD_V2            2       // Has AUX_EN, GPS_VBACKUP, USB_MODE, USB_3V3, L76
-#define CURRENT_BOARD       BOARD_V1
+#define BOARD_CYGNET_V1     1       // First spin of cygnet
+#define BOARD_CYGNET_V2     2       // Second spin of cygnet, with USER_BTN and USB_DETECT swapped because SYS_WAKE
+
+// App's overrides to set the board type
+#include "app_boardtype.h"
 
 // Pin Definitions for stm32l433cct6t
 // 1 VBAT				13 PA3/IN8			25 PB12				37 PA14
@@ -47,11 +49,17 @@
 #if (CURRENT_BOARD != BOARD_NUCLEO)
 #define	LED_BUILTIN_Pin					GPIO_PIN_8		// PA8
 #define	LED_BUILTIN_GPIO_Port			GPIOA
+#if (CURRENT_BOARD == BOARD_CYGNET_V1)
 #define	USER_BTN_Pin					GPIO_PIN_3		// PB3
 #define	USER_BTN_GPIO_Port				GPIOB
+#define	USER_BTN_IRQn                   EXTI3_IRQn
+#else
+#define	USER_BTN_Pin					GPIO_PIN_13     // PC13
+#define	USER_BTN_GPIO_Port				GPIOC
+#define	USER_BTN_IRQn                   EXTI15_10_IRQn
+#endif
 #define	USER_BTN_STATE_PUSHED			GPIO_PIN_RESET
 #define	USER_BTN_STATE_RELEASED			GPIO_PIN_SET
-#define	USER_BTN_IRQn                   EXTI3_IRQn
 #else
 #define	LED_BUILTIN_Pin					GPIO_PIN_13		// PB13 (LD4)
 #define	LED_BUILTIN_GPIO_Port			GPIOB
@@ -63,9 +71,15 @@
 #endif
 
 #if (CURRENT_BOARD != BOARD_NUCLEO)
+#if (CURRENT_BOARD == BOARD_CYGNET_V1)
 #define	USB_DETECT_Pin					GPIO_PIN_13		// PC13
 #define	USB_DETECT_GPIO_Port			GPIOC
 #define	USB_DETECT_IRQn                 EXTI15_10_IRQn
+#else
+#define	USB_DETECT_Pin					GPIO_PIN_3		// PB3
+#define	USB_DETECT_GPIO_Port			GPIOB
+#define	USB_DETECT_IRQn                 EXTI3_IRQn
+#endif
 #define	USB_DM_Pin						GPIO_PIN_11		// PA11
 #define	USB_DM_GPIO_Port				GPIOA
 #define	USB_DP_Pin						GPIO_PIN_12		// PA12
