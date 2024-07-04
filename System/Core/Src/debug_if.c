@@ -114,6 +114,9 @@ void MX_DBG_Init(void)
 void MX_JumpToBootloader()
 {
 
+    // Disable USB in case it's enabled; this blocks bootloader entry
+    MX_USB_DEVICE_DeInit();
+
     // Disable instruction cache
 #ifdef HAL_ICACHE_MODULE_ENABLED
     if (HAL_ICACHE_IsEnabled() == 1) {
