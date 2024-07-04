@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include "main.h"
+#include "usb_device.h"
 
 // IAR-only method of writing to debug terminal without loading printf library
 #if defined( __ICCARM__ )
