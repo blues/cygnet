@@ -5,4 +5,4 @@
 #pragma once
 
 // What we're compiling for
-#define CURRENT_BOARD                   BOARD_CYGNET_V1
+#define CURRENT_BOARD                   BOARD_CYGNET_V2
