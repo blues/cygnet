@@ -4,6 +4,7 @@
 
 #include "app.h"
 #include "usart.h"
+#include "post.h"
 
 // Maximum command
 #define maxCMD 256
@@ -16,6 +17,7 @@ typedef enum {
     CMD_BOOTLOADER_DIRECT,
     CMD_TRACE,
     CMD_T,
+    CMD_POST,
     CMD_UNRECOGNIZED
 } allCommands;
 
@@ -31,6 +33,7 @@ STATIC const cmd_def cmdText[] = {
     {"mem", CMD_MEM},
     {"power", CMD_POWER},
     {"bootloader", CMD_BOOTLOADER_DIRECT},
+    {"post", CMD_POST},
     {NULL, 0},
 };
 
@@ -160,6 +163,11 @@ err_t diagProcess(char *diagCommand)
     case CMD_RESTART:
         MX_Restart();
         break;
+        
+    case CMD_POST: {
+        postSelfTest();
+        break;
+    }        
 
 
     case CMD_UNRECOGNIZED: {
