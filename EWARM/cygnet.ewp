@@ -1101,6 +1101,12 @@
             <name>$PROJ_DIR$\..\App\maintask.c</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\App\post.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\App\post.h</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\App\req.c</name>
         </file>
         <file>
