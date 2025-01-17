@@ -137,6 +137,9 @@ void debugMessage(const char *buf);
 void debugMessageLen(const char *buf, uint32_t buflen);
 void debugPanic(const char *message);
 void debugSoftPanic(const char *message);
+void debugPause(void);
+bool debugIsPaused(void);
+void debugResume(void);
 
 // gmem.c
 extern long memObjects;

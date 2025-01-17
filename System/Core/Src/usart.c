@@ -63,7 +63,6 @@ uint8_t rxtemp[UART_IOBUF_LEN];
 // Forwards
 bool uioReceivedBytes(UARTIO *uio, uint8_t *buf, uint32_t buflen);
 void receiveComplete(UART_HandleTypeDef *huart, UARTIO *uio, uint8_t *buf, uint32_t buflen);
-bool UART_TransmitChunk(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t len, uint32_t timeoutMs);
 
 // See if a port is DMA
 bool MX_UART_IsDMA(UART_HandleTypeDef *huart)
@@ -105,7 +104,7 @@ void MX_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t len, uin
             if (i >= singleChunkTimeoutMs) {
                 return;
             }
-            if (UART_TransmitChunk(huart, buf, chunklen, timeoutMs)) {
+            if (MX_UART_TransmitFull(huart, buf, chunklen, timeoutMs)) {
                 break;
             }
             HAL_Delay(1);
@@ -122,7 +121,7 @@ void MX_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t len, uin
 
 
 // Transmit a 64-byte chunk to a port, returning false if busy or failure, else true if success
-bool UART_TransmitChunk(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t len, uint32_t timeoutMs)
+bool MX_UART_TransmitFull(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t len, uint32_t timeoutMs)
 {
 
     // USB is a special case but the same logic

@@ -36,6 +36,7 @@ void MX_UART_RxConfigure(UART_HandleTypeDef *huart, uint8_t *rxbuf, uint16_t rxb
 bool MX_UART_RxAvailable(UART_HandleTypeDef *huart);
 uint8_t MX_UART_RxGet(UART_HandleTypeDef *huart);
 void MX_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t len, uint32_t timeoutMs);
+bool MX_UART_TransmitFull(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t len, uint32_t timeoutMs);
 
 // Receive complete for USB serial device
 void MX_USB_RxCplt(uint8_t* buf, uint32_t buflen);
