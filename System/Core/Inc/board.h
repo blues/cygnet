@@ -256,6 +256,17 @@
 #define	RS485_AF						GPIO_AF7_USART2
 #define	RS485_BAUDRATE					9600
 
+#define	SAI1_SCK_Pin					D10_Pin
+#define	SAI1_SCK_GPIO_Port				D10_GPIO_Port
+#define	SAI1_FS_Pin						D6_Pin
+#define	SAI1_FS_GPIO_Port				D6_GPIO_Port
+#define	SAI1_SD_Pin						D12_Pin
+#define	SAI1_SD_GPIO_Port				D12_GPIO_Port
+#define	SAI1_AF							GPIO_AF13_SAI1
+#define	SAI1_DMA_Channel				DMA2_Channel1
+#define	SAI1_DMA_IRQn					DMA2_Channel1_IRQn
+#define	SAI1_DMA_IRQHandler				DMA2_Channel1_IRQHandler
+
 // Interrupt priorities.  (Note - to get this you must include FreeRTOSCOnfig.h before board.h)
 #ifdef configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY
 

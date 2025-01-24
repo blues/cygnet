@@ -24,6 +24,8 @@ extern SPI_HandleTypeDef hspi2;
 extern DMA_HandleTypeDef hdma_spi2_rx;
 extern DMA_HandleTypeDef hdma_spi2_tx;
 extern RTC_HandleTypeDef hrtc;
+extern SAI_HandleTypeDef hsai_BlockA1;
+extern DMA_HandleTypeDef hdma_sai1_a;
 
 // This function handles Non maskable interrupt.
 void NMI_Handler(void)
@@ -239,6 +241,18 @@ void USART1_TX_DMA_IRQHandler(void)
 void USART1_RX_DMA_IRQHandler(void)
 {
     HAL_DMA_IRQHandler(&hdma_usart1_rx);
+}
+
+// This function handles the SAI global interrupt.
+void SAI1_DMA_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(&hdma_sai1_a);
+}
+
+// SAI1 global interrupt handler
+void SAI1_IRQHandler(void)
+{
+    HAL_SAI_IRQHandler(&hsai_BlockA1);
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
