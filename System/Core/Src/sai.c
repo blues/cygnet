@@ -2,11 +2,10 @@
 // Use of this source code is governed by licenses granted by the
 // copyright holder including that found in the LICENSE file.
 
-#include "stm32l4xx_hal_sai.h"
-#include "stm32l4xx_hal_sai_ex.h"
 #include "main.h"
 #include "global.h"
 #include "dma.h"
+#include "stm32l4xx_hal_sai.h"
 
 #include "main.h"
 
@@ -87,7 +86,7 @@ void HAL_SAI_MspInit(SAI_HandleTypeDef* hsai)
         GPIO_InitStruct.Pin = SAI1_SD_Pin;
         HAL_GPIO_Init(SAI1_SD_GPIO_Port, &GPIO_InitStruct);
 
-        hdma_sai1_a.Instance = SAI1_DMA_CHANNEL;
+        hdma_sai1_a.Instance = SAI1_DMA_Channel;
         hdma_sai1_a.Init.Request = DMA_REQUEST_1;
         hdma_sai1_a.Init.Direction = DMA_PERIPH_TO_MEMORY;
         hdma_sai1_a.Init.PeriphInc = DMA_PINC_DISABLE;
