@@ -63,20 +63,27 @@ void HAL_SAI_MspInit(SAI_HandleTypeDef* hsai)
     RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
     if (hsai->Instance==SAI1_Block_A) {
 
+#ifdef CLOCK_OPTIMIZE_FOR_HIGH_SPEED
+        // This assumes that RCC is configured with a source of HSI (16Mhz)
+        // and with a PLLM divider of 4, because we ultimately then divide
+        // the clock down to get a PLLSAI1P of 3.047619Mhz, which is
+        // within the datasheet-specified range of the IMP34D05 which
+        // is fClk >= 1.2Mhz && fClk <= 3.25Mhz.
         PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_SAI1;
         PeriphClkInit.Sai1ClockSelection = RCC_SAI1CLKSOURCE_PLLSAI1;
         PeriphClkInit.PLLSAI1.PLLSAI1Source = RCC_PLLSOURCE_HSI;
-        PeriphClkInit.PLLSAI1.PLLSAI1M = 2;
-        PeriphClkInit.PLLSAI1.PLLSAI1N = 8;
-        PeriphClkInit.PLLSAI1.PLLSAI1P = RCC_PLLP_DIV31;
-        PeriphClkInit.PLLSAI1.PLLSAI1ClockOut = RCC_PLLSAI1_SAI1CLK;
-        // Note that the fClk of the IMP34DT05 must be between 1.2 and 3.25Mhz,
-        // and that the above delivers 2.064516Mhz to SAI1
+        PeriphClkInit.PLLSAI1.PLLSAI1M = 4;
+        PeriphClkInit.PLLSAI1.PLLSAI1N = 16;
+        PeriphClkInit.PLLSAI1.PLLSAI1P = RCC_PLLP_DIV21;
         PeriphClkInit.PLLSAI1.PLLSAI1Q = RCC_PLLQ_DIV2;
         PeriphClkInit.PLLSAI1.PLLSAI1R = RCC_PLLR_DIV2;
+        PeriphClkInit.PLLSAI1.PLLSAI1ClockOut = RCC_PLLSAI1_SAI1CLK;
         if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
             Error_Handler();
         }
+#else
+        Error_Handler();
+#endif
 
         __HAL_RCC_SAI1_CLK_ENABLE();
         HAL_NVIC_SetPriority(SAI1_IRQn, INTERRUPT_PRIO_SAI, 0);
