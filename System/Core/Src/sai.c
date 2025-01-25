@@ -15,6 +15,10 @@ DMA_HandleTypeDef hdma_sai1_a;
 // SAI1 Initialization Function
 void MX_SAI1_Init(void)
 {
+// Note that this initialization requires not only that we are optimized
+// for high speed, but that HSI is the PLL source and that PLLM is
+// configured at /4.
+#ifdef CLOCK_OPTIMIZE_FOR_HIGH_SPEED
     hsai_BlockA1.Instance = SAI1_Block_A;
     hsai_BlockA1.Init.Protocol = SAI_FREE_PROTOCOL;
     hsai_BlockA1.Init.AudioMode = SAI_MODEMASTER_RX;
@@ -25,7 +29,7 @@ void MX_SAI1_Init(void)
     hsai_BlockA1.Init.OutputDrive = SAI_OUTPUTDRIVE_DISABLE;
     hsai_BlockA1.Init.NoDivider = SAI_MASTERDIVIDER_DISABLE;
     hsai_BlockA1.Init.FIFOThreshold = SAI_FIFOTHRESHOLD_HF;
-    hsai_BlockA1.Init.AudioFrequency = SAI_AUDIO_FREQUENCY_8K;
+    hsai_BlockA1.Init.AudioFrequency = SAI_AUDIO_FREQUENCY_48K;
     hsai_BlockA1.Init.SynchroExt = SAI_SYNCEXT_DISABLE;
     hsai_BlockA1.Init.MonoStereoMode = SAI_MONOMODE;
     hsai_BlockA1.Init.CompandingMode = SAI_NOCOMPANDING;
@@ -41,6 +45,9 @@ void MX_SAI1_Init(void)
     if (HAL_SAI_Init(&hsai_BlockA1) != HAL_OK) {
         Error_Handler();
     }
+#else
+    Error_Handler();
+#endif
 }
 
 // SAI1 De-initialization Function
@@ -72,12 +79,12 @@ void HAL_SAI_MspInit(SAI_HandleTypeDef* hsai)
         }
 
         __HAL_RCC_SAI1_CLK_ENABLE();
-        HAL_NVIC_SetPriority(SAI1_IRQn, 0, 0);
+        HAL_NVIC_SetPriority(SAI1_IRQn, INTERRUPT_PRIO_SAI, 0);
         HAL_NVIC_EnableIRQ(SAI1_IRQn);
 
         GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
         GPIO_InitStruct.Pull = GPIO_NOPULL;
-        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
         GPIO_InitStruct.Alternate = SAI1_AF;
         GPIO_InitStruct.Pin = SAI1_SCK_Pin;
         HAL_GPIO_Init(SAI1_SCK_GPIO_Port, &GPIO_InitStruct);
@@ -100,6 +107,9 @@ void HAL_SAI_MspInit(SAI_HandleTypeDef* hsai)
         __HAL_LINKDMA(hsai,hdmarx,hdma_sai1_a);
         __HAL_LINKDMA(hsai,hdmatx,hdma_sai1_a);
 
+        HAL_NVIC_SetPriority(SAI1_DMA_IRQn, INTERRUPT_PRIO_SAI, 0);
+        HAL_NVIC_EnableIRQ(SAI1_DMA_IRQn);
+
     }
 }
 
@@ -107,15 +117,19 @@ void HAL_SAI_MspDeInit(SAI_HandleTypeDef* hsai)
 {
 
     if (hsai->Instance==SAI1_Block_A) {
+
         __HAL_RCC_SAI1_CLK_DISABLE();
+
         HAL_NVIC_DisableIRQ(SAI1_IRQn);
+        HAL_NVIC_DisableIRQ(SAI1_DMA_IRQn);
+
+        HAL_GPIO_DeInit(SAI1_SCK_GPIO_Port, SAI1_SCK_Pin);
+        HAL_GPIO_DeInit(SAI1_FS_GPIO_Port, SAI1_FS_Pin);
+        HAL_GPIO_DeInit(SAI1_SD_GPIO_Port, SAI1_SD_Pin);
+
+        HAL_DMA_DeInit(hsai->hdmarx);
+        HAL_DMA_DeInit(hsai->hdmatx);
+
     }
-
-    HAL_GPIO_DeInit(SAI1_SCK_GPIO_Port, SAI1_SCK_Pin);
-    HAL_GPIO_DeInit(SAI1_FS_GPIO_Port, SAI1_FS_Pin);
-    HAL_GPIO_DeInit(SAI1_SD_GPIO_Port, SAI1_SD_Pin);
-
-    HAL_DMA_DeInit(hsai->hdmarx);
-    HAL_DMA_DeInit(hsai->hdmatx);
 
 }
