@@ -60,7 +60,6 @@ void HAL_SAI_MspInit(SAI_HandleTypeDef* hsai)
 {
 
     GPIO_InitTypeDef GPIO_InitStruct;
-    RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
     if (hsai->Instance==SAI1_Block_A) {
 
 #ifdef CLOCK_OPTIMIZE_FOR_HIGH_SPEED
@@ -69,6 +68,7 @@ void HAL_SAI_MspInit(SAI_HandleTypeDef* hsai)
         // the clock down to get a PLLSAI1P of 3.047619Mhz, which is
         // within the datasheet-specified range of the IMP34D05 which
         // is fClk >= 1.2Mhz && fClk <= 3.25Mhz.
+        RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
         PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_SAI1;
         PeriphClkInit.Sai1ClockSelection = RCC_SAI1CLKSOURCE_PLLSAI1;
         PeriphClkInit.PLLSAI1.PLLSAI1Source = RCC_PLLSOURCE_HSI;
