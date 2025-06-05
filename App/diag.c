@@ -18,6 +18,7 @@ typedef enum {
     CMD_TRACE,
     CMD_T,
     CMD_POST,
+    CMD_VERSION,
     CMD_UNRECOGNIZED
 } allCommands;
 
@@ -34,6 +35,7 @@ STATIC const cmd_def cmdText[] = {
     {"power", CMD_POWER},
     {"bootloader", CMD_BOOTLOADER_DIRECT},
     {"post", CMD_POST},
+    {"version", CMD_VERSION},
     {NULL, 0},
 };
 
@@ -166,6 +168,10 @@ err_t diagProcess(char *diagCommand)
         
     case CMD_POST: {
         postSelfTest();
+        break;
+
+    case CMD_VERSION:
+        debugf(PRODUCT_BUILD "\r\n\r\n");
         break;
     }        
 
