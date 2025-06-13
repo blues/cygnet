@@ -140,6 +140,7 @@ void debugSoftPanic(const char *message);
 void debugPause(void);
 bool debugIsPaused(void);
 void debugResume(void);
+void debugResumeForce(void);
 
 // gmem.c
 extern long memObjects;

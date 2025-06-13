@@ -21,10 +21,18 @@ bool debugIsPaused(void)
     return atomic_load(&debugPaused) != 0;
 }
 
+// Forcibly resume debug output after pausing temporarily, regardless of refcnt
+void debugResumeForce(void)
+{
+    atomic_store(&debugPaused, 0);
+}
+
 // Resume debug output after pausing temporarily
 void debugResume(void)
 {
-    atomic_fetch_sub(&debugPaused, 1);
+    if (atomic_load(&debugPaused) != 0) {
+        atomic_fetch_sub(&debugPaused, 1);
+    }
 }
 
 // Output a debug string raw
