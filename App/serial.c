@@ -50,7 +50,7 @@ STATIC uint32_t serialTaskID = TASKID_UNKNOWN;
 bool serialActive = false;
 
 // Forwards
-void serialReceivedNotification(UART_HandleTypeDef *huart, bool error);
+void serialReceivedNotification(UART_HandleTypeDef *huart, uint32_t error, bool overrun);
 bool pollPort(UART_HandleTypeDef *huart);
 void debugOutput(uint8_t *buf, uint32_t buflen);
 
@@ -165,7 +165,7 @@ bool serialIsActive(void)
 }
 
 // Notification
-void serialReceivedNotification(UART_HandleTypeDef *huart, bool error)
+void serialReceivedNotification(UART_HandleTypeDef *huart, uint32_t error, bool overrun)
 {
     if (serialTaskID != TASKID_UNKNOWN) {
 

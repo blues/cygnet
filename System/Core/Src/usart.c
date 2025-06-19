@@ -29,11 +29,7 @@ bool usart2UsingRS485 = false;
 uint32_t usart2BaudRate = 0;
 
 // LPUART variable speed handling
-#if defined(LPUART1_DISABLE_HIGH_BUSY_SAMPLING_RATE)
 uint32_t lpuart1PeriphClockSelection = RCC_LPUART1CLKSOURCE_LSE;
-#else
-uint32_t lpuart1PeriphClockSelection = RCC_LPUART1CLKSOURCE_HSI;
-#endif
 
 // For UART receive
 // UART receive I/O descriptor.  Note that if we ever fill the buffer
@@ -48,7 +44,7 @@ typedef struct {
     uint16_t fill;
     uint16_t drain;
     uint16_t rxlen;
-    void (*notifyReceivedFn)(UART_HandleTypeDef *huart, bool error);
+    void (*notifyReceivedFn)(UART_HandleTypeDef *huart, uint32_t error, bool overrun);
 } UARTIO;
 UARTIO rxioLPUART1 = {0};
 UARTIO rxioUSART1 = {0};
@@ -257,39 +253,38 @@ void MX_UART_RxStart(UART_HandleTypeDef *huart)
         return;
     }
 
-    // Importantly, abort any existing transfer so the receive doesn't return BUSY, such as
-    // is the case when restarting receive after an IDLE interrupt.
-    if (huart->RxState != HAL_UART_STATE_READY) {
-        HAL_UART_AbortReceive(huart);
-    }
-
     // Start the new receive
     if (huart == &hlpuart1 && rxioLPUART1.buf != NULL) {
-        if (HAL_UART_Receive_IT(huart, rxioLPUART1.iobuf, rxioLPUART1.iobuflen) == HAL_OK) {
-            return;
+        if (HAL_UART_Receive_IT(huart, rxioLPUART1.iobuf, rxioLPUART1.iobuflen) != HAL_OK) {
+            HAL_UART_AbortReceive(huart);
+            HAL_UART_Receive_IT(huart, rxioLPUART1.iobuf, rxioLPUART1.iobuflen);
         }
         return;
     }
     if (huart == &huart1 && rxioUSART1.buf != NULL) {
 #if USART1_USE_DMA
-        if (HAL_UART_Receive_DMA(huart, rxioUSART1.iobuf, rxioUSART1.iobuflen) == HAL_OK) {
-            return;
+        if (HAL_UART_Receive_DMA(huart, rxioUSART1.iobuf, rxioUSART1.iobuflen) != HAL_OK) {
+            HAL_UART_AbortReceive(huart);
+            HAL_UART_Receive_DMA(huart, rxioUSART1.iobuf, rxioUSART1.iobuflen);
         }
 #else
-        if (HAL_UART_Receive_IT(huart, rxioUSART1.iobuf, rxioUSART1.iobuflen) == HAL_OK) {
-            return;
+        if (HAL_UART_Receive_IT(huart, rxioUSART1.iobuf, rxioUSART1.iobuflen) != HAL_OK) {
+            HAL_UART_AbortReceive(huart);
+            HAL_UART_Receive_IT(huart, rxioUSART1.iobuf, rxioUSART1.iobuflen);
         }
 #endif
         return;
     }
     if (huart == &huart2 && rxioUSART2.buf != NULL) {
 #if USART2_USE_DMA
-        if (HAL_UART_Receive_DMA(huart, rxioUSART2.iobuf, rxioUSART2.iobuflen) == HAL_OK) {
-            return;
+        if (HAL_UART_Receive_DMA(huart, rxioUSART2.iobuf, rxioUSART2.iobuflen) != HAL_OK) {
+            HAL_UART_AbortReceive(huart);
+            HAL_UART_Receive_DMA(huart, rxioUSART2.iobuf, rxioUSART2.iobuflen);
         }
 #else
-        if (HAL_UART_Receive_IT(huart, rxioUSART2.iobuf, rxioUSART2.iobuflen) == HAL_OK) {
-            return;
+        if (HAL_UART_Receive_IT(huart, rxioUSART2.iobuf, rxioUSART2.iobuflen) != HAL_OK) {
+            HAL_UART_AbortReceive(huart);
+            HAL_UART_Receive_IT(huart, rxioUSART2.iobuf, rxioUSART2.iobuflen);
         }
 #endif
         return;
@@ -298,7 +293,7 @@ void MX_UART_RxStart(UART_HandleTypeDef *huart)
 }
 
 // Register a completion callback and allocate receive buffer
-void MX_UART_RxConfigure(UART_HandleTypeDef *huart, uint8_t *rxbuf, uint16_t rxbuflen, void (*cb)(UART_HandleTypeDef *huart, bool error))
+void MX_UART_RxConfigure(UART_HandleTypeDef *huart, uint8_t *rxbuf, uint16_t rxbuflen, void (*cb)(UART_HandleTypeDef *huart, uint32_t error, bool overrun))
 {
 
     // Initialize receive buffers
@@ -377,15 +372,6 @@ void MX_USB_RxCplt(uint8_t* buf, uint32_t buflen)
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 
-    // If we've gone into low speed mode, crank it back up
-#if !defined(LPUART1_DISABLE_HIGH_BUSY_SAMPLING_RATE)
-    if (huart == &hlpuart1 && lpuart1PeriphClockSelection != RCC_LPUART1CLKSOURCE_HSI) {
-        lpuart1PeriphClockSelection = RCC_LPUART1CLKSOURCE_HSI;
-        __HAL_RCC_LPUART1_CONFIG(lpuart1PeriphClockSelection);
-        hlpuart1.Instance->BRR = UART_DIV_LPUART(HSI_VALUE, hlpuart1.Init.BaudRate);
-    }
-#endif
-
     // Get the receive port
     uint16_t receivedBytes;
     UARTIO *uio = rxPort(huart, &receivedBytes);
@@ -404,10 +390,8 @@ void receiveComplete(UART_HandleTypeDef *huart, UARTIO *uio, uint8_t *buf, uint3
 
     // If there's an error, abort
     if (huart != NULL && huart->ErrorCode != HAL_UART_ERROR_NONE) {
-        HAL_UART_Abort(huart);
-        uio->fill = uio->drain = uio->rxlen = 0;
         if (uio->notifyReceivedFn != NULL) {
-            uio->notifyReceivedFn(huart, true);
+            uio->notifyReceivedFn(huart, huart->ErrorCode, false);
         }
         MX_UART_RxStart(huart);
         return;
@@ -426,11 +410,11 @@ void receiveComplete(UART_HandleTypeDef *huart, UARTIO *uio, uint8_t *buf, uint3
     // Process the received bytes
     if (!uioReceivedBytes(uio, iobuf, buflen)) {
         if (uio->notifyReceivedFn != NULL) {
-            uio->notifyReceivedFn(huart, true);
+            uio->notifyReceivedFn(huart, 0, true);
         }
     } else {
         if (uio->notifyReceivedFn != NULL) {
-            uio->notifyReceivedFn(huart, false);
+            uio->notifyReceivedFn(huart, 0, false);
         }
     }
 
@@ -527,15 +511,6 @@ void MX_LPUART1_UART_Suspend(void)
         return;
     }
 
-        // Before going to sleep, make sure the LPUART is in low speed mode.
-#if !defined(LPUART1_DISABLE_HIGH_BUSY_SAMPLING_RATE)
-    if (lpuart1PeriphClockSelection != RCC_LPUART1CLKSOURCE_LSE) {
-        lpuart1PeriphClockSelection = RCC_LPUART1CLKSOURCE_LSE;
-        __HAL_RCC_LPUART1_CONFIG(lpuart1PeriphClockSelection);
-        hlpuart1.Instance->BRR = UART_DIV_LPUART(LSE_VALUE, hlpuart1.Init.BaudRate);
-    }
-#endif
-
     // Set wakeUp event on start bit
     UART_WakeUpTypeDef WakeUpSelection;
     WakeUpSelection.WakeUpEvent = LL_LPUART_WAKEUP_ON_RXNE;
@@ -568,7 +543,7 @@ void MX_LPUART1_UART_Resume(void)
 
     // Notify of activity, so that we stay awake
     if (rxioLPUART1.notifyReceivedFn != NULL) {
-        rxioLPUART1.notifyReceivedFn(&hlpuart1, false);
+        rxioLPUART1.notifyReceivedFn(&hlpuart1, 0, false);
     }
 
 }
@@ -581,15 +556,6 @@ void MX_LPUART1_UART_Transmit(uint8_t *buf, uint32_t len, uint32_t timeoutMs)
     if ((peripherals & PERIPHERAL_LPUART1) == 0) {
         return;
     }
-
-    // If we've gone into low speed mode, crank it back up
-#if !defined(LPUART1_DISABLE_HIGH_BUSY_SAMPLING_RATE)
-    if (lpuart1PeriphClockSelection != RCC_LPUART1CLKSOURCE_HSI) {
-        lpuart1PeriphClockSelection = RCC_LPUART1CLKSOURCE_HSI;
-        __HAL_RCC_LPUART1_CONFIG(lpuart1PeriphClockSelection);
-        hlpuart1.Instance->BRR = UART_DIV_LPUART(HSI_VALUE, hlpuart1.Init.BaudRate);
-    }
-#endif
 
     // Transmit
     HAL_UART_Transmit_IT(&hlpuart1, buf, len);

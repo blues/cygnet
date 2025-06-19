@@ -32,7 +32,7 @@ void MX_USART2_UART_DeInit(void);
 void MX_USART2_UART_Transmit(uint8_t *buf, uint32_t len, uint32_t timeoutMs);
 
 void MX_UART_RxStart(UART_HandleTypeDef *huart);
-void MX_UART_RxConfigure(UART_HandleTypeDef *huart, uint8_t *rxbuf, uint16_t rxbuflen, void (*cb)(UART_HandleTypeDef *huart, bool error));
+void MX_UART_RxConfigure(UART_HandleTypeDef *huart, uint8_t *rxbuf, uint16_t rxbuflen, void (*cb)(UART_HandleTypeDef *huart, uint32_t error, bool overrun));
 bool MX_UART_RxAvailable(UART_HandleTypeDef *huart);
 uint8_t MX_UART_RxGet(UART_HandleTypeDef *huart);
 void MX_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t len, uint32_t timeoutMs);
