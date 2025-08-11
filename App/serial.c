@@ -46,6 +46,9 @@ STATIC int64_t lastTimeDidWorkMs = 0L;
 // Task ID
 STATIC uint32_t serialTaskID = TASKID_UNKNOWN;
 
+// For debugging
+STATIC UART_HandleTypeDef *serialDebugUart = NULL;
+
 // Whether or not the serial polling is active
 bool serialActive = false;
 
@@ -357,6 +360,16 @@ bool serialIsDebugPort(UART_HandleTypeDef *huart)
     return false;
 }
 
+// Set the serial debug output port
+bool serialSetDebugPort(UART_HandleTypeDef *huart)
+{
+    if (!serialIsDebugPort(huart)) {
+        return false;
+    }
+    serialDebugUart = huart;
+    return true;
+}
+
 // Debug output
 void debugOutput(uint8_t *buf, uint32_t buflen)
 {
@@ -374,8 +387,12 @@ void debugOutput(uint8_t *buf, uint32_t buflen)
     }
 
     // Output to USB if it's detected
-    if (osUsbDetected()) {
-        serialOutput(NULL, buf, buflen);
+    if (serialDebugUart == NULL) {
+        if (osUsbDetected()) {
+            serialOutput(NULL, buf, buflen);
+        }
+    } else {
+        serialOutput(serialDebugUart, buf, buflen);
     }
 
 }
