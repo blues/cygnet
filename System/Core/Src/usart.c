@@ -44,6 +44,7 @@ typedef struct {
     uint16_t fill;
     uint16_t drain;
     uint16_t rxlen;
+    uint16_t overruns;
     void (*notifyReceivedFn)(UART_HandleTypeDef *huart, uint32_t error, bool overrun);
 } UARTIO;
 UARTIO rxioLPUART1 = {0};
@@ -351,7 +352,11 @@ bool uioReceivedBytes(UARTIO *uio, uint8_t *buf, uint32_t buflen)
         // that a \n terminator will get into the buffer.
         uio->buf[uio->fill] = *buf++;
         if (uio->fill+1 == uio->drain) {
-            // overrun - don't increment the pointer
+            // overrun - completely reset the buffer rather than
+            // just bumping into the end, so that a temporary
+            // overrun will at least give us a fresh start
+            // so that we don't need to constantly catch back up.
+            rxioUSB.fill = rxioUSB.drain = rxioUSB.rxlen = 0;
             return false;
         }
         uio->fill++;
@@ -409,6 +414,7 @@ void receiveComplete(UART_HandleTypeDef *huart, UARTIO *uio, uint8_t *buf, uint3
 
     // Process the received bytes
     if (!uioReceivedBytes(uio, iobuf, buflen)) {
+        uio->overruns++;
         if (uio->notifyReceivedFn != NULL) {
             uio->notifyReceivedFn(huart, 0, true);
         }
@@ -426,21 +432,42 @@ void receiveComplete(UART_HandleTypeDef *huart, UARTIO *uio, uint8_t *buf, uint3
 
 }
 
+// Get Rx stats
+void MX_UART_RxStats(UART_HandleTypeDef *huart, uint32_t *rxLen, uint32_t *rxCap, uint32_t *rxOverruns)
+{
+    UARTIO *uio;
+    if (huart == NULL) {
+        uio = &rxioUSB;
+    } else if (huart == &hlpuart1) {
+        uio = &rxioLPUART1;
+    } else if (huart == &huart1) {
+        uio = &rxioUSART1;
+    } else if (huart == &huart2) {
+        uio = &rxioUSART2;
+    } else {
+        *rxLen = *rxCap = *rxOverruns = 0;
+        return;
+    }
+    *rxLen = uio->rxlen;
+    *rxCap = uio->buflen;
+    *rxOverruns = uio->overruns;
+    return;
+}
+    
 // See if anything is available
 bool MX_UART_RxAvailable(UART_HandleTypeDef *huart)
 {
     UARTIO *uio;
     if (huart == NULL) {
         uio = &rxioUSB;
-    }
-    if (huart == &hlpuart1) {
+    } else if (huart == &hlpuart1) {
         uio = &rxioLPUART1;
-    }
-    if (huart == &huart1) {
+    } else if (huart == &huart1) {
         uio = &rxioUSART1;
-    }
-    if (huart == &huart2) {
+    } else if (huart == &huart2) {
         uio = &rxioUSART2;
+    } else {
+        return false;
     }
     return (uio->fill != uio->drain);
 }
