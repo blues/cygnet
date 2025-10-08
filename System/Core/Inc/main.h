@@ -10,18 +10,19 @@
 #include "stm32l4xx_hal.h"
 #include "board.h"
 
-// Peripherals (please update MY_ActivePeripherals()
-#define PERIPHERAL_RNG		0x00000001
-#define PERIPHERAL_USB		0x00000002
-#define PERIPHERAL_ADC1		0x00000004
-#define PERIPHERAL_CAN1		0x00000008
-#define PERIPHERAL_LPUART1  0x00000010
-#define PERIPHERAL_USART1   0x00000020
-#define PERIPHERAL_USART2   0x00000040
-#define PERIPHERAL_I2C1     0x00000080
-#define PERIPHERAL_I2C3     0x00000100
-#define PERIPHERAL_SPI1     0x00000200
-#define PERIPHERAL_SPI2     0x00000400
+// Peripherals (please update MX_ActivePeripherals()
+#define PERIPHERAL_RNG           0x00000001
+#define PERIPHERAL_USB           0x00000002
+#define PERIPHERAL_ADC1          0x00000004
+#define PERIPHERAL_CAN1          0x00000008
+#define PERIPHERAL_LPUART1       0x00000010
+#define PERIPHERAL_USART1        0x00000020
+#define PERIPHERAL_USART2        0x00000040
+#define PERIPHERAL_I2C1          0x00000080
+#define PERIPHERAL_I2C3          0x00000100
+#define PERIPHERAL_SPI1          0x00000200
+#define PERIPHERAL_SPI2          0x00000400
+#define PERIPHERAL_LPUART1_PCLK1 0x00000800
 
 // global
 size_t strlcpy(char *dst, const char *src, size_t siz);
