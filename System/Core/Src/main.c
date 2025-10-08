@@ -198,7 +198,9 @@ void MX_ActivePeripherals(char *buf, uint32_t buflen)
     if ((peripherals & PERIPHERAL_SPI2) != 0) {
         strlcat(buf, "SPI2 ", buflen);
     }
-
+    if ((peripherals & PERIPHERAL_LPUART1_PCLK1) != 0) {
+        strlcat(buf, "LPUART1_PCLK1 ", buflen);
+    }
 }
 
 // Get the image size

@@ -501,6 +501,25 @@ void MX_LPUART1_UART_Init(bool altPins, uint32_t baudRate)
 {
     lpuart1UsingAlternatePins = altPins;
     lpuart1BaudRate = baudRate;
+
+    // Switch clock source based on baud rate requirements.
+    // LPUART requires peripheral clock to be in range [3 × baudrate, 4096 × baudrate].
+    // LSE (32768 Hz) can only support baud rates up to ~10922 baud (32768/3).
+    // For higher baud rates, we must use a faster clock source like PCLK1.
+    if (baudRate > 10000) {
+        // High baud rates need a fast clock source
+        lpuart1PeriphClockSelection = RCC_LPUART1CLKSOURCE_PCLK1;
+        // We must set this bit in the peripherals mask to prevent going into
+        // STOP2 while the LPUART is still using this faster clock and baud
+        // rate. This means that the MCU will not be able to enter STOP2 until
+        // LPUART1 is reinited at 9600 baud.
+        peripherals |= PERIPHERAL_LPUART1_PCLK1;
+    } else {
+        // Low baud rates can use LSE (for low power)
+        lpuart1PeriphClockSelection = RCC_LPUART1CLKSOURCE_LSE;
+        peripherals &= ~PERIPHERAL_LPUART1_PCLK1;
+    }
+
     MX_LPUART1_UART_ReInit();
 }
 
@@ -602,10 +621,11 @@ void MX_LPUART1_UART_Transmit(uint8_t *buf, uint32_t len, uint32_t timeoutMs)
 void MX_LPUART1_UART_DeInit(void)
 {
     peripherals &= ~PERIPHERAL_LPUART1;
+    peripherals &= ~PERIPHERAL_LPUART1_PCLK1;
     __HAL_UART_DISABLE_IT(&hlpuart1, UART_IT_IDLE);
     rxioLPUART1.fill = rxioLPUART1.drain = 0;
-    __HAL_RCC_USART1_FORCE_RESET();
-    __HAL_RCC_USART1_RELEASE_RESET();
+    __HAL_RCC_LPUART1_FORCE_RESET();
+    __HAL_RCC_LPUART1_RELEASE_RESET();
     HAL_UART_DeInit(&hlpuart1);
 }
 
