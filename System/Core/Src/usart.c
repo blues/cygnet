@@ -3,6 +3,7 @@
 // copyright holder including that found in the LICENSE file.
 
 #include "stm32l4xx_ll_lpuart.h"
+#include "stm32l4xx_ll_exti.h"
 #include "stm32l4xx_hal_uart.h"
 #include "stm32l4xx_hal_uart_ex.h"
 #include "stm32l4xx_hal_usart_ex.h"
@@ -575,6 +576,10 @@ void MX_LPUART1_UART_Suspend(void)
 
     // Enable Wake Up From Stop
     LL_LPUART_EnableInStopMode(LPUART1);
+
+    // Unmask wakeup with Interrupt request from LPUART1
+    // See RM0394 Table 47 to see why line 31
+    LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_31);
 
 }
 
