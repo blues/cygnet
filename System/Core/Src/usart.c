@@ -543,6 +543,10 @@ void MX_LPUART1_UART_ReInit(void)
 
     __HAL_UART_ENABLE_IT(&hlpuart1, UART_IT_IDLE);
 
+    // Unmask wakeup with Interrupt request from LPUART1
+    // See RM0394 Table 47 to see why line 31
+    LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_31);
+
     MX_UART_RxStart(&hlpuart1);
 
     peripherals |= PERIPHERAL_LPUART1;
