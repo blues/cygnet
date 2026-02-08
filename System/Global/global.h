@@ -274,8 +274,6 @@ void taskGiveAllFromISR(void);
 void taskSuspend(void);
 void taskResume(void);
 void taskStackStats();
-uint32_t taskIOPriorityBegin();
-void taskIOPriorityEnd(uint32_t prio);
 void taskStackOverflowCheck();
 
 // tss.c

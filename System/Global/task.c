@@ -230,21 +230,6 @@ void taskStackStats()
 
 }
 
-// Temporarily increase the task's priority to maximum
-uint32_t taskIOPriorityBegin()
-{
-    TaskHandle_t task = xTaskGetCurrentTaskHandle();
-    uint32_t prio = uxTaskPriorityGet(task);
-    vTaskPrioritySet(task, configMAX_PRIORITIES-1);
-    return prio;
-}
-
-// Restore the task's priority
-void taskIOPriorityEnd(uint32_t prio)
-{
-    vTaskPrioritySet(xTaskGetCurrentTaskHandle(), prio);
-}
-
 // Check stack to ensure that we're not near overflow
 void taskStackOverflowCheck()
 {

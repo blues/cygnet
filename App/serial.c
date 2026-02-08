@@ -383,13 +383,7 @@ void debugOutput(uint8_t *buf, uint32_t buflen)
 // Output to a port, suspending tasks that might interrupt it if not DMA
 void uartTransmit(UART_HandleTypeDef *huart, uint8_t *buf, uint32_t buflen, uint32_t timeoutMs)
 {
-    if (MX_UART_IsDMA(huart)) {
-        MX_UART_Transmit(huart, buf, buflen, timeoutMs);
-    } else {
-        uint32_t prio = taskIOPriorityBegin();
-        MX_UART_Transmit(huart, buf, buflen, timeoutMs);
-        taskIOPriorityEnd(prio);
-    }
+    MX_UART_Transmit(huart, buf, buflen, timeoutMs);
 }
 
 // Output to the specified port
