@@ -35,6 +35,7 @@ bool serialIsActive(void);
 void serialInit(uint32_t serialTaskID);
 void serialPoll(void);
 bool serialIsDebugPort(UART_HandleTypeDef *huart);
+bool serialSetDebugPort(UART_HandleTypeDef *huart);
 bool serialLock(UART_HandleTypeDef *huart, uint8_t **retData, uint32_t *retDataLen, bool *retDiagAllowed);
 void serialUnlock(UART_HandleTypeDef *huart, bool reset);
 void serialOutputString(UART_HandleTypeDef *huart, char *buf);

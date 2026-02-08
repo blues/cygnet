@@ -11,10 +11,10 @@
 #error "In your IDE please define PRODUCT_MANUFACTURER as something like 'Acme Inc'"
 #endif
 #ifndef PRODUCT_DISPLAY_NAME
-#error "In your IDE please define PRODUCT_DISPLAY_NAME as something like "Power Monitor"
+#error "In your IDE please define PRODUCT_DISPLAY_NAME as something like 'Power Monitor'"
 #endif
 #ifndef PRODUCT_PROGRAMMATIC_NAME
-#error "In your IDE please define PRODUCT_PROGRAMMATIC_NAME as something like "powermon"
+#error "In your IDE please define PRODUCT_PROGRAMMATIC_NAME as something like 'powermon'"
 #endif
 
 // USB overrides in case you'd like to assign your own

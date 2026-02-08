@@ -7,5 +7,5 @@
 #define PRODUCT_DISPLAY_NAME        "Cygnet Test App"
 #define PRODUCT_PROGRAMMATIC_NAME   "cygnet"
 #define PRODUCT_MAJOR_VERSION       1
-#define PRODUCT_MINOR_VERSION       2
+#define PRODUCT_MINOR_VERSION       3
 #define PRODUCT_PATCH_VERSION       1

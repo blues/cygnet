@@ -3,6 +3,7 @@
 // copyright holder including that found in the LICENSE file.
 
 #include "stm32l4xx_ll_lpuart.h"
+#include "stm32l4xx_ll_exti.h"
 #include "stm32l4xx_hal_uart.h"
 #include "stm32l4xx_hal_uart_ex.h"
 #include "stm32l4xx_hal_usart_ex.h"
@@ -44,6 +45,7 @@ typedef struct {
     uint16_t fill;
     uint16_t drain;
     uint16_t rxlen;
+    uint16_t overruns;
     void (*notifyReceivedFn)(UART_HandleTypeDef *huart, uint32_t error, bool overrun);
 } UARTIO;
 UARTIO rxioLPUART1 = {0};
@@ -351,7 +353,11 @@ bool uioReceivedBytes(UARTIO *uio, uint8_t *buf, uint32_t buflen)
         // that a \n terminator will get into the buffer.
         uio->buf[uio->fill] = *buf++;
         if (uio->fill+1 == uio->drain) {
-            // overrun - don't increment the pointer
+            // overrun - completely reset the buffer rather than
+            // just bumping into the end, so that a temporary
+            // overrun will at least give us a fresh start
+            // so that we don't need to constantly catch back up.
+            rxioUSB.fill = rxioUSB.drain = rxioUSB.rxlen = 0;
             return false;
         }
         uio->fill++;
@@ -409,6 +415,7 @@ void receiveComplete(UART_HandleTypeDef *huart, UARTIO *uio, uint8_t *buf, uint3
 
     // Process the received bytes
     if (!uioReceivedBytes(uio, iobuf, buflen)) {
+        uio->overruns++;
         if (uio->notifyReceivedFn != NULL) {
             uio->notifyReceivedFn(huart, 0, true);
         }
@@ -426,21 +433,42 @@ void receiveComplete(UART_HandleTypeDef *huart, UARTIO *uio, uint8_t *buf, uint3
 
 }
 
+// Get Rx stats
+void MX_UART_RxStats(UART_HandleTypeDef *huart, uint32_t *rxLen, uint32_t *rxCap, uint32_t *rxOverruns)
+{
+    UARTIO *uio;
+    if (huart == NULL) {
+        uio = &rxioUSB;
+    } else if (huart == &hlpuart1) {
+        uio = &rxioLPUART1;
+    } else if (huart == &huart1) {
+        uio = &rxioUSART1;
+    } else if (huart == &huart2) {
+        uio = &rxioUSART2;
+    } else {
+        *rxLen = *rxCap = *rxOverruns = 0;
+        return;
+    }
+    *rxLen = uio->rxlen;
+    *rxCap = uio->buflen;
+    *rxOverruns = uio->overruns;
+    return;
+}
+    
 // See if anything is available
 bool MX_UART_RxAvailable(UART_HandleTypeDef *huart)
 {
     UARTIO *uio;
     if (huart == NULL) {
         uio = &rxioUSB;
-    }
-    if (huart == &hlpuart1) {
+    } else if (huart == &hlpuart1) {
         uio = &rxioLPUART1;
-    }
-    if (huart == &huart1) {
+    } else if (huart == &huart1) {
         uio = &rxioUSART1;
-    }
-    if (huart == &huart2) {
+    } else if (huart == &huart2) {
         uio = &rxioUSART2;
+    } else {
+        return false;
     }
     return (uio->fill != uio->drain);
 }
@@ -474,6 +502,25 @@ void MX_LPUART1_UART_Init(bool altPins, uint32_t baudRate)
 {
     lpuart1UsingAlternatePins = altPins;
     lpuart1BaudRate = baudRate;
+
+    // Switch clock source based on baud rate requirements.
+    // LPUART requires peripheral clock to be in range [3 × baudrate, 4096 × baudrate].
+    // LSE (32768 Hz) can only support baud rates up to ~10922 baud (32768/3).
+    // For higher baud rates, we must use a faster clock source like PCLK1.
+    if (baudRate > 10000) {
+        // High baud rates need a fast clock source
+        lpuart1PeriphClockSelection = RCC_LPUART1CLKSOURCE_PCLK1;
+        // We must set this bit in the peripherals mask to prevent going into
+        // STOP2 while the LPUART is still using this faster clock and baud
+        // rate. This means that the MCU will not be able to enter STOP2 until
+        // LPUART1 is reinited at 9600 baud.
+        peripherals |= PERIPHERAL_LPUART1_PCLK1;
+    } else {
+        // Low baud rates can use LSE (for low power)
+        lpuart1PeriphClockSelection = RCC_LPUART1CLKSOURCE_LSE;
+        peripherals &= ~PERIPHERAL_LPUART1_PCLK1;
+    }
+
     MX_LPUART1_UART_ReInit();
 }
 
@@ -495,6 +542,10 @@ void MX_LPUART1_UART_ReInit(void)
     }
 
     __HAL_UART_ENABLE_IT(&hlpuart1, UART_IT_IDLE);
+
+    // Unmask wakeup with Interrupt request from LPUART1
+    // See RM0394 Table 47 to see why line 31
+    LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_31);
 
     MX_UART_RxStart(&hlpuart1);
 
@@ -529,6 +580,10 @@ void MX_LPUART1_UART_Suspend(void)
 
     // Enable Wake Up From Stop
     LL_LPUART_EnableInStopMode(LPUART1);
+
+    // Unmask wakeup with Interrupt request from LPUART1
+    // See RM0394 Table 47 to see why line 31
+    LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_31);
 
 }
 
@@ -575,10 +630,11 @@ void MX_LPUART1_UART_Transmit(uint8_t *buf, uint32_t len, uint32_t timeoutMs)
 void MX_LPUART1_UART_DeInit(void)
 {
     peripherals &= ~PERIPHERAL_LPUART1;
+    peripherals &= ~PERIPHERAL_LPUART1_PCLK1;
     __HAL_UART_DISABLE_IT(&hlpuart1, UART_IT_IDLE);
     rxioLPUART1.fill = rxioLPUART1.drain = 0;
-    __HAL_RCC_USART1_FORCE_RESET();
-    __HAL_RCC_USART1_RELEASE_RESET();
+    __HAL_RCC_LPUART1_FORCE_RESET();
+    __HAL_RCC_LPUART1_RELEASE_RESET();
     HAL_UART_DeInit(&hlpuart1);
 }
 

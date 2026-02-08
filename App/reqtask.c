@@ -40,6 +40,7 @@ void reqTask(void *params)
 // Process incoming serial request
 bool processReq(UART_HandleTypeDef *huart)
 {
+    err_t err;
 
     // Get the pending JSON request
     uint8_t *reqJSON;
@@ -61,9 +62,14 @@ bool processReq(UART_HandleTypeDef *huart)
     ledEnable(true);
 
     // Process the request (which is conveniently null-terminated by the serial subsystem)
-    bool debugWasEnabled = MX_DBG_Enable(false);
-    err_t err = reqProcess(serialIsDebugPort(huart), reqJSON, diagAllowed);
-    MX_DBG_Enable(debugWasEnabled);
+    if (serialIsDebugPort(huart)) {
+        serialSetDebugPort(huart);
+        bool debugWasEnabled = MX_DBG_Enable(false);
+        err = reqProcess(true, reqJSON, diagAllowed);
+        MX_DBG_Enable(debugWasEnabled);
+    } else {
+        err = reqProcess(false, reqJSON, diagAllowed);
+    }
     serialUnlock(huart, true);
     if (err) {
         char *errstr = errString(err);
